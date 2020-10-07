@@ -1,11 +1,11 @@
 package main
 
 import (
-    "os"
+	"os"
 )
 
 func main() {
-    cmdMap := NewCmdMap()
-    cmdMap.makeSubCmd("build", "install", "run")
-    cmdMap.Parse(os.Args)
+	cmdMap := NewCmdMap()
+	cmdMap.makeSubCmd("build", "install", "run")
+	cmdMap.Parse(os.Args)
 }
