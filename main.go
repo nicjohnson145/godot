@@ -1,11 +1,10 @@
 package main
 
 import (
-	"os"
+	"fmt"
 )
 
 func main() {
-	cmdMap := NewCmdMap()
-	cmdMap.makeSubCmd("build", "install", "run")
-	cmdMap.Parse(os.Args)
+	config := GetGodotConfig()
+	fmt.Println(config)
 }
