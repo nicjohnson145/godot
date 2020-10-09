@@ -33,8 +33,8 @@ func renderManagedFile(pair PathPair) {
 	fmt.Println(fmt.Sprintf("Rendering - %+v", pair))
 }
 
-
 const myJson = `{"name": {"first": "Nic"}}`
+
 func readMappings() {
 	fmt.Println(gjson.Get(myJson, "name.first"))
 }
