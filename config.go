@@ -67,7 +67,7 @@ func readConfig() godotConfig {
 	return userConf
 }
 
-func GetGodotConfig() godotConfig {
+func getGodotConfig() godotConfig {
 	basic := defaultConfig()
 	usr := readConfig()
 

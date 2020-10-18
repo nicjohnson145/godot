@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 )
 
@@ -22,6 +23,6 @@ func isDir(filepath string) bool {
 
 func check(e error) {
 	if e != nil {
-		panic(e)
+		log.Panicln(e)
 	}
 }
