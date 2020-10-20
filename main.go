@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"log"
 	"os"
 	"os/user"
@@ -14,9 +13,9 @@ func main() {
 	logFile, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0664)
 	check(err)
 	defer logFile.Close()
-	writer := io.MultiWriter(os.Stdout, logFile)
-	log.SetOutput(writer)
+	log.SetOutput(logFile)
 
 	config := getGodotConfig()
-	renderTemplates(config)
+	workerFunc := getWorkerFunc(config, os.Args)
+	workerFunc()
 }

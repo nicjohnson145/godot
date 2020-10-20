@@ -59,11 +59,7 @@ func readConfig() godotConfig {
 	data, _ := ioutil.ReadFile(path)
 	var userConf godotConfig
 	err := json.Unmarshal(data, &userConf)
-	if err != nil {
-		fmt.Println("Error parsing config file")
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	check(err)
 	return userConf
 }
 
