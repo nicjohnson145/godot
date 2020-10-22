@@ -1,12 +1,12 @@
 package main
 
 import (
+	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/util"
 	"log"
 	"os"
 	"os/user"
 	"path/filepath"
-	"github.com/nicjohnson145/godot/internal/config"
-	"github.com/nicjohnson145/godot/internal/util"
 )
 
 func main() {

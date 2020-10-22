@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/managed_files"
+	"github.com/nicjohnson145/godot/internal/render"
 	"log"
 	"os"
-	"github.com/nicjohnson145/godot/internal/config"
-	"github.com/nicjohnson145/godot/internal/render"
-	"github.com/nicjohnson145/godot/internal/managed_files"
 )
 
 type workerFunc func()
