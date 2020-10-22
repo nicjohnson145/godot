@@ -1,4 +1,4 @@
-package main
+package render
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"text/template"
+	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/nicjohnson145/godot/internal/config"
 
 	"github.com/tidwall/gjson"
 )
@@ -31,16 +33,16 @@ func getTemplateFuncs() template.FuncMap {
 	}
 }
 
-func renderTemplates(config godotConfig) {
+func RenderTemplates(config config.GodotConfig) {
 	outputRoot := filepath.Join(config.RepoPath, COMPILED)
 	srcRoot := filepath.Join(config.RepoPath, TEMPLATES)
 
 	templateData := templateData{Target: config.TargetName}
 	templateFuncs := getTemplateFuncs()
 
-	if !isDir(outputRoot) {
+	if !util.IsDir(outputRoot) {
 		err := os.Mkdir(outputRoot, 0775)
-		check(err)
+		util.Check(err)
 	}
 	for _, pair := range config.ManagedFiles {
 		var src string
@@ -49,31 +51,31 @@ func renderTemplates(config godotConfig) {
 		} else {
 			src = srcRoot
 		}
-		pair.addDestRoot(outputRoot)
-		pair.addSourceRoot(src)
+		pair.AddDestRoot(outputRoot)
+		pair.AddSourceRoot(src)
 		renderManagedFile(pair, templateData, templateFuncs)
 	}
 }
 
-func renderManagedFile(pair PathPair, templateData templateData, templateFuncs template.FuncMap) {
+func renderManagedFile(pair config.PathPair, templateData templateData, templateFuncs template.FuncMap) {
 	log.Println(fmt.Sprintf("Rendering - %+v", pair))
-	if isFile(pair.DestPath) {
+	if util.IsFile(pair.DestPath) {
 		e := os.Remove(pair.DestPath)
-		check(e)
+		util.Check(e)
 	}
 
 	tmpl := template.New("thing")
 	tmpl.Funcs(templateFuncs)
 	data, err := ioutil.ReadFile(pair.SourcePath)
-	check(err)
+	util.Check(err)
 	tmpl.Parse(string(data))
 
 	outFile, err := os.OpenFile(pair.DestPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0664)
-	check(err)
+	util.Check(err)
 	defer outFile.Close()
 
 	err = tmpl.Execute(outFile, templateData)
-	check(err)
+	util.Check(err)
 }
 
 const myJson = `{"name": {"first": "Nic"}}`

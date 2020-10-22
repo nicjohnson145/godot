@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func isFile(filepath string) bool {
+func IsFile(filepath string) bool {
 	info, err := os.Stat(filepath)
 	if os.IsNotExist(err) {
 		return false
@@ -15,7 +15,7 @@ func isFile(filepath string) bool {
 	return !info.IsDir()
 }
 
-func isDir(filepath string) bool {
+func IsDir(filepath string) bool {
 	info, err := os.Stat(filepath)
 	if os.IsNotExist(err) {
 		return false
@@ -23,7 +23,7 @@ func isDir(filepath string) bool {
 	return info.IsDir()
 }
 
-func check(e error) {
+func Check(e error) {
 	if e != nil {
 		if val, _ := strconv.Atoi(os.Getenv("GODOT_PANIC")); val == 1 {
 			log.Panicln(e)

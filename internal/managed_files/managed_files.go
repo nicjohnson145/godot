@@ -1,4 +1,4 @@
-package main
+package managed_files
 
 import (
 	"encoding/json"
@@ -7,6 +7,9 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
+	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/render"
+	"github.com/nicjohnson145/godot/internal/util"
 )
 
 type managedFiles struct {
@@ -20,19 +23,19 @@ type _PathPair struct {
 	Group      string `json:"group"`
 }
 
-func newManagedFiles(config godotConfig) managedFiles {
+func NewManagedFiles(config config.GodotConfig) managedFiles {
 	path := filepath.Join(config.RepoPath, "managed_files.json")
 	data, _ := ioutil.ReadFile(path)
 	var files managedFiles
 	err := json.Unmarshal(data, &files)
-	check(err)
+	util.Check(err)
 	files.RepoPath = config.RepoPath
 	return files
 }
 
 func (this *managedFiles) AddFile(path string, addAs string, group string) {
 	group = this.getGroupName(path, group)
-	sourcePath := filepath.Join(this.RepoPath, TEMPLATES, group, this.getSourcePath(path, addAs))
+	sourcePath := filepath.Join(this.RepoPath, render.TEMPLATES, group, this.getSourcePath(path, addAs))
 
 	this.Files = append(
 		this.Files,
@@ -46,9 +49,9 @@ func (this *managedFiles) AddFile(path string, addAs string, group string) {
 
 func (this *managedFiles) WriteConfig() {
 	file, err := json.MarshalIndent(this, "", "    ")
-	check(err)
+	util.Check(err)
 	err = ioutil.WriteFile(this.RepoPath, file, 0664)
-	check(err)
+	util.Check(err)
 }
 
 func (this *managedFiles) getSourcePath(path string, addAs string) string {
@@ -64,8 +67,8 @@ func (this *managedFiles) getGroupName(path string, group string) (outgroup stri
 	} else {
 		outgroup = strings.ReplaceAll(filepath.Base(path), ".", "")
 	}
-	outPath := filepath.Join(this.RepoPath, TEMPLATES, outgroup)
-	if isDir(outPath) || isFile(outPath) {
+	outPath := filepath.Join(this.RepoPath, render.TEMPLATES, outgroup)
+	if util.IsDir(outPath) || util.IsFile(outPath) {
 		msg := fmt.Sprintf("Template folder '%s' already exists", outgroup)
 		fmt.Println(msg)
 		log.Fatalln(msg)

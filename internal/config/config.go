@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"github.com/nicjohnson145/godot/internal/util"
 )
 
 type PathPair struct {
@@ -15,21 +16,21 @@ type PathPair struct {
 	Group      string `json:"group"`
 }
 
-func (this *PathPair) addSourceRoot(root string) {
+func (this *PathPair) AddSourceRoot(root string) {
 	this.SourcePath = filepath.Join(root, this.SourcePath)
 }
 
-func (this *PathPair) addDestRoot(root string) {
+func (this *PathPair) AddDestRoot(root string) {
 	this.DestPath = filepath.Join(root, this.DestPath)
 }
 
-type godotConfig struct {
+type GodotConfig struct {
 	RepoPath     string     `json:"repo_path"`
 	ManagedFiles []PathPair `json:"managed_files"`
 	TargetName   string     `json:"target"`
 }
 
-func (this godotConfig) String() string {
+func (this GodotConfig) String() string {
 	s := ""
 	s += "GodotConfig {\n"
 	s += fmt.Sprintf("  RepoPath: '%v',\n", this.RepoPath)
@@ -39,31 +40,31 @@ func (this godotConfig) String() string {
 	return s
 }
 
-func defaultConfig() godotConfig {
+func defaultConfig() GodotConfig {
 	usr, _ := user.Current()
 
-	return godotConfig{
+	return GodotConfig{
 		RepoPath:     filepath.Join(usr.HomeDir, "dotfiles"),
 		ManagedFiles: []PathPair{},
 		TargetName:   "",
 	}
 }
 
-func readConfig() godotConfig {
+func readConfig() GodotConfig {
 	usr, _ := user.Current()
 	path := filepath.Join(usr.HomeDir, ".config", "godot.json")
-	if !isFile(path) {
-		return godotConfig{}
+	if !util.IsFile(path) {
+		return GodotConfig{}
 	}
 
 	data, _ := ioutil.ReadFile(path)
-	var userConf godotConfig
+	var userConf GodotConfig
 	err := json.Unmarshal(data, &userConf)
-	check(err)
+	util.Check(err)
 	return userConf
 }
 
-func getGodotConfig() godotConfig {
+func GetGodotConfig() GodotConfig {
 	basic := defaultConfig()
 	usr := readConfig()
 

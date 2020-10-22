@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/render"
+	"github.com/nicjohnson145/godot/internal/managed_files"
 )
 
 type workerFunc func()
 
-func getWorkerFunc(config godotConfig, args []string) workerFunc {
+func getWorkerFunc(config config.GodotConfig, args []string) workerFunc {
 	runCmd := flag.NewFlagSet("run", flag.ExitOnError)
 	addCmd := flag.NewFlagSet("add", flag.ExitOnError)
 
@@ -58,12 +61,12 @@ func getWorkerFunc(config godotConfig, args []string) workerFunc {
 	return nil
 }
 
-func runFunc(config godotConfig) {
-	renderTemplates(config)
+func runFunc(config config.GodotConfig) {
+	render.RenderTemplates(config)
 }
 
-func addFunc(config godotConfig, newSrc string, addAs string, addGroup string) {
-	files := newManagedFiles(config)
+func addFunc(config config.GodotConfig, newSrc string, addAs string, addGroup string) {
+	files := managed_files.NewManagedFiles(config)
 	files.AddFile(newSrc, addAs, addGroup)
 	for _, fl := range files.Files {
 		fmt.Println(fmt.Sprintf("%+v", fl))

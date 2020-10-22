@@ -5,17 +5,19 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/util"
 )
 
 func main() {
 	usr, _ := user.Current()
 	path := filepath.Join(usr.HomeDir, "godot.log")
 	logFile, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0664)
-	check(err)
+	util.Check(err)
 	defer logFile.Close()
 	log.SetOutput(logFile)
 
-	config := getGodotConfig()
+	config := config.GetGodotConfig()
 	workerFunc := getWorkerFunc(config, os.Args)
 	workerFunc()
 }
