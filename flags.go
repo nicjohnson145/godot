@@ -7,9 +7,6 @@ import (
 	"os"
 )
 
-type subCmd struct {
-
-}
 type workerFunc func()
 
 func getWorkerFunc(config godotConfig, args []string) workerFunc {
@@ -18,6 +15,16 @@ func getWorkerFunc(config godotConfig, args []string) workerFunc {
 
 	// Add command flags
 	addSrc := addCmd.String("src", "", "Path to the source file to be added (required)")
+	addAs := addCmd.String(
+		"as",
+		"",
+		"Optional filename for the template (defaults to the same name as the file with '.' replaced with 'dot_')",
+	)
+	addGroup := addCmd.String(
+		"group",
+		"",
+		"Option group name for template folder, defaults to the name of the file with '.' replaced with ''",
+	)
 
 	runWrapper := func() {
 		runFunc(config)
@@ -28,24 +35,24 @@ func getWorkerFunc(config godotConfig, args []string) workerFunc {
 	}
 
 	switch args[1] {
-		case "run":
-			runCmd.Parse(args[2:])
-			return runWrapper
-		case "add":
-			addCmd.Parse(args[2:])
+	case "run":
+		runCmd.Parse(args[2:])
+		return runWrapper
+	case "add":
+		addCmd.Parse(args[2:])
 
-			if *addSrc == "" {
-				addCmd.PrintDefaults()
-				os.Exit(1)
-			}
+		if *addSrc == "" {
+			addCmd.PrintDefaults()
+			os.Exit(1)
+		}
 
-			return func() {
-				addFunc(config, *addSrc)
-			}
-		default:
-			msg := fmt.Sprintf("Unknown command %s", args[1])
-			fmt.Println(msg)
-			log.Fatalln(msg)
+		return func() {
+			addFunc(config, *addSrc, *addAs, *addGroup)
+		}
+	default:
+		msg := fmt.Sprintf("Unknown command %s", args[1])
+		fmt.Println(msg)
+		log.Fatalln(msg)
 	}
 	// Can't get here
 	return nil
@@ -55,11 +62,11 @@ func runFunc(config godotConfig) {
 	renderTemplates(config)
 }
 
-func addFunc(config godotConfig, newSrc string) {
+func addFunc(config godotConfig, newSrc string, addAs string, addGroup string) {
 	files := newManagedFiles(config)
-	files.AddFile(newSrc)
+	files.AddFile(newSrc, addAs, addGroup)
 	for _, fl := range files.Files {
 		fmt.Println(fmt.Sprintf("%+v", fl))
 	}
-	files.WriteFile()
+	// files.WriteConfig()
 }

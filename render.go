@@ -15,8 +15,8 @@ type templateData struct {
 	Target string
 }
 
-const templates = "templates"
-const compiled = "compiled"
+const TEMPLATES = "templates"
+const COMPILED = "compiled"
 
 func getTemplateFuncs() template.FuncMap {
 	return template.FuncMap{
@@ -32,8 +32,8 @@ func getTemplateFuncs() template.FuncMap {
 }
 
 func renderTemplates(config godotConfig) {
-	outputRoot := filepath.Join(config.RepoPath, compiled)
-	srcRoot := filepath.Join(config.RepoPath, templates)
+	outputRoot := filepath.Join(config.RepoPath, COMPILED)
+	srcRoot := filepath.Join(config.RepoPath, TEMPLATES)
 
 	templateData := templateData{Target: config.TargetName}
 	templateFuncs := getTemplateFuncs()
