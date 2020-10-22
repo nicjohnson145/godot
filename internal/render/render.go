@@ -9,8 +9,6 @@ import (
 	"text/template"
 	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/nicjohnson145/godot/internal/config"
-
-	"github.com/tidwall/gjson"
 )
 
 type templateData struct {
@@ -78,8 +76,3 @@ func renderManagedFile(pair config.PathPair, templateData templateData, template
 	util.Check(err)
 }
 
-const myJson = `{"name": {"first": "Nic"}}`
-
-func readMappings() {
-	fmt.Println(gjson.Get(myJson, "name.first"))
-}
