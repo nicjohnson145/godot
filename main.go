@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/cmd"
 	"github.com/nicjohnson145/godot/internal/util"
 	"log"
 	"os"
@@ -17,7 +17,5 @@ func main() {
 	defer logFile.Close()
 	log.SetOutput(logFile)
 
-	config := config.GetGodotConfig()
-	workerFunc := getWorkerFunc(config, os.Args)
-	workerFunc()
+    cmd.Execute()
 }
