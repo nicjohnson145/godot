@@ -86,7 +86,6 @@ type renderer struct {
 	Files []File
 }
 
-
 func NewRenderer(files []File, home HomeDirGetter) *renderer {
 	homeDir := home.GetHomeDir()
 	for i := range files {

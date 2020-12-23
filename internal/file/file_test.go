@@ -5,14 +5,14 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"testing"
 	"sort"
+	"testing"
 )
 
 func createTempDir(t *testing.T, pattern string) (string, func()) {
 	t.Helper()
 
-	dir, err := ioutil.TempDir("", "test-" + pattern)
+	dir, err := ioutil.TempDir("", "test-"+pattern)
 	if err != nil {
 		t.Fatalf("could not create temp directory %v", err)
 	}
@@ -77,7 +77,7 @@ func assertSymlinkTo(t *testing.T, link string, source string) {
 		t.Fatalf("error getting link info for %q: %v", link, err)
 	}
 
-	if info.Mode() & os.ModeSymlink == 0 {
+	if info.Mode()&os.ModeSymlink == 0 {
 		t.Fatalf("%q is not a symlink", link)
 	}
 
@@ -99,7 +99,6 @@ func (t *TempHomeDir) GetHomeDir() string {
 	return t.HomeDir
 }
 
-
 func TestFile(t *testing.T) {
 	t.Run("files without templating are copied and symlinked", func(t *testing.T) {
 		src, removeSrc := createTempDir(t, "src")
@@ -115,7 +114,7 @@ func TestFile(t *testing.T) {
 
 		f := File{
 			DestinationPath: filepath.Join(home, ".some_other_file"),
-			TemplatePath: filepath.Join(src, "some_file"),
+			TemplatePath:    filepath.Join(src, "some_file"),
 		}
 		err := f.Build(build)
 		if err != nil {
@@ -145,7 +144,7 @@ func TestFile(t *testing.T) {
 
 		f := File{
 			DestinationPath: filepath.Join(home, "subdir", ".some_other_file"),
-			TemplatePath: filepath.Join(src, "some_file"),
+			TemplatePath:    filepath.Join(src, "some_file"),
 		}
 		err := f.Build(build)
 		if err != nil {
@@ -153,10 +152,9 @@ func TestFile(t *testing.T) {
 		}
 
 		want := []string{
-			"subdir", 
+			"subdir",
 			"subdir/.some_other_file",
 		}
 		assertDirectoryContents(t, home, want)
 	})
 }
-
