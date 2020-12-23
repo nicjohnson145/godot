@@ -39,7 +39,7 @@ func (f *File) render(buildDir string) error {
 
 	destPath := filepath.Join(buildDir, filepath.Base(f.TemplatePath))
 
-	err = ioutil.WriteFile(destPath, []byte(contents), 0644)
+	err = ioutil.WriteFile(destPath, []byte(contents), 0700)
 	if err != nil {
 		err = fmt.Errorf("could not open %q for writing, %v", destPath, err)
 		return err
@@ -50,9 +50,16 @@ func (f *File) render(buildDir string) error {
 
 func (f *File) symlink(buildDir string) error {
 	src := filepath.Join(buildDir, filepath.Base(f.TemplatePath))
-	err := os.Symlink(src, f.DestinationPath)
+	destbase := filepath.Dir(f.DestinationPath)
+	err := os.MkdirAll(destbase, 0700)
+	if err != nil {
+		err = fmt.Errorf("unable to create dir %q, %v", destbase, err)
+		return err
+	}
+	err = os.Symlink(src, f.DestinationPath)
 	if err != nil {
 		err = fmt.Errorf("unable to symlink %q to %q, %v", src, f.DestinationPath, err)
+		return err
 	}
 	return err
 }

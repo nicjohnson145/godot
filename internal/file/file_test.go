@@ -12,7 +12,7 @@ import (
 func createTempDir(t *testing.T, pattern string) (string, func()) {
 	t.Helper()
 
-	dir, err := ioutil.TempDir("", pattern)
+	dir, err := ioutil.TempDir("", "test-" + pattern)
 	if err != nil {
 		t.Fatalf("could not create temp directory %v", err)
 	}
@@ -31,7 +31,7 @@ func assertDirectoryContents(t *testing.T, dir string, want []string) {
 
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			t.Errorf("error walking directory %q, %v", dir, err)
+			t.Fatalf("error walking directory %q, %v", dir, err)
 		}
 		if path != dir {
 			relpath, _ := filepath.Rel(dir, path)
@@ -42,7 +42,7 @@ func assertDirectoryContents(t *testing.T, dir string, want []string) {
 	sort.Strings(allPaths)
 
 	if !reflect.DeepEqual(allPaths, want) {
-		t.Errorf("directory listings not equal got %v want %v", allPaths, want)
+		t.Fatalf("directory listings not equal got %v want %v", allPaths, want)
 	}
 }
 
@@ -74,20 +74,20 @@ func assertSymlinkTo(t *testing.T, link string, source string) {
 
 	info, err := os.Lstat(link)
 	if err != nil {
-		t.Errorf("error getting link info for %q: %v", link, err)
+		t.Fatalf("error getting link info for %q: %v", link, err)
 	}
 
 	if info.Mode() & os.ModeSymlink == 0 {
-		t.Errorf("%q is not a symlink", link)
+		t.Fatalf("%q is not a symlink", link)
 	}
 
 	pointsTo, err := os.Readlink(link)
 	if err != nil {
-		t.Errorf("error reading symlink %q, %v", link, err)
+		t.Fatalf("error reading symlink %q, %v", link, err)
 	}
 
 	if pointsTo != source {
-		t.Errorf("symlink not pointing to correct file, got %q want %q", pointsTo, source)
+		t.Fatalf("symlink not pointing to correct file, got %q want %q", pointsTo, source)
 	}
 }
 
@@ -119,7 +119,7 @@ func TestFile(t *testing.T) {
 		}
 		err := f.Build(build)
 		if err != nil {
-			t.Errorf("error building, %v", err)
+			t.Fatalf("error building, %v", err)
 		}
 
 		want := []string{".some_other_file"}
@@ -129,6 +129,34 @@ func TestFile(t *testing.T) {
 			filepath.Join(home, ".some_other_file"),
 			filepath.Join(build, "some_file"),
 		)
+	})
+
+	t.Run("missing destination sub dirs are created", func(t *testing.T) {
+		src, removeSrc := createTempDir(t, "src")
+		defer removeSrc()
+
+		build, removeBuild := createTempDir(t, "build")
+		defer removeBuild()
+
+		home, removeHome := createTempDir(t, "home")
+		defer removeHome()
+
+		writeData(t, filepath.Join(src, "some_file"), "the contents")
+
+		f := File{
+			DestinationPath: filepath.Join(home, "subdir", ".some_other_file"),
+			TemplatePath: filepath.Join(src, "some_file"),
+		}
+		err := f.Build(build)
+		if err != nil {
+			t.Fatalf("error building, %v", err)
+		}
+
+		want := []string{
+			"subdir", 
+			"subdir/.some_other_file",
+		}
+		assertDirectoryContents(t, home, want)
 	})
 }
 
