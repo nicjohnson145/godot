@@ -29,16 +29,6 @@ type File struct {
 	TemplatePath    string
 }
 
-func NewFile(template string, destination string, home HomeDirGetter) *File {
-	f := &File{
-		TemplatePath: template,
-		DestinationPath: destination,
-	}
-	substituteTilde(f, home)
-
-	return f
-}
-
 func (f *File) render(buildDir string) error {
 	bytes, err := ioutil.ReadFile(f.TemplatePath)
 	if err != nil {
@@ -83,4 +73,17 @@ func substituteTilde(f *File, home HomeDirGetter) {
 	if strings.HasPrefix(f.DestinationPath, "~/") {
 		f.DestinationPath = filepath.Join(home.GetHomeDir(), f.DestinationPath[2:])
 	}
+}
+
+type fileRenderer struct {
+	Files []File
+}
+
+
+func NewFileRenderer(files []File, home HomeDirGetter) *fileRenderer {
+	for i := range files {
+		substituteTilde(&files[i], home)
+	}
+
+	return &fileRenderer{Files: files}
 }

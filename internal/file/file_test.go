@@ -95,11 +95,10 @@ func TestFile(t *testing.T) {
 
 		writeData(t, filepath.Join(src, "some_file"), "the contents")
 
-		f := NewFile(
-			filepath.Join(src, "some_file"),
-			"~/.some_other_file",
-			&TempHomeDir{HomeDir: home},
-		)
+		f := File{
+			DestinationPath: filepath.Join(home, ".some_other_file"),
+			TemplatePath: filepath.Join(src, "some_file"),
+		}
 		err := f.Build(build)
 		if err != nil {
 			t.Errorf("error building, %v", err)
