@@ -69,21 +69,22 @@ func (f *File) Build(buildDir string) error {
 	return nil
 }
 
-func substituteTilde(f *File, home HomeDirGetter) {
+func substituteTilde(f *File, home string) {
 	if strings.HasPrefix(f.DestinationPath, "~/") {
-		f.DestinationPath = filepath.Join(home.GetHomeDir(), f.DestinationPath[2:])
+		f.DestinationPath = filepath.Join(home, f.DestinationPath[2:])
 	}
 }
 
-type fileRenderer struct {
+type renderer struct {
 	Files []File
 }
 
 
-func NewFileRenderer(files []File, home HomeDirGetter) *fileRenderer {
+func NewRenderer(files []File, home HomeDirGetter) *renderer {
+	homeDir := home.GetHomeDir()
 	for i := range files {
-		substituteTilde(&files[i], home)
+		substituteTilde(&files[i], homeDir)
 	}
 
-	return &fileRenderer{Files: files}
+	return &renderer{Files: files}
 }
