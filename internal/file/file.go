@@ -4,25 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"path/filepath"
-	"strings"
 )
-
-type HomeDirGetter interface {
-	GetHomeDir() string
-}
-
-type OSHomeDir struct{}
-
-func (o *OSHomeDir) GetHomeDir() (string, error) {
-	usr, err := user.Current()
-	if err != nil {
-		err = fmt.Errorf("could not get value of current user %v", err)
-	}
-	dir := usr.HomeDir
-	return dir, err
-}
 
 type File struct {
 	DestinationPath string
@@ -74,23 +57,4 @@ func (f *File) Build(buildDir string) error {
 		return err
 	}
 	return nil
-}
-
-func substituteTilde(f *File, home string) {
-	if strings.HasPrefix(f.DestinationPath, "~/") {
-		f.DestinationPath = filepath.Join(home, f.DestinationPath[2:])
-	}
-}
-
-type renderer struct {
-	Files []File
-}
-
-func NewRenderer(files []File, home HomeDirGetter) *renderer {
-	homeDir := home.GetHomeDir()
-	for i := range files {
-		substituteTilde(&files[i], homeDir)
-	}
-
-	return &renderer{Files: files}
 }

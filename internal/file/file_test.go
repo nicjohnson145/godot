@@ -95,8 +95,8 @@ type TempHomeDir struct {
 	HomeDir string
 }
 
-func (t *TempHomeDir) GetHomeDir() string {
-	return t.HomeDir
+func (t *TempHomeDir) GetHomeDir() (string, error) {
+	return t.HomeDir, nil
 }
 
 func TestFile(t *testing.T) {
