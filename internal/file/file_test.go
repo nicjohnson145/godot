@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"sort"
 )
 
 func createTempDir(t *testing.T, pattern string) (string, func()) {
@@ -26,6 +27,26 @@ func createTempDir(t *testing.T, pattern string) (string, func()) {
 func assertDirectoryContents(t *testing.T, dir string, want []string) {
 	t.Helper()
 
+	var allPaths []string
+
+	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			t.Errorf("error walking directory %q, %v", dir, err)
+		}
+		if path != dir {
+			relpath, _ := filepath.Rel(dir, path)
+			allPaths = append(allPaths, relpath)
+		}
+		return nil
+	})
+	sort.Strings(allPaths)
+
+	if !reflect.DeepEqual(allPaths, want) {
+		t.Errorf("directory listings not equal got %v want %v", allPaths, want)
+	}
+}
+
+func getDirContents(t *testing.T, dir string) []string {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		t.Fatalf("could not read directory %v", err)
@@ -36,10 +57,7 @@ func assertDirectoryContents(t *testing.T, dir string, want []string) {
 	for _, file := range files {
 		found = append(found, file.Name())
 	}
-
-	if !reflect.DeepEqual(found, want) {
-		t.Errorf("directory listings not equal got %v want %v", found, want)
-	}
+	return found
 }
 
 func writeData(t *testing.T, path string, data string) {
@@ -112,6 +130,5 @@ func TestFile(t *testing.T) {
 			filepath.Join(build, "some_file"),
 		)
 	})
-
 }
 
