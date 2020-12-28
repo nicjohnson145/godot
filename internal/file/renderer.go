@@ -58,7 +58,7 @@ func NewRenderer(files []File, home HomeDirGetter, root string) (*renderer, erro
 
 func (r  *renderer) ensureBuildDir() (string, error) {
 	dir := filepath.Join(r.DotfilesRoot, "build")
-	err := os.MkdirAll(dir, 700)
+	err := os.MkdirAll(dir, 744)
 	if err != nil {
 		err := fmt.Errorf("error creating build directory in %q, %v", dir, err)
 		return "", err
