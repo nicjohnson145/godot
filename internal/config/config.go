@@ -102,7 +102,7 @@ func (c *Config) setRelevantFiles(home string) {
 
 	names := gjson.Get(c.content, fmt.Sprintf("renders.%v", c.Target))
 	if !names.Exists() {
-		panic(fmt.Sprintf("No file list found for target %q", c.Target))
+		return
 	}
 
 	var files []file.File

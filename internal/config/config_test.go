@@ -2,10 +2,14 @@ package config
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
+	"reflect"
+
 	"github.com/nicjohnson145/godot/internal/help"
+	"github.com/tidwall/gjson"
 )
 
 func TestConfig(t *testing.T) {
@@ -127,4 +131,52 @@ func TestConfig(t *testing.T) {
 			t.Errorf("incorrect template path, got %q want %q", f.TemplatePath, expectedTemplate)
 		}
 	})
+
+	t.Run("add files to repo config", func(t *testing.T) {
+		home, remove := help.CreateTempDir(t, "home")
+		defer remove()
+
+		dotPath := filepath.Join(home, "dotfiles")
+		err := os.Mkdir(dotPath, 0744)
+		if err != nil {
+			t.Fatalf("error creating dir, %v", err)
+		}
+
+		userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotPath)
+		help.WriteConfig(t, home, userConf)
+
+		confData := fmt.Sprintf(`{
+			"all_files": {"dot_zshrc": "~/.zshrc"},
+			"renders": {
+				"other_host": ["dot_zshrc"]
+			}
+		}`)
+		help.WriteRepoConf(t, dotPath, confData)
+
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		c.AddFile("some_config", "~/.some_config")
+		err = c.Write()
+		if err != nil {
+			t.Fatalf("error writing config, %v", err)
+		}
+
+		contents := help.ReadFile(t, filepath.Join(dotPath, "config.json"))
+		value := gjson.Get(contents, "all_files")
+
+		actual := make(map[string]string)
+		value.ForEach(func(key, value gjson.Result) bool {
+			actual[key.String()] = value.String()
+			return true
+		})
+
+		expected := map[string]string{
+			"dot_zshrc": "~/.zshrc",
+			"some_config": "~/.some_config",
+		}
+
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("all files incorrect, got %v want %v", actual, expected)
+		}
+	})
 }
+

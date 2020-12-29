@@ -53,16 +53,21 @@ func AssertDirectoryContents(t *testing.T, dir string, want []string) {
 
 func AssertFileContents(t *testing.T, path string, want string) {
 	t.Helper()
-
-	bytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		t.Errorf("error reading, %v", err)
-	}
-	contents := string(bytes)
+	contents := ReadFile(t, path)
 
 	if contents != want {
 		t.Errorf("incorrect file contents, got %q want %q", contents, want)
 	}
+}
+
+func ReadFile(t *testing.T, path string) string {
+	t.Helper()
+
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatalf("error reading, %v", err)
+	}
+	return string(bytes)
 }
 
 func WriteData(t *testing.T, path string, data string) {
