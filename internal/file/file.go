@@ -19,9 +19,9 @@ type TemplateVars struct {
 }
 
 var funcs = template.FuncMap{
-	"oneOf": func(target string, options ...string) bool {
+	"oneOf": func(vars TemplateVars, options ...string) bool {
 		for _, opt := range options {
-			if opt == target {
+			if opt == vars.Target {
 				return true
 			}
 		}

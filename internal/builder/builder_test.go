@@ -60,7 +60,7 @@ func TestBuilder(t *testing.T) {
 		help.WriteData(
 			t,
 			filepath.Join(dotPath, "templates", "dot_zshrc"),
-			`{{ if oneOf .Target "host" "other" }}{{ .Target }}{{ end }} zsh contents`,
+			`{{ if oneOf . "host" "other" }}{{ .Target }}{{ end }} zsh contents`,
 		)
 		help.WriteRepoConf(t, dotPath, `{
 			"all_files": {
