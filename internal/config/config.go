@@ -34,6 +34,10 @@ func parseUserConfig(getter file.HomeDirGetter) *Config {
 	}
 	contents := string(bytes)
 
+	if !gjson.Valid(contents) {
+		panic("invalid json")
+	}
+
 	target := gjson.Get(contents, "target")
 	if !target.Exists() {
 		panic("missing 'target' key in config")
@@ -67,11 +71,6 @@ func (c *Config) setRelevantFiles() {
 
 	content := string(bytes)
 
-	names := gjson.Get(content, fmt.Sprintf("renders.%v", c.Target))
-	if !names.Exists() {
-		panic(fmt.Sprintf("No file list found for target %q", c.Target))
-	}
-
 	allVal := gjson.Get(content, "all_files")
 	if !allVal.Exists() {
 		panic(fmt.Sprintf("Malformed repo conf, missing all files key"))
@@ -85,6 +84,11 @@ func (c *Config) setRelevantFiles() {
 		}
 		return true // keep iterating
 	})
+
+	names := gjson.Get(content, fmt.Sprintf("renders.%v", c.Target))
+	if !names.Exists() {
+		panic(fmt.Sprintf("No file list found for target %q", c.Target))
+	}
 
 	var files []file.File
 	names.ForEach(func(key, value gjson.Result) bool {
