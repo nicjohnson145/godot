@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/tidwall/gjson"
 )
@@ -18,7 +19,7 @@ type Config struct {
 	Files []file.File
 }
 
-func NewConfig(getter file.HomeDirGetter) *Config {
+func NewConfig(getter util.HomeDirGetter) *Config {
 	home, err := getter.GetHomeDir()
 	if err != nil {
 		panic("Cannot get home dir")
