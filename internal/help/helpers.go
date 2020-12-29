@@ -106,3 +106,10 @@ func WriteConfig(t *testing.T, basedir string, contents string) {
 	os.MkdirAll(godotDir, 744)
 	WriteData(t, filepath.Join(godotDir, "config.json"), contents)
 }
+
+func WriteRepoConf(t *testing.T, dotDir string, contents string) {
+	t.Helper()
+
+	path := filepath.Join(dotDir, "config.json")
+	WriteData(t, path, contents)
+}
