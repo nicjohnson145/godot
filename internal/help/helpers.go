@@ -65,20 +65,6 @@ func AssertFileContents(t *testing.T, path string, want string) {
 	}
 }
 
-func GetDirContents(t *testing.T, dir string) []string {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		t.Fatalf("could not read directory %v", err)
-	}
-
-	var found []string
-
-	for _, file := range files {
-		found = append(found, file.Name())
-	}
-	return found
-}
-
 func WriteData(t *testing.T, path string, data string) {
 	t.Helper()
 
