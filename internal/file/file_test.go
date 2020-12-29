@@ -3,20 +3,22 @@ package file
 import (
 	"path/filepath"
 	"testing"
+
+	"github.com/nicjohnson145/godot/internal/help"
 )
 
 func TestFile(t *testing.T) {
 	t.Run("files without templating are copied and symlinked", func(t *testing.T) {
-		src, removeSrc := createTempDir(t, "src")
+		src, removeSrc := help.CreateTempDir(t, "src")
 		defer removeSrc()
 
-		build, removeBuild := createTempDir(t, "build")
+		build, removeBuild := help.CreateTempDir(t, "build")
 		defer removeBuild()
 
-		home, removeHome := createTempDir(t, "home")
+		home, removeHome := help.CreateTempDir(t, "home")
 		defer removeHome()
 
-		writeData(t, filepath.Join(src, "some_file"), "the contents")
+		help.WriteData(t, filepath.Join(src, "some_file"), "the contents")
 
 		f := File{
 			DestinationPath: filepath.Join(home, ".some_other_file"),
@@ -28,8 +30,8 @@ func TestFile(t *testing.T) {
 		}
 
 		want := []string{".some_other_file"}
-		assertDirectoryContents(t, home, want)
-		assertSymlinkTo(
+		help.AssertDirectoryContents(t, home, want)
+		help.AssertSymlinkTo(
 			t,
 			filepath.Join(home, ".some_other_file"),
 			filepath.Join(build, "some_file"),
@@ -37,16 +39,16 @@ func TestFile(t *testing.T) {
 	})
 
 	t.Run("missing destination sub dirs are created", func(t *testing.T) {
-		src, removeSrc := createTempDir(t, "src")
+		src, removeSrc := help.CreateTempDir(t, "src")
 		defer removeSrc()
 
-		build, removeBuild := createTempDir(t, "build")
+		build, removeBuild := help.CreateTempDir(t, "build")
 		defer removeBuild()
 
-		home, removeHome := createTempDir(t, "home")
+		home, removeHome := help.CreateTempDir(t, "home")
 		defer removeHome()
 
-		writeData(t, filepath.Join(src, "some_file"), "the contents")
+		help.WriteData(t, filepath.Join(src, "some_file"), "the contents")
 
 		f := File{
 			DestinationPath: filepath.Join(home, "subdir", ".some_other_file"),
@@ -61,6 +63,6 @@ func TestFile(t *testing.T) {
 			"subdir",
 			"subdir/.some_other_file",
 		}
-		assertDirectoryContents(t, home, want)
+		help.AssertDirectoryContents(t, home, want)
 	})
 }

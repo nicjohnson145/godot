@@ -1,4 +1,4 @@
-package file
+package help
 
 import (
 	"io/ioutil"
@@ -10,7 +10,7 @@ import (
 )
 
 
-func createTempDir(t *testing.T, pattern string) (string, func()) {
+func CreateTempDir(t *testing.T, pattern string) (string, func()) {
 	t.Helper()
 
 	dir, err := ioutil.TempDir("", "test-"+pattern)
@@ -25,7 +25,7 @@ func createTempDir(t *testing.T, pattern string) (string, func()) {
 	return dir, remove
 }
 
-func assertDirectoryContents(t *testing.T, dir string, want []string) {
+func AssertDirectoryContents(t *testing.T, dir string, want []string) {
 	t.Helper()
 
 	var allPaths []string
@@ -47,7 +47,7 @@ func assertDirectoryContents(t *testing.T, dir string, want []string) {
 	}
 }
 
-func getDirContents(t *testing.T, dir string) []string {
+func GetDirContents(t *testing.T, dir string) []string {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		t.Fatalf("could not read directory %v", err)
@@ -61,7 +61,7 @@ func getDirContents(t *testing.T, dir string) []string {
 	return found
 }
 
-func writeData(t *testing.T, path string, data string) {
+func WriteData(t *testing.T, path string, data string) {
 	t.Helper()
 
 	err := ioutil.WriteFile(path, []byte(data), 0700)
@@ -70,7 +70,7 @@ func writeData(t *testing.T, path string, data string) {
 	}
 }
 
-func assertSymlinkTo(t *testing.T, link string, source string) {
+func AssertSymlinkTo(t *testing.T, link string, source string) {
 	t.Helper()
 
 	info, err := os.Lstat(link)
@@ -100,3 +100,11 @@ func (t *TempHomeDir) GetHomeDir() (string, error) {
 	return t.HomeDir, nil
 }
 
+
+func WriteConfig(t *testing.T, basedir string, contents string) {
+	t.Helper()
+
+	godotDir := filepath.Join(basedir, ".config", "godot")
+	os.MkdirAll(godotDir, 744)
+	WriteData(t, filepath.Join(godotDir, "config.json"), contents)
+}

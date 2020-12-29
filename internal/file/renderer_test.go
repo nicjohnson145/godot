@@ -3,21 +3,23 @@ package file
 import (
 	"path/filepath"
 	"testing"
+
+	"github.com/nicjohnson145/godot/internal/help"
 )
 
 func TestRenderer(t *testing.T) {
 	t.Run("all files rendered and symlinked", func(t *testing.T) {
-		src, removeSrc := createTempDir(t, "src")
+		src, removeSrc := help.CreateTempDir(t, "src")
 		defer removeSrc()
 
-		dotRoot, removeDotRoot := createTempDir(t, "dotfiles")
+		dotRoot, removeDotRoot := help.CreateTempDir(t, "dotfiles")
 		defer removeDotRoot()
 
-		home, removeHome := createTempDir(t, "home")
+		home, removeHome := help.CreateTempDir(t, "home")
 		defer removeHome()
 
-		writeData(t, filepath.Join(src, "first_file"), "first contents")
-		writeData(t, filepath.Join(src, "second_file"), "second contents")
+		help.WriteData(t, filepath.Join(src, "first_file"), "first contents")
+		help.WriteData(t, filepath.Join(src, "second_file"), "second contents")
 
 		files := []File{
 			{
@@ -30,7 +32,7 @@ func TestRenderer(t *testing.T) {
 			},
 		}
 		
-		r, err := NewRenderer(files, &TempHomeDir{HomeDir: home}, dotRoot)
+		r, err := NewRenderer(files, &help.TempHomeDir{HomeDir: home}, dotRoot)
 		if err != nil {
 			t.Fatalf("error creating renderer, %v", err)
 		}
@@ -44,6 +46,6 @@ func TestRenderer(t *testing.T) {
 			".config/second_file",
 			".first_file",
 		}
-		assertDirectoryContents(t, home, want)
+		help.AssertDirectoryContents(t, home, want)
 	})
 }
