@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/nicjohnson145/godot/internal/file"
@@ -12,11 +13,17 @@ import (
 type Config struct {
 	Target       string `json:"target"`
 	DotfilesRoot string `json:"dotfiles_root"`
-	//// This will be pulled from the config that lives inside the dotfiles repo
-	//Files        []file.File
+	// This will be pulled from the config that lives inside the dotfiles repo
+	Files []file.File
 }
 
 func NewConfig(getter file.HomeDirGetter) *Config {
+	c := parseUserConfig(getter)
+	c.setRelevantFiles()
+	return c
+}
+
+func parseUserConfig(getter file.HomeDirGetter) *Config {
 	home, err := getter.GetHomeDir()
 	if err != nil {
 		panic("Cannot get home dir")
@@ -41,8 +48,18 @@ func NewConfig(getter file.HomeDirGetter) *Config {
 	}
 
 	return &Config{
-		Target: target.String(),
+		Target:       target.String(),
 		DotfilesRoot: dotfilesRoot,
 	}
 }
 
+func (c *Config) setRelevantFiles() {
+	configPath := filepath.Join(c.DotfilesRoot, "config.json")
+	_, err := ioutil.ReadFile(configPath)
+	if os.IsNotExist(err) {
+		// TODO: touch the file?
+		return
+	} else {
+		panic(err)
+	}
+}

@@ -9,7 +9,6 @@ import (
 	"testing"
 )
 
-
 func CreateTempDir(t *testing.T, pattern string) (string, func()) {
 	t.Helper()
 
@@ -99,7 +98,6 @@ type TempHomeDir struct {
 func (t *TempHomeDir) GetHomeDir() (string, error) {
 	return t.HomeDir, nil
 }
-
 
 func WriteConfig(t *testing.T, basedir string, contents string) {
 	t.Helper()

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -71,6 +72,22 @@ func TestConfig(t *testing.T) {
 		expected := "some_path"
 		if c.DotfilesRoot != expected {
 			t.Errorf("dotfiles root not pulled from file, got %q want %q", c.DotfilesRoot, expected)
+		}
+	})
+
+	t.Run("missing repo config means no files", func(t *testing.T) {
+		home, remove := help.CreateTempDir(t, "home")
+		defer remove()
+
+		dotfiles, removeDots := help.CreateTempDir(t, "dotfiles")
+		defer removeDots()
+
+		userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotfiles)
+		help.WriteConfig(t, home, userConf)
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+		if len(c.Files) != 0 {
+			t.Errorf("missing repo config should result in 0 files, got %v", len(c.Files))
 		}
 	})
 }
