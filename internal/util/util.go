@@ -3,6 +3,8 @@ package util
 import (
 	"fmt"
 	"os/user"
+	"path/filepath"
+	"strings"
 )
 
 type HomeDirGetter interface {
@@ -18,4 +20,12 @@ func (o *OSHomeDir) GetHomeDir() (string, error) {
 	}
 	dir := usr.HomeDir
 	return dir, err
+}
+
+func ToTemplateName(path string) string {
+	name := filepath.Base(path)
+	if strings.HasPrefix(name, ".") {
+		return "dot_" + name[1:]
+	}
+	return name
 }
