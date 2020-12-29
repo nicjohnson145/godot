@@ -46,7 +46,7 @@ func TestBuilder(t *testing.T) {
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build()
 		if err != nil {
-			t.Errorf("error encountered, %v", err)
+			t.Fatalf("error encountered, %v", err)
 		}
 
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
@@ -57,7 +57,11 @@ func TestBuilder(t *testing.T) {
 		defer remove()
 
 		expected := "host zsh contents"
-		help.WriteData(t, filepath.Join(dotPath, "templates", "dot_zshrc"), `{{ .Target }} zsh contents`)
+		help.WriteData(
+			t,
+			filepath.Join(dotPath, "templates", "dot_zshrc"),
+			`{{ if oneOf .Target "host" "other" }}{{ .Target }}{{ end }} zsh contents`,
+		)
 		help.WriteRepoConf(t, dotPath, `{
 			"all_files": {
 				"dot_zshrc": "~/.zshrc"
@@ -70,7 +74,7 @@ func TestBuilder(t *testing.T) {
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build()
 		if err != nil {
-			t.Errorf("error encountered, %v", err)
+			t.Fatalf("error encountered, %v", err)
 		}
 
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)

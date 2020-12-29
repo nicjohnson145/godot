@@ -18,10 +18,21 @@ type TemplateVars struct {
 	Target string
 }
 
+var funcs = template.FuncMap{
+	"oneOf": func(target string, options ...string) bool {
+		for _, opt := range options {
+			if opt == target {
+				return true
+			}
+		}
+		return false
+	},
+}
+
 func (f *File) Render(buildDir string, vars TemplateVars) error {
 	tmplName := filepath.Base(f.TemplatePath)
 
-	tpl := template.New(tmplName)
+	tpl := template.New(tmplName).Funcs(funcs)
 	_, err := tpl.ParseFiles(f.TemplatePath)
 
 	b := bytes.NewBufferString("")
