@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/tidwall/gjson"
@@ -18,16 +19,16 @@ type Config struct {
 }
 
 func NewConfig(getter file.HomeDirGetter) *Config {
-	c := parseUserConfig(getter)
-	c.setRelevantFiles()
-	return c
-}
-
-func parseUserConfig(getter file.HomeDirGetter) *Config {
 	home, err := getter.GetHomeDir()
 	if err != nil {
 		panic("Cannot get home dir")
 	}
+	c := parseUserConfig(home)
+	c.setRelevantFiles(home)
+	return c
+}
+
+func parseUserConfig(home string) *Config {
 	bytes, err := ioutil.ReadFile(filepath.Join(home, ".config", "godot", "config.json"))
 	if err != nil {
 		panic(fmt.Errorf("Error reading build target, %v", err))
@@ -57,7 +58,7 @@ func parseUserConfig(getter file.HomeDirGetter) *Config {
 	}
 }
 
-func (c *Config) setRelevantFiles() {
+func (c *Config) setRelevantFiles(home string) {
 	configPath := filepath.Join(c.DotfilesRoot, "config.json")
 	bytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
@@ -78,10 +79,12 @@ func (c *Config) setRelevantFiles() {
 
 	allFiles := make(map[string]file.File)
 	allVal.ForEach(func(key, value gjson.Result) bool {
-		allFiles[key.String()] = file.File{
+		f := file.File{
 			DestinationPath: value.String(),
 			TemplatePath: filepath.Join(c.DotfilesRoot, "templates", key.String()),
 		}
+		substituteTilde(&f, home)
+		allFiles[key.String()] = f
 		return true // keep iterating
 	})
 
@@ -101,4 +104,10 @@ func (c *Config) setRelevantFiles() {
 	})
 
 	c.Files = files
+}
+
+func substituteTilde(f *file.File, home string) {
+	if strings.HasPrefix(f.DestinationPath, "~/") {
+		f.DestinationPath = filepath.Join(home, f.DestinationPath[2:])
+	}
 }

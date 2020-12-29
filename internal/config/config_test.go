@@ -57,8 +57,7 @@ func TestConfig(t *testing.T) {
 		c := NewConfig(&help.TempHomeDir{HomeDir: dir})
 
 		expected := filepath.Join(dir, "dotfiles")
-		if c.DotfilesRoot != expected {
-			t.Errorf("dotfiles root not inferred, got %q want %q", c.DotfilesRoot, expected)
+		if c.DotfilesRoot != expected { t.Errorf("dotfiles root not inferred, got %q want %q", c.DotfilesRoot, expected)
 		}
 	})
 
@@ -117,7 +116,7 @@ func TestConfig(t *testing.T) {
 		}
 
 		f := c.Files[0]
-		expectedDest := "~/.config/nvim/init.vim"
+		expectedDest := filepath.Join(home, ".config/nvim/init.vim")
 		if f.DestinationPath != expectedDest {
 			t.Errorf("incorrect destination, got %q want %q", f.DestinationPath, expectedDest)
 		}
