@@ -178,5 +178,51 @@ func TestConfig(t *testing.T) {
 			t.Errorf("all files incorrect, got %v want %v", actual, expected)
 		}
 	})
+
+	t.Run("add file to target", func(t *testing.T) {
+		home, remove := help.CreateTempDir(t, "home")
+		defer remove()
+
+		dotPath := filepath.Join(home, "dotfiles")
+		err := os.Mkdir(dotPath, 0744)
+		if err != nil {
+			t.Fatalf("error creating dir, %v", err)
+		}
+
+		userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotPath)
+		help.WriteConfig(t, home, userConf)
+
+		confData := fmt.Sprintf(`{
+			"all_files": {"dot_zshrc": "~/.zshrc"},
+			"renders": {
+				"other_host": ["dot_zshrc"]
+			}
+		}`)
+		help.WriteRepoConf(t, dotPath, confData)
+
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		err = c.AddToTarget("my_host", "dot_zshrc")
+		if err != nil {
+			t.Fatalf("error adding, %v", err)
+		}
+		err = c.Write()
+		if err != nil {
+			t.Fatalf("error writing config, %v", err)
+		}
+
+		contents := help.ReadFile(t, filepath.Join(dotPath, "config.json"))
+		value := gjson.Get(contents, "renders.my_host")
+		var actual []string
+		value.ForEach(func(key, value gjson.Result) bool {
+			actual = append(actual, value.String())
+			return true
+		})
+
+		expected := []string{"dot_zshrc"}
+
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("target files incorrect, got %v want %v", actual, expected)
+		}
+	})
 }
 

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -130,6 +131,24 @@ func (c *Config) AddFile(template string, destination string) error {
 	}
 	c.content = value
 	return nil
+}
+
+func (c *Config) AddToTarget(target string, name string) error {
+	if !c.isValidFile(name) {
+		return errors.New(fmt.Sprintf("unknown file name of %q", name))
+	}
+	value, err := sjson.Set(c.content, fmt.Sprintf("renders.%v.-1", target), name)
+	if err != nil {
+		err = fmt.Errorf("error adding %q to %q, %v", name, target, err)
+		return err
+	}
+	c.content = value
+	return nil
+}
+
+func (c *Config) isValidFile(name string) bool {
+	value := gjson.Get(c.content, fmt.Sprintf("all_files.%v", name))
+	return value.Exists()
 }
 
 func substituteTilde(f *file.File, home string) {
