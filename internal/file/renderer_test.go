@@ -31,7 +31,7 @@ func TestRenderer(t *testing.T) {
 				TemplatePath:    filepath.Join(src, "second_file"),
 			},
 		}
-		
+
 		r := NewRenderer(files, dotRoot)
 		err := r.Render()
 		if err != nil {

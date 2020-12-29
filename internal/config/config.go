@@ -81,7 +81,7 @@ func (c *Config) setRelevantFiles(home string) {
 	allVal.ForEach(func(key, value gjson.Result) bool {
 		f := file.File{
 			DestinationPath: value.String(),
-			TemplatePath: filepath.Join(c.DotfilesRoot, "templates", key.String()),
+			TemplatePath:    filepath.Join(c.DotfilesRoot, "templates", key.String()),
 		}
 		substituteTilde(&f, home)
 		allFiles[key.String()] = f

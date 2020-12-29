@@ -57,7 +57,8 @@ func TestConfig(t *testing.T) {
 		c := NewConfig(&help.TempHomeDir{HomeDir: dir})
 
 		expected := filepath.Join(dir, "dotfiles")
-		if c.DotfilesRoot != expected { t.Errorf("dotfiles root not inferred, got %q want %q", c.DotfilesRoot, expected)
+		if c.DotfilesRoot != expected {
+			t.Errorf("dotfiles root not inferred, got %q want %q", c.DotfilesRoot, expected)
 		}
 	})
 

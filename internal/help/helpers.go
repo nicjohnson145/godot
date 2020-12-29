@@ -17,8 +17,13 @@ func CreateTempDir(t *testing.T, pattern string) (string, func()) {
 		t.Fatalf("could not create temp directory %v", err)
 	}
 
+	os.Chmod(dir, os.ModePerm)
+
 	remove := func() {
-		os.RemoveAll(dir)
+		err := os.RemoveAll(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	return dir, remove
@@ -63,7 +68,7 @@ func GetDirContents(t *testing.T, dir string) []string {
 func WriteData(t *testing.T, path string, data string) {
 	t.Helper()
 
-	err := ioutil.WriteFile(path, []byte(data), 0700)
+	err := ioutil.WriteFile(path, []byte(data), 0744)
 	if err != nil {
 		t.Fatalf("could not write file %v", err)
 	}
@@ -103,7 +108,7 @@ func WriteConfig(t *testing.T, basedir string, contents string) {
 	t.Helper()
 
 	godotDir := filepath.Join(basedir, ".config", "godot")
-	os.MkdirAll(godotDir, 744)
+	os.MkdirAll(godotDir, os.ModePerm)
 	WriteData(t, filepath.Join(godotDir, "config.json"), contents)
 }
 

@@ -30,20 +30,20 @@ func substituteTilde(f *File, home string) {
 }
 
 type Renderer struct {
-	Files []File
+	Files        []File
 	DotfilesRoot string
 }
 
 func NewRenderer(files []File, root string) *Renderer {
 	return &Renderer{
-		Files: files,
+		Files:        files,
 		DotfilesRoot: root,
 	}
 }
 
-func (r  *Renderer) ensureBuildDir() (string, error) {
+func (r *Renderer) ensureBuildDir() (string, error) {
 	dir := filepath.Join(r.DotfilesRoot, "build")
-	err := os.MkdirAll(dir, 744)
+	err := os.MkdirAll(dir, 0744)
 	if err != nil {
 		err := fmt.Errorf("error creating build directory in %q, %v", dir, err)
 		return "", err
