@@ -14,9 +14,9 @@ var (
 	force bool
 
 	syncCmd = &cobra.Command{
-		Use: "sync",
+		Use:   "sync",
 		Short: "Build and symlink dotfiles",
-		Long: "Compile templates and symlink them to their final destinations",
+		Long:  "Compile templates and symlink them to their final destinations",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			b := builder.Builder{Getter: &util.OSHomeDir{}}
 			err := b.Build()
@@ -28,4 +28,3 @@ var (
 func init() {
 	syncCmd.Flags().BoolVarP(&force, "force", "f", false, "If a target file already exists, delete it then symlink it")
 }
-

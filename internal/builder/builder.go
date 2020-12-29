@@ -14,7 +14,7 @@ type Builder struct {
 	Getter util.HomeDirGetter
 }
 
-func (b *Builder) Build() error {
+func (b *Builder) Build(force bool) error {
 	conf := config.NewConfig(b.Getter)
 
 	vars := file.TemplateVars{
@@ -27,7 +27,7 @@ func (b *Builder) Build() error {
 	}
 
 	for _, fl := range conf.Files {
-		err = fl.Render(dir, vars)
+		err = fl.Render(dir, vars, force)
 		if err != nil {
 			err = fmt.Errorf("error rendering template %q, %v", fl.DestinationPath, err)
 			return err

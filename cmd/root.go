@@ -9,9 +9,9 @@ import (
 
 var (
 	rootCmd = &cobra.Command{
-		Use: "godot",
+		Use:   "godot",
 		Short: "A dotfiles manager",
-		Long: "A staticly linked dotfiles manager written in Go",
+		Long:  "A staticly linked dotfiles manager written in Go",
 	}
 )
 

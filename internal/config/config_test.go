@@ -170,7 +170,7 @@ func TestConfig(t *testing.T) {
 		})
 
 		expected := map[string]string{
-			"dot_zshrc": "~/.zshrc",
+			"dot_zshrc":   "~/.zshrc",
 			"some_config": "~/.some_config",
 		}
 
@@ -225,4 +225,3 @@ func TestConfig(t *testing.T) {
 		}
 	})
 }
-
