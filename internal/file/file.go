@@ -98,9 +98,9 @@ func (f *File) maybeRemoveFile(force bool) error {
 
 func (f *File) getFileState() (fileState, error) {
 	if info, err := os.Stat(f.DestinationPath); err == nil {
-		if info.Mode().IsRegular() {
+		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 			return RegularFile, nil
-		} else if info.Mode()&os.ModeSymlink == os.ModeSymlink {
+		} else if info.Mode().IsRegular() {
 			return Symlink, nil
 		} else {
 			return "", errors.New(fmt.Sprintf("%q is not a symlink or file", f.DestinationPath))

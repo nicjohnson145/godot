@@ -19,7 +19,7 @@ var (
 		Long:  "Compile templates and symlink them to their final destinations",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			b := builder.Builder{Getter: &util.OSHomeDir{}}
-			err := b.Build()
+			err := b.Build(force)
 			return err
 		},
 	}
