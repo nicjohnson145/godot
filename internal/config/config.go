@@ -10,6 +10,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 type Config struct {
@@ -115,6 +116,20 @@ func (c *Config) setRelevantFiles(home string) {
 	})
 
 	c.Files = files
+}
+
+func (c *Config) Write() error {
+	return ioutil.WriteFile(c.repoConfig, []byte(c.content), 0744)
+}
+
+func (c *Config) AddFile(template string, destination string) error {
+	value, err := sjson.Set(c.content, fmt.Sprintf("all_files.%v", template), destination)
+	if err != nil {
+		err = fmt.Errorf("error adding file, %v", err)
+		return err
+	}
+	c.content = value
+	return nil
 }
 
 func substituteTilde(f *file.File, home string) {
