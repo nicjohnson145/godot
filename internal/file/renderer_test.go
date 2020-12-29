@@ -32,11 +32,8 @@ func TestRenderer(t *testing.T) {
 			},
 		}
 		
-		r, err := NewRenderer(files, &help.TempHomeDir{HomeDir: home}, dotRoot)
-		if err != nil {
-			t.Fatalf("error creating renderer, %v", err)
-		}
-		err = r.Render()
+		r := NewRenderer(files, dotRoot)
+		err := r.Render()
 		if err != nil {
 			t.Fatalf("error rendering, %v", err)
 		}

@@ -29,30 +29,19 @@ func substituteTilde(f *File, home string) {
 	}
 }
 
-type renderer struct {
+type Renderer struct {
 	Files []File
 	DotfilesRoot string
 }
 
-func NewRenderer(files []File, home HomeDirGetter, root string) (*renderer, error) {
-
-	homeDir, err := home.GetHomeDir()
-	if err != nil {
-		err = fmt.Errorf("error getting home directory: %v", err)
-		return nil, err
-	}
-	for i := range files {
-		substituteTilde(&files[i], homeDir)
-	}
-
-	r := &renderer{
+func NewRenderer(files []File, root string) *Renderer {
+	return &Renderer{
 		Files: files,
 		DotfilesRoot: root,
 	}
-	return r, nil
 }
 
-func (r  *renderer) ensureBuildDir() (string, error) {
+func (r  *Renderer) ensureBuildDir() (string, error) {
 	dir := filepath.Join(r.DotfilesRoot, "build")
 	err := os.MkdirAll(dir, 744)
 	if err != nil {
@@ -62,7 +51,7 @@ func (r  *renderer) ensureBuildDir() (string, error) {
 	return dir, nil
 }
 
-func (r *renderer) Render() error {
+func (r *Renderer) Render() error {
 	buildDir, err := r.ensureBuildDir()
 	if err != nil {
 		return err
