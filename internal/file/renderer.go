@@ -12,10 +12,6 @@ type HomeDirGetter interface {
 	GetHomeDir() (string, error)
 }
 
-type ConfigGetter interface {
-	GetConfig()
-}
-
 type OSHomeDir struct{}
 
 func (o *OSHomeDir) GetHomeDir() (string, error) {
