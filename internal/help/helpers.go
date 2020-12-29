@@ -51,6 +51,20 @@ func AssertDirectoryContents(t *testing.T, dir string, want []string) {
 	}
 }
 
+func AssertFileContents(t *testing.T, path string, want string) {
+	t.Helper()
+
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Errorf("error reading, %v", err)
+	}
+	contents := string(bytes)
+
+	if contents != want {
+		t.Errorf("incorrect file contents, got %q want %q", contents, want)
+	}
+}
+
 func GetDirContents(t *testing.T, dir string) []string {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {

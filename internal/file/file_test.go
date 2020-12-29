@@ -8,7 +8,7 @@ import (
 )
 
 func TestFile(t *testing.T) {
-	t.Run("files without templating are copied and symlinked", func(t *testing.T) {
+	t.Run("render writes to build dir", func(t *testing.T) {
 		src, removeSrc := help.CreateTempDir(t, "src")
 		defer removeSrc()
 
@@ -24,45 +24,38 @@ func TestFile(t *testing.T) {
 			DestinationPath: filepath.Join(home, ".some_other_file"),
 			TemplatePath:    filepath.Join(src, "some_file"),
 		}
-		err := f.Build(build)
+
+		vars := TemplateVars{}
+		err := f.Render(build, vars)
 		if err != nil {
-			t.Fatalf("error building, %v", err)
+			t.Fatalf("error rendering, %v", err)
 		}
 
-		want := []string{".some_other_file"}
-		help.AssertDirectoryContents(t, home, want)
-		help.AssertSymlinkTo(
-			t,
-			filepath.Join(home, ".some_other_file"),
-			filepath.Join(build, "some_file"),
-		)
+		want := []string{"some_file"}
+		help.AssertDirectoryContents(t, build, want)
+		help.AssertFileContents(t, filepath.Join(build, "some_file"), "the contents")
 	})
 
-	t.Run("missing destination sub dirs are created", func(t *testing.T) {
+	t.Run("templated data is expanded", func(t *testing.T) {
 		src, removeSrc := help.CreateTempDir(t, "src")
 		defer removeSrc()
 
 		build, removeBuild := help.CreateTempDir(t, "build")
 		defer removeBuild()
-
-		home, removeHome := help.CreateTempDir(t, "home")
-		defer removeHome()
-
-		help.WriteData(t, filepath.Join(src, "some_file"), "the contents")
+		help.WriteData(t, filepath.Join(src, "some_file"), "the {{ .Target }} contents")
 
 		f := File{
-			DestinationPath: filepath.Join(home, "subdir", ".some_other_file"),
 			TemplatePath:    filepath.Join(src, "some_file"),
 		}
-		err := f.Build(build)
+
+		vars := TemplateVars{Target: "host"}
+		err := f.Render(build, vars)
 		if err != nil {
-			t.Fatalf("error building, %v", err)
+			t.Fatalf("error rendering, %v", err)
 		}
 
-		want := []string{
-			"subdir",
-			"subdir/.some_other_file",
-		}
-		help.AssertDirectoryContents(t, home, want)
+		want := []string{"some_file"}
+		help.AssertDirectoryContents(t, build, want)
+		help.AssertFileContents(t, filepath.Join(build, "some_file"), "the host contents")
 	})
 }

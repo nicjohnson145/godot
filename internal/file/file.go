@@ -1,10 +1,12 @@
 package file
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"text/template"
 )
 
 type File struct {
@@ -12,17 +14,26 @@ type File struct {
 	TemplatePath    string
 }
 
-func (f *File) render(buildDir string) error {
-	bytes, err := ioutil.ReadFile(f.TemplatePath)
+type TemplateVars struct {
+	Target string
+}
+
+func (f *File) Render(buildDir string, vars TemplateVars) error {
+	tmplName := filepath.Base(f.TemplatePath)
+
+	tpl := template.New(tmplName)
+	_, err := tpl.ParseFiles(f.TemplatePath)
+
+	b := bytes.NewBufferString("")
+	err = tpl.Execute(b, vars)
 	if err != nil {
-		err = fmt.Errorf("could not open %q for reading, %v", f.TemplatePath, err)
+		err = fmt.Errorf("error executing template, %v", err)
 		return err
 	}
-	contents := string(bytes)
 
-	destPath := filepath.Join(buildDir, filepath.Base(f.TemplatePath))
+	destPath := filepath.Join(buildDir, tmplName)
 
-	err = ioutil.WriteFile(destPath, []byte(contents), 0700)
+	err = ioutil.WriteFile(destPath, b.Bytes(), 0700)
 	if err != nil {
 		err = fmt.Errorf("could not open %q for writing, %v", destPath, err)
 		return err
@@ -31,7 +42,7 @@ func (f *File) render(buildDir string) error {
 	return nil
 }
 
-func (f *File) symlink(buildDir string) error {
+func (f *File) Symlink(buildDir string) error {
 	src := filepath.Join(buildDir, filepath.Base(f.TemplatePath))
 	destbase := filepath.Dir(f.DestinationPath)
 	err := os.MkdirAll(destbase, 0700)
@@ -47,14 +58,3 @@ func (f *File) symlink(buildDir string) error {
 	return err
 }
 
-func (f *File) Build(buildDir string) error {
-	err := f.render(buildDir)
-	if err != nil {
-		return err
-	}
-	err = f.symlink(buildDir)
-	if err != nil {
-		return err
-	}
-	return nil
-}
