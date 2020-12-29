@@ -19,4 +19,3 @@ func (o *OSHomeDir) GetHomeDir() (string, error) {
 	dir := usr.HomeDir
 	return dir, err
 }
-

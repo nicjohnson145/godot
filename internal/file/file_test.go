@@ -45,7 +45,7 @@ func TestFile(t *testing.T) {
 		help.WriteData(t, filepath.Join(src, "some_file"), "the {{ .Target }} contents")
 
 		f := File{
-			TemplatePath:    filepath.Join(src, "some_file"),
+			TemplatePath: filepath.Join(src, "some_file"),
 		}
 
 		vars := TemplateVars{Target: "host"}

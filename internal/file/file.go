@@ -68,4 +68,3 @@ func (f *File) Symlink(buildDir string) error {
 	}
 	return err
 }
-

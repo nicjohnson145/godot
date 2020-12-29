@@ -7,16 +7,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/nicjohnson145/godot/internal/file"
+	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/tidwall/gjson"
 )
 
 type Config struct {
-	Target       string `json:"target"`
-	DotfilesRoot string `json:"dotfiles_root"`
-	// This will be pulled from the config that lives inside the dotfiles repo
-	Files []file.File
+	Target       string      `json:"target"`
+	DotfilesRoot string      `json:"dotfiles_root"`
+	content      string      // The raw json content
+	repoConfig   string      // Path to repo config, we'll need to rewrite it often
+	Files        []file.File // This will be pulled from the config that lives inside the dotfiles repo
 }
 
 func NewConfig(getter util.HomeDirGetter) *Config {
@@ -25,6 +26,7 @@ func NewConfig(getter util.HomeDirGetter) *Config {
 		panic("Cannot get home dir")
 	}
 	c := parseUserConfig(home)
+	c.readRepoConfig()
 	c.setRelevantFiles(home)
 	return c
 }
@@ -59,8 +61,9 @@ func parseUserConfig(home string) *Config {
 	}
 }
 
-func (c *Config) setRelevantFiles(home string) {
+func (c *Config) readRepoConfig() {
 	configPath := filepath.Join(c.DotfilesRoot, "config.json")
+	c.repoConfig = configPath
 	bytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -72,8 +75,15 @@ func (c *Config) setRelevantFiles(home string) {
 	}
 
 	content := string(bytes)
+	c.content = content
+}
 
-	allVal := gjson.Get(content, "all_files")
+func (c *Config) setRelevantFiles(home string) {
+	if c.content == "" {
+		// TODO: what do if no user config
+		return
+	}
+	allVal := gjson.Get(c.content, "all_files")
 	if !allVal.Exists() {
 		panic(fmt.Sprintf("Malformed repo conf, missing all files key"))
 	}
@@ -89,7 +99,7 @@ func (c *Config) setRelevantFiles(home string) {
 		return true // keep iterating
 	})
 
-	names := gjson.Get(content, fmt.Sprintf("renders.%v", c.Target))
+	names := gjson.Get(c.content, fmt.Sprintf("renders.%v", c.Target))
 	if !names.Exists() {
 		panic(fmt.Sprintf("No file list found for target %q", c.Target))
 	}
