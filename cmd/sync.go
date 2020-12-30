@@ -8,6 +8,7 @@ import (
 
 func init() {
 	rootCmd.AddCommand(syncCmd)
+	syncCmd.Flags().BoolVarP(&force, "force", "f", false, "If a target file already exists, delete it then symlink it")
 }
 
 var (
@@ -24,7 +25,3 @@ var (
 		},
 	}
 )
-
-func init() {
-	syncCmd.Flags().BoolVarP(&force, "force", "f", false, "If a target file already exists, delete it then symlink it")
-}
