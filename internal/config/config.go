@@ -124,6 +124,9 @@ func (c *Config) Write() error {
 }
 
 func (c *Config) AddFile(template string, destination string) error {
+	if c.IsValidFile(template) {
+		return errors.New(fmt.Sprintf("template name %q already exists", template))
+	}
 	value, err := sjson.Set(c.content, fmt.Sprintf("all_files.%v", template), destination)
 	if err != nil {
 		err = fmt.Errorf("error adding file, %v", err)
@@ -134,7 +137,7 @@ func (c *Config) AddFile(template string, destination string) error {
 }
 
 func (c *Config) AddToTarget(target string, name string) error {
-	if !c.isValidFile(name) {
+	if !c.IsValidFile(name) {
 		return errors.New(fmt.Sprintf("unknown file name of %q", name))
 	}
 	value, err := sjson.Set(c.content, fmt.Sprintf("renders.%v.-1", target), name)
@@ -146,7 +149,7 @@ func (c *Config) AddToTarget(target string, name string) error {
 	return nil
 }
 
-func (c *Config) isValidFile(name string) bool {
+func (c *Config) IsValidFile(name string) bool {
 	value := gjson.Get(c.content, fmt.Sprintf("all_files.%v", name))
 	return value.Exists()
 }
@@ -156,3 +159,4 @@ func substituteTilde(f *file.File, home string) {
 		f.DestinationPath = filepath.Join(home, f.DestinationPath[2:])
 	}
 }
+

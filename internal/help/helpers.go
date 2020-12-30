@@ -1,6 +1,7 @@
 package help
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -122,4 +123,44 @@ func WriteRepoConf(t *testing.T, dotDir string, contents string) {
 
 	path := filepath.Join(dotDir, "config.json")
 	WriteData(t, path, contents)
+}
+
+func SetupFullConfig(t *testing.T, target string, data *string) (string, string, func()) {
+	t.Helper()
+	home, dotPath, remove := SetupDirectories(t, target)
+	WriteRepoConf(t, dotPath, `{
+		"all_files": {
+			"dot_zshrc": "~/.zshrc"
+		},
+		"renders": {
+			"host": ["dot_zshrc"]
+		}
+	}`)
+
+	if data != nil {
+		WriteData(t, filepath.Join(dotPath, "templates", "dot_zshrc"), *data)
+	}
+
+	return home, dotPath, remove
+}
+
+
+func SetupDirectories(t *testing.T, target string) (string, string, func()) {
+	t.Helper()
+	
+	home, remove := CreateTempDir(t, "home")
+
+	dotPath := filepath.Join(home, "dotfiles")
+	err := os.Mkdir(dotPath, 0744)
+	if err != nil {
+		t.Errorf("error making dir, %v", err)
+	}
+
+	err = os.Mkdir(filepath.Join(dotPath, "templates"), 0744)
+	if err != nil {
+		t.Errorf("error making dir, %v", err)
+	}
+	WriteConfig(t, home, fmt.Sprintf(`{"target": "%v", "dotfiles_root": "%v"}`, target, dotPath))
+
+	return home, dotPath, remove
 }

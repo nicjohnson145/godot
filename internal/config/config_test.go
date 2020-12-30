@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -11,6 +10,23 @@ import (
 	"github.com/nicjohnson145/godot/internal/help"
 	"github.com/tidwall/gjson"
 )
+
+
+func getAllFiles(t *testing.T, dotPath string) map[string]string {
+	t.Helper()
+	
+	contents := help.ReadFile(t, filepath.Join(dotPath, "config.json"))
+	value := gjson.Get(contents, "all_files")
+
+	actual := make(map[string]string)
+	value.ForEach(func(key, value gjson.Result) bool {
+		actual[key.String()] = value.String()
+		return true
+	})
+
+	return actual
+}
+
 
 func TestConfig(t *testing.T) {
 	t.Run("missing config file panics", func(t *testing.T) {
@@ -133,42 +149,17 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("add files to repo config", func(t *testing.T) {
-		home, remove := help.CreateTempDir(t, "home")
+		home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
 		defer remove()
-
-		dotPath := filepath.Join(home, "dotfiles")
-		err := os.Mkdir(dotPath, 0744)
-		if err != nil {
-			t.Fatalf("error creating dir, %v", err)
-		}
-
-		userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotPath)
-		help.WriteConfig(t, home, userConf)
-
-		confData := fmt.Sprintf(`{
-			"all_files": {"dot_zshrc": "~/.zshrc"},
-			"renders": {
-				"other_host": ["dot_zshrc"]
-			}
-		}`)
-		help.WriteRepoConf(t, dotPath, confData)
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
 		c.AddFile("some_config", "~/.some_config")
-		err = c.Write()
+		err := c.Write()
 		if err != nil {
 			t.Fatalf("error writing config, %v", err)
 		}
 
-		contents := help.ReadFile(t, filepath.Join(dotPath, "config.json"))
-		value := gjson.Get(contents, "all_files")
-
-		actual := make(map[string]string)
-		value.ForEach(func(key, value gjson.Result) bool {
-			actual[key.String()] = value.String()
-			return true
-		})
-
+		actual := getAllFiles(t, dotPath)
 		expected := map[string]string{
 			"dot_zshrc":   "~/.zshrc",
 			"some_config": "~/.some_config",
@@ -179,29 +170,49 @@ func TestConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("add file to target", func(t *testing.T) {
-		home, remove := help.CreateTempDir(t, "home")
+	t.Run("is valid file", func(t *testing.T) {
+		home, dotPath, remove := help.SetupDirectories(t, "home")
 		defer remove()
 
-		dotPath := filepath.Join(home, "dotfiles")
-		err := os.Mkdir(dotPath, 0744)
-		if err != nil {
-			t.Fatalf("error creating dir, %v", err)
-		}
-
-		userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotPath)
-		help.WriteConfig(t, home, userConf)
-
-		confData := fmt.Sprintf(`{
-			"all_files": {"dot_zshrc": "~/.zshrc"},
-			"renders": {
-				"other_host": ["dot_zshrc"]
+		help.WriteRepoConf(t, dotPath, `{
+			"all_files": {
+				"dot_zshrc": "~/.zshrc"
 			}
 		}`)
-		help.WriteRepoConf(t, dotPath, confData)
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		err = c.AddToTarget("my_host", "dot_zshrc")
+		
+		if c.IsValidFile("dot_zshrc") != true {
+			t.Fatalf("dot_zshrc should be a valid file")
+		}
+
+		if c.IsValidFile("invalid_file") != false {
+			t.Fatalf("invalid_file should not be a valid file")
+		}
+	})
+
+	t.Run("add files to repo already exists", func(t *testing.T) {
+		// should setup a "dot_zshrc" file
+		home, _, remove := help.SetupFullConfig(t, "home", nil)
+		defer remove()
+
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		err := c.AddFile("dot_zshrc", "~/subdir/.zshrc")
+		if err == nil {
+			t.Fatalf("Code should have errored")
+		}
+		want := `template name "dot_zshrc" already exists`
+		if err.Error() != want {
+			t.Fatalf("incorrect error, got %q want %q", err, want)
+		}
+	})
+
+	t.Run("add file to target", func(t *testing.T) {
+		home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
+		defer remove()
+
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		err := c.AddToTarget("my_host", "dot_zshrc")
 		if err != nil {
 			t.Fatalf("error adding, %v", err)
 		}
