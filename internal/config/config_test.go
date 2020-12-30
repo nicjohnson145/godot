@@ -11,10 +11,9 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-
 func getAllFiles(t *testing.T, dotPath string) map[string]string {
 	t.Helper()
-	
+
 	contents := help.ReadFile(t, filepath.Join(dotPath, "config.json"))
 	value := gjson.Get(contents, "all_files")
 
@@ -26,7 +25,6 @@ func getAllFiles(t *testing.T, dotPath string) map[string]string {
 
 	return actual
 }
-
 
 func TestConfig(t *testing.T) {
 	t.Run("missing config file panics", func(t *testing.T) {
@@ -181,7 +179,7 @@ func TestConfig(t *testing.T) {
 		}`)
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		
+
 		if c.IsValidFile("dot_zshrc") != true {
 			t.Fatalf("dot_zshrc should be a valid file")
 		}

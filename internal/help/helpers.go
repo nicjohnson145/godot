@@ -144,10 +144,9 @@ func SetupFullConfig(t *testing.T, target string, data *string) (string, string,
 	return home, dotPath, remove
 }
 
-
 func SetupDirectories(t *testing.T, target string) (string, string, func()) {
 	t.Helper()
-	
+
 	home, remove := CreateTempDir(t, "home")
 
 	dotPath := filepath.Join(home, "dotfiles")

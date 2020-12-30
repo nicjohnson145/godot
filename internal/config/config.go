@@ -159,4 +159,3 @@ func substituteTilde(f *file.File, home string) {
 		f.DestinationPath = filepath.Join(home, f.DestinationPath[2:])
 	}
 }
-
