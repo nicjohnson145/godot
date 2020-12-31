@@ -151,7 +151,7 @@ func TestConfig(t *testing.T) {
 		defer remove()
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		c.AddFile("some_config", "~/.some_config")
+		c.ManageFile("~/.some_config")
 		err := c.Write()
 		if err != nil {
 			t.Fatalf("error writing config, %v", err)
@@ -160,7 +160,29 @@ func TestConfig(t *testing.T) {
 		actual := getAllFiles(t, dotPath)
 		expected := map[string]string{
 			"dot_zshrc":   "~/.zshrc",
-			"some_config": "~/.some_config",
+			"dot_some_config": "~/.some_config",
+		}
+
+		if !reflect.DeepEqual(actual, expected) {
+			t.Errorf("all files incorrect, got %v want %v", actual, expected)
+		}
+	})
+
+	t.Run("add files to repo config with home substitution", func(t *testing.T) {
+		home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
+		defer remove()
+
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		c.ManageFile(filepath.Join(home, ".some_config"))
+		err := c.Write()
+		if err != nil {
+			t.Fatalf("error writing config, %v", err)
+		}
+
+		actual := getAllFiles(t, dotPath)
+		expected := map[string]string{
+			"dot_zshrc":   "~/.zshrc",
+			"dot_some_config": "~/.some_config",
 		}
 
 		if !reflect.DeepEqual(actual, expected) {
@@ -195,7 +217,7 @@ func TestConfig(t *testing.T) {
 		defer remove()
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		err := c.AddFile("dot_zshrc", "~/subdir/.zshrc")
+		err := c.ManageFile("~/subdir/.zshrc")
 		if err == nil {
 			t.Fatalf("Code should have errored")
 		}

@@ -19,6 +19,7 @@ type Config struct {
 	content      string      // The raw json content
 	repoConfig   string      // Path to repo config, we'll need to rewrite it often
 	Files        []file.File // This will be pulled from the config that lives inside the dotfiles repo
+	home         string      // Users home directory
 }
 
 func NewConfig(getter util.HomeDirGetter) *Config {
@@ -59,6 +60,7 @@ func parseUserConfig(home string) *Config {
 	return &Config{
 		Target:       target.String(),
 		DotfilesRoot: dotfilesRoot,
+		home:         home,
 	}
 }
 
@@ -121,10 +123,16 @@ func (c *Config) Write() error {
 	return ioutil.WriteFile(c.repoConfig, []byte(c.content), 0744)
 }
 
-func (c *Config) AddFile(template string, destination string) error {
-	if c.IsValidFile(template) {
-		return errors.New(fmt.Sprintf("template name %q already exists", template))
+func (c *Config) ManageFile(destination string) error {
+	templateName := util.ToTemplateName(destination)
+	if c.IsValidFile(templateName) {
+		return errors.New(fmt.Sprintf("template name %q already exists", templateName))
 	}
+	newDest := util.ReplacePrefix(destination, c.home, "~")
+	return c.addFile(templateName, newDest)
+}
+
+func (c *Config) addFile(template string, destination string) error {
 	value, err := sjson.Set(c.content, fmt.Sprintf("all_files.%v", template), destination)
 	if err != nil {
 		err = fmt.Errorf("error adding file, %v", err)
@@ -151,4 +159,3 @@ func (c *Config) IsValidFile(name string) bool {
 	value := gjson.Get(c.content, fmt.Sprintf("all_files.%v", name))
 	return value.Exists()
 }
-
