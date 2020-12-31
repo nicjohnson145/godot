@@ -80,6 +80,21 @@ func TestConfig(t *testing.T) {
 		}
 	})
 
+	t.Run("malformed config errors", func(t *testing.T) {
+		dir, remove := help.CreateTempDir(t, "home")
+		defer remove()
+
+		defer func() {
+			if r := recover(); r == nil {
+				t.Errorf("Code did not panic")
+			} 
+		}()
+
+		help.WriteConfig(t, dir, `{"target": "my_host"`)
+		// Should panic
+		NewConfig(&help.TempHomeDir{HomeDir: dir})
+	})
+
 	t.Run("dotfiles root can be overridden", func(t *testing.T) {
 		dir, remove := help.CreateTempDir(t, "home")
 		defer remove()
