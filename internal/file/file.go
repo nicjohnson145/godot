@@ -49,7 +49,7 @@ func (f *File) Render(buildDir string, vars TemplateVars, force bool) error {
 
 	destPath := filepath.Join(buildDir, tmplName)
 
-	err = ioutil.WriteFile(destPath, b.Bytes(), 0700)
+	err = ioutil.WriteFile(destPath, b.Bytes(), 0600)
 	if err != nil {
 		err = fmt.Errorf("could not open %q for writing, %v", destPath, err)
 		return err
