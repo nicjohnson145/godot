@@ -146,9 +146,17 @@ func (c *Config) IsValidFile(name string) bool {
 
 func (c *Config) GetTargetFiles() []file.File {
 	var files []file.File
+	for _, value := range c.getFilesByTarget(c.Target) {
+		files = append(files, value)
+	}
+	return files
+}
+
+func (c *Config) getFilesByTarget(target string)  map[string]file.File {
+	files := make(map[string]file.File)
 
 	allFiles := c.getAllFiles()
-	names := gjson.Get(c.content, fmt.Sprintf("renders.%v", c.Target))
+	names := gjson.Get(c.content, fmt.Sprintf("renders.%v", target))
 	if !names.Exists() {
 		return files
 	}
@@ -156,9 +164,9 @@ func (c *Config) GetTargetFiles() []file.File {
 	names.ForEach(func(key, value gjson.Result) bool {
 		file, ok := allFiles[value.String()]
 		if !ok {
-			panic(fmt.Sprintf("Invalid file key of %q for target %q", value.String(), c.Target))
+			panic(fmt.Sprintf("Invalid file key of %q for target %q", value.String(), target))
 		}
-		files = append(files, file)
+		files[value.String()] = file
 		return true // keep iterating
 	})
 
@@ -184,4 +192,9 @@ func (c *Config) writeFileMap(w io.Writer, files map[string]file.File) {
 			panic(fmt.Sprintf("error listing files, %v", err))
 		}
 	}
+}
+
+func (c *Config) ListTargetFiles(target string, w io.Writer) {
+	files := c.getFilesByTarget(target)
+	c.writeFileMap(w, files)
 }

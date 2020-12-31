@@ -296,4 +296,33 @@ some_conf => ~/some_conf
 			t.Errorf("incorrect data printed, got %q want %q", got, want)
 		}
 	})
+
+	t.Run("list target files", func(t *testing.T) {
+		home, dotPath, remove := help.SetupDirectories(t, "home")
+		defer remove()
+
+		help.WriteRepoConf(t, dotPath, `{
+			"all_files": {
+				"dot_zshrc": "~/.zshrc",
+				"some_conf": "~/some_conf",
+				"other_conf": "~/other_conf"
+			},
+			"renders": {
+				"home": ["dot_zshrc", "some_conf"],
+				"work": ["other_conf"]
+			}
+		}`)
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		s := bytes.NewBufferString("")
+		c.ListTargetFiles(c.Target, s)
+
+		want := `dot_zshrc => ~/.zshrc
+some_conf => ~/some_conf
+`
+
+		got := s.String()
+		if got != want {
+			t.Errorf("incorrect data printed, got %q want %q", got, want)
+		}
+	})
 }
