@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -269,6 +270,30 @@ func TestConfig(t *testing.T) {
 
 		if !reflect.DeepEqual(actual, expected) {
 			t.Errorf("target files incorrect, got %v want %v", actual, expected)
+		}
+	})
+
+	t.Run("list all files", func(t *testing.T) {
+		home, dotPath, remove := help.SetupDirectories(t, "home")
+		defer remove()
+
+		help.WriteRepoConf(t, dotPath, `{
+			"all_files": {
+				"dot_zshrc": "~/.zshrc",
+				"some_conf": "~/some_conf"
+			},
+		}`)
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		s := bytes.NewBufferString("")
+		c.ListAllFiles(s)
+
+		want := `dot_zshrc => ~/.zshrc
+some_conf => ~/some_conf
+`
+
+		got := s.String()
+		if got != want {
+			t.Errorf("incorrect data printed, got %q want %q", got, want)
 		}
 	})
 }

@@ -165,5 +165,12 @@ func (c *Config) GetTargetFiles() []file.File {
 }
 
 func (c *Config) ListAllFiles(w io.Writer) {
-
+	allFiles := c.getAllFiles()
+	for template, fl := range allFiles {
+		subbedDest := util.ReplacePrefix(fl.DestinationPath, c.home, "~")
+		_, err := w.Write([]byte(fmt.Sprintf("%v => %v\n", template, subbedDest)))
+		if err != nil {
+			panic(fmt.Sprintf("error listing files, %v", err))
+		}
+	}
 }
