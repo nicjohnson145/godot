@@ -9,6 +9,8 @@ import (
 
 type HomeDirGetter interface {
 	GetHomeDir() (string, error)
+	ReplaceWithTilde(string) (string, error)
+	ReplaceTilde(string) (string, error)
 }
 
 type OSHomeDir struct{}
@@ -22,6 +24,30 @@ func (o *OSHomeDir) GetHomeDir() (string, error) {
 	return dir, err
 }
 
+func (o *OSHomeDir) ReplaceWithTilde(path string) (string, error) {
+	home, err := o.GetHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return o.replacePrefix(path, home + "/", "~"), nil
+}
+
+func (o *OSHomeDir) ReplaceTilde(path string) (string, error) {
+	home, err := o.GetHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return o.replacePrefix(path, "~/", home), nil
+}
+
+func (o *OSHomeDir) replacePrefix(path string, prefix string, newPrefix string) string {
+	newPath := path
+	if strings.HasPrefix(path, prefix) {
+		newPath = filepath.Join(newPrefix, path[len(prefix):])
+	}
+	return newPath
+}
+
 func ToTemplateName(path string) string {
 	name := filepath.Base(path)
 	if strings.HasPrefix(name, ".") {
@@ -29,3 +55,4 @@ func ToTemplateName(path string) string {
 	}
 	return name
 }
+
