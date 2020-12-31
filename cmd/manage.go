@@ -21,11 +21,16 @@ var (
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf := config.NewConfig(&util.OSHomeDir{})
+			var err error
 			if as != "" {
-				return conf.AddFile(as, args[0])
+				err = conf.AddFile(as, args[0])
 			} else {
-				return conf.ManageFile(args[0])
+				err = conf.ManageFile(args[0])
 			}
+			if err == nil {
+				err = conf.Write()
+			}
+			return err
 		},
 	}
 )

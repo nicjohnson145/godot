@@ -11,10 +11,15 @@ import (
 func init() {
 	targetCmd.AddCommand(listCmd)
 	targetCmd.AddCommand(showCmd)
+	targetCmd.AddCommand(addCmd)
 	rootCmd.AddCommand(targetCmd)
+
+	addCmd.Flags().StringVar(&target, "target", "t", "What target to add file to, defaults to current target")
 }
 
 var (
+	target string
+
 	targetCmd = &cobra.Command{
 		Use: "target",
 		Short: "Interact with the contents of targets",
@@ -45,6 +50,23 @@ var (
 				conf.ListTargetFiles(args[0], os.Stdout)
 			}
 			return nil
+		},
+	}
+
+	addCmd = &cobra.Command{
+		Use: "add <file>",
+		Short: "Add a file to a target",
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			conf := config.NewConfig(&util.OSHomeDir{})
+			if target == "" {
+				target = conf.Target
+			}
+			err := conf.AddToTarget(target, args[1])
+			if err == nil {
+				err = conf.Write()
+			}
+			return err
 		},
 	}
 )

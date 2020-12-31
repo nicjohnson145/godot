@@ -12,6 +12,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/pretty"
 	"github.com/tidwall/sjson"
 )
 
@@ -101,7 +102,8 @@ func (c *Config) getAllFiles() map[string]file.File {
 }
 
 func (c *Config) Write() error {
-	return ioutil.WriteFile(c.repoConfig, []byte(c.content), 0744)
+	pretty := pretty.PrettyOptions([]byte(c.content), &pretty.Options{Indent: "    "})
+	return ioutil.WriteFile(c.repoConfig, pretty, 0644)
 }
 
 func (c *Config) ManageFile(destination string) error {

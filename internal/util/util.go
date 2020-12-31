@@ -33,7 +33,7 @@ func ReplacePrefix(path string, prefix string, newPrefix string) string {
 func ToTemplateName(path string) string {
 	name := filepath.Base(path)
 	if strings.HasPrefix(name, ".") {
-		return "dot_" + name[1:]
+		name = "dot_" + name[1:]
 	}
-	return name
+	return strings.Replace(name, ".", "_dot_", -1)
 }
