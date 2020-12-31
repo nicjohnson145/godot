@@ -37,4 +37,3 @@ func ToTemplateName(path string) string {
 	}
 	return name
 }
-

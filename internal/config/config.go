@@ -15,11 +15,11 @@ import (
 )
 
 type Config struct {
-	Target       string      `json:"target"`
-	DotfilesRoot string      `json:"dotfiles_root"`
-	content      string      // The raw json content
-	repoConfig   string      // Path to repo config, we'll need to rewrite it often
-	home         string      // Users home directory
+	Target       string `json:"target"`
+	DotfilesRoot string `json:"dotfiles_root"`
+	content      string // The raw json content
+	repoConfig   string // Path to repo config, we'll need to rewrite it often
+	home         string // Users home directory
 }
 
 func NewConfig(getter util.HomeDirGetter) *Config {
@@ -165,5 +165,5 @@ func (c *Config) GetTargetFiles() []file.File {
 }
 
 func (c *Config) ListAllFiles(w io.Writer) {
-	
+
 }

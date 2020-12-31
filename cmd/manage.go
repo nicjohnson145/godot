@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/spf13/cobra"
 )
 
 func init() {
@@ -15,10 +15,10 @@ var (
 	as string
 
 	manageCmd = &cobra.Command{
-		Use: "manage <file>",
+		Use:   "manage <file>",
 		Short: "Add file to be managed by godot",
-		Long: "Import/create a file to be managed by godot at the specified location",
-		Args: cobra.ExactArgs(1),
+		Long:  "Import/create a file to be managed by godot at the specified location",
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf := config.NewConfig(&util.OSHomeDir{})
 			if as != "" {

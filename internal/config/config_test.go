@@ -87,7 +87,7 @@ func TestConfig(t *testing.T) {
 		defer func() {
 			if r := recover(); r == nil {
 				t.Errorf("Code did not panic")
-			} 
+			}
 		}()
 
 		help.WriteConfig(t, dir, `{"target": "my_host"`)
@@ -175,7 +175,7 @@ func TestConfig(t *testing.T) {
 
 		actual := getAllFiles(t, dotPath)
 		expected := map[string]string{
-			"dot_zshrc":   "~/.zshrc",
+			"dot_zshrc":       "~/.zshrc",
 			"dot_some_config": "~/.some_config",
 		}
 
@@ -197,7 +197,7 @@ func TestConfig(t *testing.T) {
 
 		actual := getAllFiles(t, dotPath)
 		expected := map[string]string{
-			"dot_zshrc":   "~/.zshrc",
+			"dot_zshrc":       "~/.zshrc",
 			"dot_some_config": "~/.some_config",
 		}
 
