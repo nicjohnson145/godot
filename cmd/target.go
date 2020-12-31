@@ -24,7 +24,12 @@ var (
 	listCmd = &cobra.Command{
 		Use: "list",
 		Short: "List all files maintained by godot",
-		RunE: List,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			conf := config.NewConfig(&util.OSHomeDir{})
+			conf.ListAllFiles(os.Stdout)
+			return nil
+		},
 	}
 
 	showCmd = &cobra.Command{
@@ -44,8 +49,3 @@ var (
 	}
 )
 
-func List(cmd *cobra.Command, args []string) error {
-	conf := config.NewConfig(&util.OSHomeDir{})
-	conf.ListAllFiles(os.Stdout)
-	return nil
-}
