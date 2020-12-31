@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,7 +19,6 @@ type Config struct {
 	DotfilesRoot string      `json:"dotfiles_root"`
 	content      string      // The raw json content
 	repoConfig   string      // Path to repo config, we'll need to rewrite it often
-	Files        []file.File // This will be pulled from the config that lives inside the dotfiles repo
 	home         string      // Users home directory
 }
 
@@ -27,14 +27,16 @@ func NewConfig(getter util.HomeDirGetter) *Config {
 	if err != nil {
 		panic("Cannot get home dir")
 	}
-	c := parseUserConfig(home)
+	c := &Config{
+		home: home,
+	}
+	c.parseUserConfig()
 	c.readRepoConfig()
-	c.setRelevantFiles(home)
 	return c
 }
 
-func parseUserConfig(home string) *Config {
-	bytes, err := ioutil.ReadFile(filepath.Join(home, ".config", "godot", "config.json"))
+func (c *Config) parseUserConfig() {
+	bytes, err := ioutil.ReadFile(filepath.Join(c.home, ".config", "godot", "config.json"))
 	if err != nil {
 		panic(fmt.Errorf("Error reading build target, %v", err))
 	}
@@ -48,20 +50,16 @@ func parseUserConfig(home string) *Config {
 	if !target.Exists() {
 		panic("missing 'target' key in config")
 	}
+	c.Target = target.String()
 
 	root := gjson.Get(contents, "dotfiles_root")
 	var dotfilesRoot string
 	if !root.Exists() {
-		dotfilesRoot = filepath.Join(home, "dotfiles")
+		dotfilesRoot = filepath.Join(c.home, "dotfiles")
 	} else {
 		dotfilesRoot = root.String()
 	}
-
-	return &Config{
-		Target:       target.String(),
-		DotfilesRoot: dotfilesRoot,
-		home:         home,
-	}
+	c.DotfilesRoot = dotfilesRoot
 }
 
 func (c *Config) readRepoConfig() {
@@ -81,42 +79,24 @@ func (c *Config) readRepoConfig() {
 	c.content = content
 }
 
-func (c *Config) setRelevantFiles(home string) {
-	if c.content == "" {
-		// TODO: what do if no user config
-		return
-	}
+func (c *Config) getAllFiles() map[string]file.File {
+	allFiles := make(map[string]file.File)
+
 	allVal := gjson.Get(c.content, "all_files")
 	if !allVal.Exists() {
-		panic(fmt.Sprintf("Malformed repo conf, missing all files key"))
+		return allFiles
 	}
 
-	allFiles := make(map[string]file.File)
 	allVal.ForEach(func(key, value gjson.Result) bool {
 		f := file.File{
-			DestinationPath: util.ReplacePrefix(value.String(), "~/", home),
+			DestinationPath: util.ReplacePrefix(value.String(), "~/", c.home),
 			TemplatePath:    filepath.Join(c.DotfilesRoot, "templates", key.String()),
 		}
 		allFiles[key.String()] = f
 		return true // keep iterating
 	})
 
-	names := gjson.Get(c.content, fmt.Sprintf("renders.%v", c.Target))
-	if !names.Exists() {
-		return
-	}
-
-	var files []file.File
-	names.ForEach(func(key, value gjson.Result) bool {
-		file, ok := allFiles[value.String()]
-		if !ok {
-			panic(fmt.Sprintf("Invalid file key of %q for target %q", value.String(), c.Target))
-		}
-		files = append(files, file)
-		return true // keep iterating
-	})
-
-	c.Files = files
+	return allFiles
 }
 
 func (c *Config) Write() error {
@@ -161,4 +141,29 @@ func (c *Config) AddToTarget(target string, name string) error {
 func (c *Config) IsValidFile(name string) bool {
 	value := gjson.Get(c.content, fmt.Sprintf("all_files.%v", name))
 	return value.Exists()
+}
+
+func (c *Config) GetTargetFiles() []file.File {
+	var files []file.File
+
+	allFiles := c.getAllFiles()
+	names := gjson.Get(c.content, fmt.Sprintf("renders.%v", c.Target))
+	if !names.Exists() {
+		return files
+	}
+
+	names.ForEach(func(key, value gjson.Result) bool {
+		file, ok := allFiles[value.String()]
+		if !ok {
+			panic(fmt.Sprintf("Invalid file key of %q for target %q", value.String(), c.Target))
+		}
+		files = append(files, file)
+		return true // keep iterating
+	})
+
+	return files
+}
+
+func (c *Config) ListAllFiles(w io.Writer) {
+	
 }

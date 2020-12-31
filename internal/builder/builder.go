@@ -26,7 +26,7 @@ func (b *Builder) Build(force bool) error {
 		return err
 	}
 
-	for _, fl := range conf.Files {
+	for _, fl := range conf.GetTargetFiles() {
 		err = fl.Render(dir, vars, force)
 		if err != nil {
 			err = fmt.Errorf("error rendering template %q, %v", fl.DestinationPath, err)

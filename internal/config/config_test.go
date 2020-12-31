@@ -104,8 +104,8 @@ func TestConfig(t *testing.T) {
 		help.WriteConfig(t, home, userConf)
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
 
-		if len(c.Files) != 0 {
-			t.Errorf("missing repo config should result in 0 files, got %v", len(c.Files))
+		if len(c.GetTargetFiles()) != 0 {
+			t.Errorf("missing repo config should result in 0 files, got %v", len(c.GetTargetFiles()))
 		}
 	})
 
@@ -130,11 +130,12 @@ func TestConfig(t *testing.T) {
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
 
-		if len(c.Files) != 1 {
-			t.Errorf("Expected 1 file, got %v", len(c.Files))
+		targetFiles := c.GetTargetFiles()
+		if len(targetFiles) != 1 {
+			t.Errorf("Expected 1 file, got %v", len(targetFiles))
 		}
 
-		f := c.Files[0]
+		f := targetFiles[0]
 		expectedDest := filepath.Join(home, ".config/nvim/init.vim")
 		if f.DestinationPath != expectedDest {
 			t.Errorf("incorrect destination, got %q want %q", f.DestinationPath, expectedDest)
