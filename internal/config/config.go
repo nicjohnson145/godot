@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
@@ -166,9 +167,19 @@ func (c *Config) GetTargetFiles() []file.File {
 
 func (c *Config) ListAllFiles(w io.Writer) {
 	allFiles := c.getAllFiles()
-	for template, fl := range allFiles {
+	c.writeFileMap(w, allFiles)
+}
+
+func (c *Config) writeFileMap(w io.Writer, files map[string]file.File) {
+	keys := make([]string, 0)
+	for key := range files {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		fl := files[key]
 		subbedDest := util.ReplacePrefix(fl.DestinationPath, c.home, "~")
-		_, err := w.Write([]byte(fmt.Sprintf("%v => %v\n", template, subbedDest)))
+		_, err := w.Write([]byte(fmt.Sprintf("%v => %v\n", key, subbedDest)))
 		if err != nil {
 			panic(fmt.Sprintf("error listing files, %v", err))
 		}
