@@ -129,10 +129,13 @@ func (c *Config) ManageFile(destination string) error {
 		return errors.New(fmt.Sprintf("template name %q already exists", templateName))
 	}
 	newDest := util.ReplacePrefix(destination, c.home, "~")
-	return c.addFile(templateName, newDest)
+	return c.AddFile(templateName, newDest)
 }
 
-func (c *Config) addFile(template string, destination string) error {
+func (c *Config) AddFile(template string, destination string) error {
+	if c.IsValidFile(template) {
+		return errors.New(fmt.Sprintf("template name %q already exists", template))
+	}
 	value, err := sjson.Set(c.content, fmt.Sprintf("all_files.%v", template), destination)
 	if err != nil {
 		err = fmt.Errorf("error adding file, %v", err)
