@@ -110,14 +110,6 @@ func (t *TempHomeDir) GetHomeDir() (string, error) {
 	return t.HomeDir, nil
 }
 
-func (t *TempHomeDir) ReplaceTilde(path string) (string, error) {
-	return "", nil
-}
-
-func (t *TempHomeDir) ReplaceWithTilde(path string) (string, error) {
-	return "", nil
-}
-
 func WriteConfig(t *testing.T, basedir string, contents string) {
 	t.Helper()
 

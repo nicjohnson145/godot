@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
@@ -93,10 +92,9 @@ func (c *Config) setRelevantFiles(home string) {
 	allFiles := make(map[string]file.File)
 	allVal.ForEach(func(key, value gjson.Result) bool {
 		f := file.File{
-			DestinationPath: value.String(),
+			DestinationPath: util.ReplacePrefix(value.String(), "~/", home),
 			TemplatePath:    filepath.Join(c.DotfilesRoot, "templates", key.String()),
 		}
-		substituteTilde(&f, home)
 		allFiles[key.String()] = f
 		return true // keep iterating
 	})
@@ -154,8 +152,3 @@ func (c *Config) IsValidFile(name string) bool {
 	return value.Exists()
 }
 
-func substituteTilde(f *file.File, home string) {
-	if strings.HasPrefix(f.DestinationPath, "~/") {
-		f.DestinationPath = filepath.Join(home, f.DestinationPath[2:])
-	}
-}
