@@ -62,7 +62,7 @@ var (
 			if target == "" {
 				target = conf.Target
 			}
-			err := conf.AddToTarget(target, args[1])
+			err := conf.AddToTarget(target, args[0])
 			if err == nil {
 				err = conf.Write()
 			}
