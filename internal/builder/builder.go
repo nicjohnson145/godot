@@ -18,9 +18,9 @@ func (b *Builder) Build(force bool) error {
 	conf := config.NewConfig(b.Getter)
 
 	vars := file.TemplateVars{
-		Target: conf.Target,
+		Target:     conf.Target,
 		Submodules: filepath.Join(conf.DotfilesRoot, "submodules"),
-		Home: conf.Home,
+		Home:       conf.Home,
 	}
 
 	dir, err := b.ensureBuildDir(*conf)

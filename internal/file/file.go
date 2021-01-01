@@ -16,9 +16,9 @@ type File struct {
 }
 
 type TemplateVars struct {
-	Target string
+	Target     string
 	Submodules string
-	Home string
+	Home       string
 }
 
 var funcs = template.FuncMap{

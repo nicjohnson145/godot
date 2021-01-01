@@ -155,7 +155,7 @@ func (c *Config) GetTargetFiles() []file.File {
 	return files
 }
 
-func (c *Config) getFilesByTarget(target string)  map[string]file.File {
+func (c *Config) getFilesByTarget(target string) map[string]file.File {
 	files := make(map[string]file.File)
 
 	allFiles := c.getAllFiles()

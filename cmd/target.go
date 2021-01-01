@@ -21,15 +21,15 @@ var (
 	target string
 
 	targetCmd = &cobra.Command{
-		Use: "target",
+		Use:   "target",
 		Short: "Interact with the contents of targets",
-		Long: "Add/remove/show what files are assigned to each target",
+		Long:  "Add/remove/show what files are assigned to each target",
 	}
 
 	listCmd = &cobra.Command{
-		Use: "list",
+		Use:   "list",
 		Short: "List all files maintained by godot",
-		Args: cobra.NoArgs,
+		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf := config.NewConfig(&util.OSHomeDir{})
 			conf.ListAllFiles(os.Stdout)
@@ -38,10 +38,10 @@ var (
 	}
 
 	showCmd = &cobra.Command{
-		Use: "show <target?>",
+		Use:   "show <target?>",
 		Short: "Show current files assigned to a target",
-		Long: "Show current files assigned to a target, if target is not supplied, the current target will be used",
-		Args: cobra.MaximumNArgs(1),
+		Long:  "Show current files assigned to a target, if target is not supplied, the current target will be used",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf := config.NewConfig(&util.OSHomeDir{})
 			if len(args) == 0 {
@@ -54,9 +54,9 @@ var (
 	}
 
 	addCmd = &cobra.Command{
-		Use: "add <file>",
+		Use:   "add <file>",
 		Short: "Add a file to a target",
-		Args: cobra.MaximumNArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf := config.NewConfig(&util.OSHomeDir{})
 			if target == "" {
@@ -70,4 +70,3 @@ var (
 		},
 	}
 )
-
