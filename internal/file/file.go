@@ -106,7 +106,7 @@ func (f *File) maybeRemoveFile(force bool) error {
 }
 
 func (f *File) getFileState() (fileState, error) {
-	if info, err := os.Stat(f.DestinationPath); err == nil {
+	if info, err := os.Lstat(f.DestinationPath); err == nil {
 		if info.Mode()&os.ModeSymlink == os.ModeSymlink {
 			return Symlink, nil
 		} else if info.Mode().IsRegular() {

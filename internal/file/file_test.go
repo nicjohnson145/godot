@@ -1,6 +1,7 @@
 package file
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -75,6 +76,27 @@ func TestFile(t *testing.T) {
 		}
 		if state != RegularFile {
 			t.Fatalf("incorrect state, got %q want %q", state, RegularFile)
+		}
+	})
+
+	t.Run("get file state - is symlink", func(t *testing.T) {
+		dir, remove := help.CreateTempDir(t, "dir")
+		defer remove()
+
+		dest := filepath.Join(dir, "some_file")
+		help.WriteData(t, dest, "")
+		err := os.Symlink(dest, filepath.Join(dir, "link_name"))
+		if err != nil {
+			t.Fatalf("error symlinking, %v", err)
+		}
+
+		f := File{DestinationPath: filepath.Join(dir, "link_name")}
+		state, err := f.getFileState()
+		if err != nil {
+			t.Fatalf("code should not error, got %v", err)
+		}
+		if state != Symlink {
+			t.Fatalf("incorrect state, got %q want %q", state, Symlink)
 		}
 	})
 }
