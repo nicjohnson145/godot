@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"text/tabwriter"
 
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
@@ -186,13 +187,18 @@ func (c *Config) writeFileMap(w io.Writer, files map[string]file.File) {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
+	tw := tabwriter.NewWriter(w, 0, 1, 0, ' ', tabwriter.AlignRight)
 	for _, key := range keys {
 		fl := files[key]
 		subbedDest := util.ReplacePrefix(fl.DestinationPath, c.Home, "~")
-		_, err := w.Write([]byte(fmt.Sprintf("%v => %v\n", key, subbedDest)))
+		_, err := fmt.Fprintln(tw, fmt.Sprintf("%v\t => %v", key, subbedDest))
 		if err != nil {
 			panic(fmt.Sprintf("error listing files, %v", err))
 		}
+	}
+	err := tw.Flush()
+	if err != nil {
+		panic(err)
 	}
 }
 
