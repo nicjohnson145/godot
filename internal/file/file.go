@@ -29,6 +29,14 @@ var funcs = template.FuncMap{
 		}
 		return false
 	},
+	"notOneOf": func(vars TemplateVars, options ...string) bool {
+		for _, opt := range options {
+			if opt == vars.Target {
+				return false
+			}
+		}
+		return true
+	},
 }
 
 func (f *File) Render(buildDir string, vars TemplateVars, force bool) error {
