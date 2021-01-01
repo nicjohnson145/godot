@@ -21,7 +21,7 @@ type Config struct {
 	DotfilesRoot string `json:"dotfiles_root"`
 	content      string // The raw json content
 	repoConfig   string // Path to repo config, we'll need to rewrite it often
-	home         string // Users home directory
+	Home         string // Users home directory
 }
 
 func NewConfig(getter util.HomeDirGetter) *Config {
@@ -30,7 +30,7 @@ func NewConfig(getter util.HomeDirGetter) *Config {
 		panic("Cannot get home dir")
 	}
 	c := &Config{
-		home: home,
+		Home: home,
 	}
 	c.parseUserConfig()
 	c.readRepoConfig()
@@ -38,7 +38,7 @@ func NewConfig(getter util.HomeDirGetter) *Config {
 }
 
 func (c *Config) parseUserConfig() {
-	bytes, err := ioutil.ReadFile(filepath.Join(c.home, ".config", "godot", "config.json"))
+	bytes, err := ioutil.ReadFile(filepath.Join(c.Home, ".config", "godot", "config.json"))
 	if err != nil {
 		panic(fmt.Errorf("Error reading build target, %v", err))
 	}
@@ -57,7 +57,7 @@ func (c *Config) parseUserConfig() {
 	root := gjson.Get(contents, "dotfiles_root")
 	var dotfilesRoot string
 	if !root.Exists() {
-		dotfilesRoot = filepath.Join(c.home, "dotfiles")
+		dotfilesRoot = filepath.Join(c.Home, "dotfiles")
 	} else {
 		dotfilesRoot = root.String()
 	}
@@ -91,7 +91,7 @@ func (c *Config) getAllFiles() map[string]file.File {
 
 	allVal.ForEach(func(key, value gjson.Result) bool {
 		f := file.File{
-			DestinationPath: util.ReplacePrefix(value.String(), "~/", c.home),
+			DestinationPath: util.ReplacePrefix(value.String(), "~/", c.Home),
 			TemplatePath:    filepath.Join(c.DotfilesRoot, "templates", key.String()),
 		}
 		allFiles[key.String()] = f
@@ -111,7 +111,7 @@ func (c *Config) ManageFile(destination string) error {
 	if c.IsValidFile(templateName) {
 		return errors.New(fmt.Sprintf("template name %q already exists", templateName))
 	}
-	newDest := util.ReplacePrefix(destination, c.home, "~")
+	newDest := util.ReplacePrefix(destination, c.Home, "~")
 	return c.AddFile(templateName, newDest)
 }
 
@@ -188,7 +188,7 @@ func (c *Config) writeFileMap(w io.Writer, files map[string]file.File) {
 	sort.Strings(keys)
 	for _, key := range keys {
 		fl := files[key]
-		subbedDest := util.ReplacePrefix(fl.DestinationPath, c.home, "~")
+		subbedDest := util.ReplacePrefix(fl.DestinationPath, c.Home, "~")
 		_, err := w.Write([]byte(fmt.Sprintf("%v => %v\n", key, subbedDest)))
 		if err != nil {
 			panic(fmt.Sprintf("error listing files, %v", err))
