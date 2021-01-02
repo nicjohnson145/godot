@@ -190,8 +190,11 @@ func TestConfig(t *testing.T) {
 		defer remove()
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		c.ManageFile(filepath.Join(home, ".some_config"))
-		err := c.Write()
+		_, err := c.ManageFile(filepath.Join(home, ".some_config"))
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		err = c.Write()
 		if err != nil {
 			t.Fatalf("error writing config, %v", err)
 		}
@@ -234,7 +237,7 @@ func TestConfig(t *testing.T) {
 		defer remove()
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		err := c.ManageFile("~/subdir/.zshrc")
+		_, err := c.ManageFile("~/subdir/.zshrc")
 		if err == nil {
 			t.Fatalf("Code should have errored")
 		}
@@ -266,11 +269,7 @@ func TestConfig(t *testing.T) {
 			return true
 		})
 
-		expected := []string{"dot_zshrc"}
-
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("target files incorrect, got %v want %v", actual, expected)
-		}
+		help.AssertTargetContents(t, dotPath, "my_host", []string{"dot_zshrc"})
 	})
 
 	t.Run("list all files", func(t *testing.T) {

@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+
+	"github.com/tidwall/gjson"
 )
 
 func CreateTempDir(t *testing.T, pattern string) (string, func()) {
@@ -18,7 +20,7 @@ func CreateTempDir(t *testing.T, pattern string) (string, func()) {
 		t.Fatalf("could not create temp directory %v", err)
 	}
 
-	os.Chmod(dir, os.ModePerm)
+	os.Chmod(dir, 0777)
 
 	remove := func() {
 		err := os.RemoveAll(dir)
@@ -162,4 +164,20 @@ func SetupDirectories(t *testing.T, target string) (string, string, func()) {
 	WriteConfig(t, home, fmt.Sprintf(`{"target": "%v", "dotfiles_root": "%v"}`, target, dotPath))
 
 	return home, dotPath, remove
+}
+
+func AssertTargetContents(t *testing.T, dotPath string, target string, want []string) {
+	t.Helper()
+	
+	contents := ReadFile(t, filepath.Join(dotPath, "config.json"))
+	value := gjson.Get(contents, fmt.Sprintf("renders.%v", target))
+	var actual []string
+	value.ForEach(func(key, value gjson.Result) bool {
+		actual = append(actual, value.String())
+		return true
+	})
+
+	if !reflect.DeepEqual(actual, want) {
+		t.Fatalf("target files incorrect, got %v want %v", actual, want)
+	}
 }

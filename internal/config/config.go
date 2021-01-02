@@ -107,26 +107,26 @@ func (c *Config) Write() error {
 	return ioutil.WriteFile(c.repoConfig, pretty, 0644)
 }
 
-func (c *Config) ManageFile(destination string) error {
+func (c *Config) ManageFile(destination string) (string, error) {
 	templateName := util.ToTemplateName(destination)
 	if c.IsValidFile(templateName) {
-		return errors.New(fmt.Sprintf("template name %q already exists", templateName))
+		return "", errors.New(fmt.Sprintf("template name %q already exists", templateName))
 	}
 	newDest := util.ReplacePrefix(destination, c.Home, "~")
 	return c.AddFile(templateName, newDest)
 }
 
-func (c *Config) AddFile(template string, destination string) error {
+func (c *Config) AddFile(template string, destination string) (string, error) {
 	if c.IsValidFile(template) {
-		return errors.New(fmt.Sprintf("template name %q already exists", template))
+		return "", errors.New(fmt.Sprintf("template name %q already exists", template))
 	}
 	value, err := sjson.Set(c.content, fmt.Sprintf("all_files.%v", template), destination)
 	if err != nil {
 		err = fmt.Errorf("error adding file, %v", err)
-		return err
+		return "", err
 	}
 	c.content = value
-	return nil
+	return template, nil
 }
 
 func (c *Config) AddToTarget(target string, name string) error {

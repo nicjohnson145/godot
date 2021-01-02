@@ -93,4 +93,44 @@ func TestBuilder(t *testing.T) {
 
 		help.AssertFileContents(t, destPath, "zsh contents")
 	})
+
+	t.Run("import file", func(t *testing.T) {
+		home, dotPath, remove := help.SetupFullConfig(t, "host", nil)
+		defer remove()
+
+		expected := "contents"
+		path := filepath.Join(home, ".some_conf")
+		help.WriteData(t, path, expected)
+
+		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
+		b.Import(path, "")
+
+		help.AssertDirectoryContents(t, filepath.Join(dotPath, "templates"), []string{"dot_some_conf"})
+		help.AssertFileContents(t, filepath.Join(dotPath, "templates", "dot_some_conf"), expected)
+	})
+
+	t.Run("import missing file", func(t *testing.T) {
+		home, dotPath, remove := help.SetupFullConfig(t, "host", nil)
+		defer remove()
+
+		path := filepath.Join(home, ".some_conf")
+
+		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
+		b.Import(path, "")
+
+		help.AssertDirectoryContents(t, filepath.Join(dotPath, "templates"), []string{"dot_some_conf"})
+		help.AssertFileContents(t, filepath.Join(dotPath, "templates", "dot_some_conf"), "")
+	})
+
+	t.Run("import file as", func(t *testing.T) {
+		home, dotPath, remove := help.SetupFullConfig(t, "host", nil)
+		defer remove()
+
+		path := filepath.Join(home, ".some_conf")
+
+		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
+		b.Import(path, "other_name")
+
+		help.AssertDirectoryContents(t, filepath.Join(dotPath, "templates"), []string{"other_name"})
+	})
 }
