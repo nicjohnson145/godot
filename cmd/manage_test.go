@@ -31,5 +31,35 @@ func TestManage(t *testing.T) {
 
 		help.AssertDirectoryContents(t, filepath.Join(dotPath, "templates"), []string{"dot_some_conf"})
 		help.AssertTargetContents(t, dotPath, "home", []string{"dot_some_conf"})
+		help.AssertAllFiles(
+			t,
+			dotPath,
+			map[string]string{
+				"dot_some_conf": "~/.some_conf",
+				"dot_zshrc": "~/.zshrc",
+			},
+		)
+	})
+
+	t.Run("import as", func(t *testing.T) {
+		home, confPath, dotPath, remove := setup(t)
+		defer remove()
+
+		getter := &help.TempHomeDir{HomeDir: home}
+		err := importFile(getter, confPath, "other_name", false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		help.AssertDirectoryContents(t, filepath.Join(dotPath, "templates"), []string{"other_name"})
+		help.AssertTargetContents(t, dotPath, "home", []string{})
+		help.AssertAllFiles(
+			t,
+			dotPath,
+			map[string]string{
+				"other_name": "~/.some_conf",
+				"dot_zshrc": "~/.zshrc",
+			},
+		)
 	})
 }

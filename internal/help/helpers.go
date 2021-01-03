@@ -177,6 +177,10 @@ func AssertTargetContents(t *testing.T, dotPath string, target string, want []st
 		return true
 	})
 
+	if len(actual) == 0 && len(want) == 0 {
+		return
+	}
+
 	if !reflect.DeepEqual(actual, want) {
 		t.Fatalf("target files incorrect, got %v want %v", actual, want)
 	}
@@ -196,3 +200,13 @@ func GetAllFiles(t *testing.T, dotPath string) map[string]string {
 
 	return actual
 }
+
+func AssertAllFiles(t *testing.T, dotPath string, want map[string]string) {
+	t.Helper()
+	
+	got := GetAllFiles(t, dotPath)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("all files not equal, got %q want %q", got, want)
+	}
+}
+
