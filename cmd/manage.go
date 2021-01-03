@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/builder"
+	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/spf13/cobra"
 )
@@ -14,7 +14,7 @@ func init() {
 }
 
 var (
-	as string
+	as  string
 	add bool
 
 	manageCmd = &cobra.Command{

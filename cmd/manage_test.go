@@ -9,7 +9,7 @@ import (
 
 func setup(t *testing.T) (string, string, string, func()) {
 	t.Helper()
-	
+
 	home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
 
 	confPath := filepath.Join(home, ".some_conf")
@@ -36,7 +36,7 @@ func TestManage(t *testing.T) {
 			dotPath,
 			map[string]string{
 				"dot_some_conf": "~/.some_conf",
-				"dot_zshrc": "~/.zshrc",
+				"dot_zshrc":     "~/.zshrc",
 			},
 		)
 	})
@@ -58,7 +58,7 @@ func TestManage(t *testing.T) {
 			dotPath,
 			map[string]string{
 				"other_name": "~/.some_conf",
-				"dot_zshrc": "~/.zshrc",
+				"dot_zshrc":  "~/.zshrc",
 			},
 		)
 	})

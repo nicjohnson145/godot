@@ -168,7 +168,7 @@ func SetupDirectories(t *testing.T, target string) (string, string, func()) {
 
 func AssertTargetContents(t *testing.T, dotPath string, target string, want []string) {
 	t.Helper()
-	
+
 	contents := ReadFile(t, filepath.Join(dotPath, "config.json"))
 	value := gjson.Get(contents, fmt.Sprintf("renders.%v", target))
 	var actual []string
@@ -203,10 +203,9 @@ func GetAllFiles(t *testing.T, dotPath string) map[string]string {
 
 func AssertAllFiles(t *testing.T, dotPath string, want map[string]string) {
 	t.Helper()
-	
+
 	got := GetAllFiles(t, dotPath)
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("all files not equal, got %q want %q", got, want)
 	}
 }
-
