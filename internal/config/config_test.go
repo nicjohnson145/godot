@@ -9,23 +9,7 @@ import (
 	"reflect"
 
 	"github.com/nicjohnson145/godot/internal/help"
-	"github.com/tidwall/gjson"
 )
-
-func getAllFiles(t *testing.T, dotPath string) map[string]string {
-	t.Helper()
-
-	contents := help.ReadFile(t, filepath.Join(dotPath, "config.json"))
-	value := gjson.Get(contents, "all_files")
-
-	actual := make(map[string]string)
-	value.ForEach(func(key, value gjson.Result) bool {
-		actual[key.String()] = value.String()
-		return true
-	})
-
-	return actual
-}
 
 func TestConfig(t *testing.T) {
 	t.Run("missing config file panics", func(t *testing.T) {
@@ -174,7 +158,7 @@ func TestConfig(t *testing.T) {
 			t.Fatalf("error writing config, %v", err)
 		}
 
-		actual := getAllFiles(t, dotPath)
+		actual := help.GetAllFiles(t, dotPath)
 		expected := map[string]string{
 			"dot_zshrc":       "~/.zshrc",
 			"dot_some_config": "~/.some_config",
@@ -199,7 +183,7 @@ func TestConfig(t *testing.T) {
 			t.Fatalf("error writing config, %v", err)
 		}
 
-		actual := getAllFiles(t, dotPath)
+		actual := help.GetAllFiles(t, dotPath)
 		expected := map[string]string{
 			"dot_zshrc":       "~/.zshrc",
 			"dot_some_config": "~/.some_config",
@@ -260,14 +244,6 @@ func TestConfig(t *testing.T) {
 		if err != nil {
 			t.Fatalf("error writing config, %v", err)
 		}
-
-		contents := help.ReadFile(t, filepath.Join(dotPath, "config.json"))
-		value := gjson.Get(contents, "renders.my_host")
-		var actual []string
-		value.ForEach(func(key, value gjson.Result) bool {
-			actual = append(actual, value.String())
-			return true
-		})
 
 		help.AssertTargetContents(t, dotPath, "my_host", []string{"dot_zshrc"})
 	})

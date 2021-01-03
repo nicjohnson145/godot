@@ -181,3 +181,18 @@ func AssertTargetContents(t *testing.T, dotPath string, target string, want []st
 		t.Fatalf("target files incorrect, got %v want %v", actual, want)
 	}
 }
+
+func GetAllFiles(t *testing.T, dotPath string) map[string]string {
+	t.Helper()
+
+	contents := ReadFile(t, filepath.Join(dotPath, "config.json"))
+	value := gjson.Get(contents, "all_files")
+
+	actual := make(map[string]string)
+	value.ForEach(func(key, value gjson.Result) bool {
+		actual[key.String()] = value.String()
+		return true
+	})
+
+	return actual
+}
