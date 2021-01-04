@@ -204,6 +204,6 @@ func (c *Config) writeFileMap(w io.Writer, files map[string]file.File) {
 
 func (c *Config) ListTargetFiles(target string, w io.Writer) {
 	files := c.getFilesByTarget(target)
-	fmt.Fprintln(w, "Target: " + target)
+	fmt.Fprintln(w, "Target: "+target)
 	c.writeFileMap(w, files)
 }

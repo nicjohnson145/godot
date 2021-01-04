@@ -163,7 +163,7 @@ func TestConfig(t *testing.T) {
 		expected := map[string]string{
 			"dot_zshrc":       "~/.zshrc",
 			"dot_some_config": "~/.some_config",
-			"init.vim": "~/.config/init.vim",
+			"init.vim":        "~/.config/init.vim",
 		}
 
 		if !reflect.DeepEqual(actual, expected) {
