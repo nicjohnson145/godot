@@ -56,7 +56,7 @@ var (
 	addCmd = &cobra.Command{
 		Use:   "add <file>",
 		Short: "Add a file to a target",
-		Args:  cobra.MaximumNArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			conf := config.NewConfig(&util.OSHomeDir{})
 			if target == "" {
