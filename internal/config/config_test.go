@@ -300,4 +300,29 @@ some_conf => ~/some_conf
 			t.Errorf("incorrect data printed, got %q want %q", got, want)
 		}
 	})
+
+	t.Run("remove_file_from_target", func(t *testing.T) {
+		home, dotPath, remove := help.SetupDirectories(t, "home")
+		defer remove()
+
+		help.WriteRepoConf(t, dotPath, `{
+			"all_files": {
+				"dot_zshrc": "~/.zshrc",
+				"some_conf": "~/some_conf"
+			},
+			"renders": {
+				"home": ["dot_zshrc", "some_conf"]
+			}
+		}`)
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		err := c.RemoveFromTarget("home", "dot_zshrc")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = c.Write()
+		if err != nil {
+			t.Fatal(err)
+		}
+		help.AssertTargetContents(t, dotPath, "home", []string{"some_conf"})
+	})
 }

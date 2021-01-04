@@ -137,6 +137,22 @@ func (c *Config) AddToTarget(target string, name string) error {
 	return nil
 }
 
+func (c *Config) RemoveFromTarget(target string, name string) error {
+	files, ok := c.content.Renders[target]
+	if !ok {
+		return errors.New(fmt.Sprintf("unknown target %q", target))
+	}
+	var newFiles []string
+	for _, fl := range files {
+		if fl == name {
+			continue
+		}
+		newFiles = append(newFiles, fl)
+	}
+	c.content.Renders[target] = newFiles
+	return nil
+}
+
 func (c *Config) IsValidFile(name string) bool {
 	_, ok := c.content.AllFiles[name]
 	return ok

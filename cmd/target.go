@@ -69,4 +69,21 @@ var (
 			return err
 		},
 	}
+
+	removeCmd = &cobra.Command{
+		Use: "remove <file>",
+		Short: "Remove a file from target",
+		Args: cobra.ExactArgs(0),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			conf := config.NewConfig(&util.OSHomeDir{})
+			if target == "" {
+				target = conf.Target
+			}
+			err := conf.RemoveFromTarget(target, args[0])
+			if err == nil {
+				err = conf.Write()
+			}
+			return err
+		},
+	}
 )
