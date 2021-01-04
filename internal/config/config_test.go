@@ -256,7 +256,7 @@ func TestConfig(t *testing.T) {
 			"all_files": {
 				"dot_zshrc": "~/.zshrc",
 				"some_conf": "~/some_conf"
-			},
+			}
 		}`)
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
 		s := bytes.NewBufferString("")

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -14,15 +15,19 @@ import (
 	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/pretty"
-	"github.com/tidwall/sjson"
 )
 
+type configContents struct {
+	AllFiles map[string]string   `json:"all_files"`
+	Renders  map[string][]string `json:"renders"`
+}
+
 type Config struct {
-	Target       string `json:"target"`
-	DotfilesRoot string `json:"dotfiles_root"`
-	content      string // The raw json content
-	repoConfig   string // Path to repo config, we'll need to rewrite it often
-	Home         string // Users home directory
+	Target       string         `json:"target"`
+	DotfilesRoot string         `json:"dotfiles_root"`
+	content      configContents // The raw json content
+	repoConfig   string         // Path to repo config, we'll need to rewrite it often
+	Home         string         // Users home directory
 }
 
 func NewConfig(getter util.HomeDirGetter) *Config {
@@ -78,33 +83,33 @@ func (c *Config) readRepoConfig() {
 		}
 	}
 
-	content := string(bytes)
+	var content configContents
+	if err := json.Unmarshal(bytes, &content); err != nil {
+		panic(err)
+	}
+
 	c.content = content
 }
 
 func (c *Config) getAllFiles() map[string]file.File {
 	allFiles := make(map[string]file.File)
 
-	allVal := gjson.Get(c.content, "all_files")
-	if !allVal.Exists() {
-		return allFiles
-	}
-
-	allVal.ForEach(func(key, value gjson.Result) bool {
-		f := file.File{
-			DestinationPath: util.ReplacePrefix(value.String(), "~/", c.Home),
-			TemplatePath:    filepath.Join(c.DotfilesRoot, "templates", key.String()),
+	for key, path := range c.content.AllFiles {
+		allFiles[key] = file.File{
+			DestinationPath: util.ReplacePrefix(path, "~/", c.Home),
+			TemplatePath:    filepath.Join(c.DotfilesRoot, "templates", key),
 		}
-		allFiles[key.String()] = f
-		return true // keep iterating
-	})
-
+	}
 	return allFiles
 }
 
 func (c *Config) Write() error {
-	pretty := pretty.PrettyOptions([]byte(c.content), &pretty.Options{Indent: "    "})
-	return ioutil.WriteFile(c.repoConfig, pretty, 0644)
+	bytes, err := json.Marshal(c.content)
+	if err != nil {
+		return err
+	}
+	prettyContents := pretty.PrettyOptions(bytes, &pretty.Options{Indent: "    "})
+	return ioutil.WriteFile(c.repoConfig, prettyContents, 0644)
 }
 
 func (c *Config) ManageFile(destination string) (string, error) {
@@ -120,12 +125,7 @@ func (c *Config) AddFile(template string, destination string) (string, error) {
 		return "", errors.New(fmt.Sprintf("template name %q already exists", template))
 	}
 	newDest := util.ReplacePrefix(destination, c.Home, "~")
-	value, err := sjson.Set(c.content, fmt.Sprintf("all_files.%v", template), newDest)
-	if err != nil {
-		err = fmt.Errorf("error adding file, %v", err)
-		return "", err
-	}
-	c.content = value
+	c.content.AllFiles[template] = newDest
 	return template, nil
 }
 
@@ -133,18 +133,13 @@ func (c *Config) AddToTarget(target string, name string) error {
 	if !c.IsValidFile(name) {
 		return errors.New(fmt.Sprintf("unknown file name of %q", name))
 	}
-	value, err := sjson.Set(c.content, fmt.Sprintf("renders.%v.-1", target), name)
-	if err != nil {
-		err = fmt.Errorf("error adding %q to %q, %v", name, target, err)
-		return err
-	}
-	c.content = value
+	c.content.Renders[target] = append(c.content.Renders[target], name)
 	return nil
 }
 
 func (c *Config) IsValidFile(name string) bool {
-	value := gjson.Get(c.content, fmt.Sprintf("all_files.%v", name))
-	return value.Exists()
+	_, ok := c.content.AllFiles[name]
+	return ok
 }
 
 func (c *Config) GetTargetFiles() []file.File {
@@ -159,20 +154,9 @@ func (c *Config) getFilesByTarget(target string) map[string]file.File {
 	files := make(map[string]file.File)
 
 	allFiles := c.getAllFiles()
-	names := gjson.Get(c.content, fmt.Sprintf("renders.%v", target))
-	if !names.Exists() {
-		return files
+	for _, name := range c.content.Renders[target] {
+		files[name] = allFiles[name]
 	}
-
-	names.ForEach(func(key, value gjson.Result) bool {
-		file, ok := allFiles[value.String()]
-		if !ok {
-			panic(fmt.Sprintf("Invalid file key of %q for target %q", value.String(), target))
-		}
-		files[value.String()] = file
-		return true // keep iterating
-	})
-
 	return files
 }
 
