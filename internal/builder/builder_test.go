@@ -38,6 +38,27 @@ func TestBuilder(t *testing.T) {
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
 	})
 
+	t.Run("build directory cleaned on each sync", func(t *testing.T) {
+		expected := "contents"
+		home, dotPath, remove := help.SetupFullConfig(t, "host", &expected)
+		defer remove()
+
+		build := filepath.Join(dotPath, "build")
+		err := os.Mkdir(build, 0744)
+		if err != nil {
+			t.Fatal(err)
+		}
+		help.WriteData(t, filepath.Join(build, "some_file"), "some_data")
+
+		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
+		err = b.Build(false)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		help.AssertDirectoryContents(t, build, []string{"dot_zshrc"})
+	})
+
 	t.Run("file exists as symlink", func(t *testing.T) {
 		expected := "host zsh contents"
 		home, dotPath, remove := help.SetupFullConfig(t, "host", &expected)

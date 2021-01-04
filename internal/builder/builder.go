@@ -60,7 +60,11 @@ func (b *Builder) ensureConfig() {
 
 func (b *Builder) ensureBuildDir() (string, error) {
 	buildDir := filepath.Join(b.Config.DotfilesRoot, "build")
-	err := os.MkdirAll(buildDir, 0744)
+	err := os.RemoveAll(buildDir)
+	if err != nil {
+		return "", err
+	}
+	err = os.MkdirAll(buildDir, 0744)
 	return buildDir, err
 }
 
