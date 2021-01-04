@@ -291,7 +291,8 @@ some_conf => ~/some_conf
 		s := bytes.NewBufferString("")
 		c.ListTargetFiles(c.Target, s)
 
-		want := `dot_zshrc => ~/.zshrc
+		want := `Target: home
+dot_zshrc => ~/.zshrc
 some_conf => ~/some_conf
 `
 
