@@ -12,6 +12,7 @@ func init() {
 	targetCmd.AddCommand(listCmd)
 	targetCmd.AddCommand(showCmd)
 	targetCmd.AddCommand(addCmd)
+	targetCmd.AddCommand(removeCmd)
 	rootCmd.AddCommand(targetCmd)
 
 	addCmd.Flags().StringVarP(&target, "target", "t", "", "What target to add file to, defaults to current target")
