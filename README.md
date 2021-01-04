@@ -15,7 +15,7 @@ This config contains only 2 values
 
 Value | Meaning | Optional
 ------|---------|---------
-target | This is the "name" of this computer, used to track what files it will recieve | False
+target | This is the "name" of this computer, used to track what files it will recieve | True, defaults to current hostname
 dotfiles_root | The root of the repository godot should use to look for templates and manage its settings | True, defaults to `~/dotfiles`
 
 Example:

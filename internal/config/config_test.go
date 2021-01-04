@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -12,32 +13,24 @@ import (
 )
 
 func TestConfig(t *testing.T) {
-	t.Run("missing config file panics", func(t *testing.T) {
+	t.Run("missing config file ok", func(t *testing.T) {
 		dir, remove := help.CreateTempDir(t, "home")
 		defer remove()
+		c := NewConfig(&help.TempHomeDir{HomeDir: dir})
 
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("Code did not panic")
-			}
-		}()
+		name, err := os.Hostname()
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		NewConfig(&help.TempHomeDir{HomeDir: dir})
-	})
+		if c.Target != name {
+			t.Errorf("incorrect target inferred, got %q want %q", c.Target, name)
+		}
 
-	t.Run("missing target panics", func(t *testing.T) {
-		dir, remove := help.CreateTempDir(t, "home")
-		defer remove()
-
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("Code did not panic")
-			}
-		}()
-
-		help.WriteConfig(t, dir, `{}`)
-
-		NewConfig(&help.TempHomeDir{HomeDir: dir})
+		expected := filepath.Join(dir, "dotfiles")
+		if c.DotfilesRoot != expected {
+			t.Errorf("dotfiles root not inferred, got %q want %q", c.DotfilesRoot, expected)
+		}
 	})
 
 	t.Run("build target pulled from file", func(t *testing.T) {
@@ -52,18 +45,19 @@ func TestConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("dotfiles root inferred if missing", func(t *testing.T) {
+	t.Run("dotfiles root can be overridden", func(t *testing.T) {
 		dir, remove := help.CreateTempDir(t, "home")
 		defer remove()
 
-		help.WriteConfig(t, dir, `{"target": "my_host"}`)
+		help.WriteConfig(t, dir, `{"target": "my_host", "dotfiles_root": "some_path"}`)
 		c := NewConfig(&help.TempHomeDir{HomeDir: dir})
 
-		expected := filepath.Join(dir, "dotfiles")
+		expected := "some_path"
 		if c.DotfilesRoot != expected {
-			t.Errorf("dotfiles root not inferred, got %q want %q", c.DotfilesRoot, expected)
+			t.Errorf("dotfiles root not pulled from file, got %q want %q", c.DotfilesRoot, expected)
 		}
 	})
+
 
 	t.Run("malformed config errors", func(t *testing.T) {
 		dir, remove := help.CreateTempDir(t, "home")
@@ -78,19 +72,6 @@ func TestConfig(t *testing.T) {
 		help.WriteConfig(t, dir, `{"target": "my_host"`)
 		// Should panic
 		NewConfig(&help.TempHomeDir{HomeDir: dir})
-	})
-
-	t.Run("dotfiles root can be overridden", func(t *testing.T) {
-		dir, remove := help.CreateTempDir(t, "home")
-		defer remove()
-
-		help.WriteConfig(t, dir, `{"target": "my_host", "dotfiles_root": "some_path"}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: dir})
-
-		expected := "some_path"
-		if c.DotfilesRoot != expected {
-			t.Errorf("dotfiles root not pulled from file, got %q want %q", c.DotfilesRoot, expected)
-		}
 	})
 
 	t.Run("missing repo config means no files", func(t *testing.T) {

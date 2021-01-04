@@ -13,21 +13,25 @@ import (
 
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
-	"github.com/tidwall/gjson"
 	"github.com/tidwall/pretty"
 )
 
-type configContents struct {
+type repoConfig struct {
 	AllFiles map[string]string   `json:"all_files"`
 	Renders  map[string][]string `json:"renders"`
 }
 
+type usrConfig struct {
+	Target       string `json:"target"`
+	DotfilesRoot string `json:"dotfiles_root"`
+}
+
 type Config struct {
-	Target       string         `json:"target"`
-	DotfilesRoot string         `json:"dotfiles_root"`
-	content      configContents // The raw json content
-	repoConfig   string         // Path to repo config, we'll need to rewrite it often
-	Home         string         // Users home directory
+	Target       string     `json:"target"`
+	DotfilesRoot string     `json:"dotfiles_root"`
+	content      repoConfig // The raw json content
+	repoConfig   string     // Path to repo config, we'll need to rewrite it often
+	Home         string     // Users home directory
 }
 
 func NewConfig(getter util.HomeDirGetter) *Config {
@@ -44,30 +48,40 @@ func NewConfig(getter util.HomeDirGetter) *Config {
 }
 
 func (c *Config) parseUserConfig() {
-	bytes, err := ioutil.ReadFile(filepath.Join(c.Home, ".config", "godot", "config.json"))
-	if err != nil {
-		panic(fmt.Errorf("Error reading build target, %v", err))
-	}
-	contents := string(bytes)
-
-	if !gjson.Valid(contents) {
-		panic("invalid json")
+	checkPanic := func(err error) {
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	target := gjson.Get(contents, "target")
-	if !target.Exists() {
-		panic("missing 'target' key in config")
-	}
-	c.Target = target.String()
+	hostname, err := os.Hostname()
+	checkPanic(err)
 
-	root := gjson.Get(contents, "dotfiles_root")
-	var dotfilesRoot string
-	if !root.Exists() {
-		dotfilesRoot = filepath.Join(c.Home, "dotfiles")
-	} else {
-		dotfilesRoot = root.String()
+	c.Target = hostname
+	c.DotfilesRoot = filepath.Join(c.Home, "dotfiles")
+
+	conf := filepath.Join(c.Home, ".config", "godot", "config.json")
+	if _, err := os.Stat(conf); os.IsNotExist(err) {
+		// Missing config file
+		return
+	} else if err != nil {
+		panic(err)
 	}
-	c.DotfilesRoot = dotfilesRoot
+
+	bytes, err := ioutil.ReadFile(conf)
+	checkPanic(err)
+
+	var config usrConfig
+	err = json.Unmarshal(bytes, &config)
+	checkPanic(err)
+
+	if config.Target != "" {
+		c.Target = config.Target
+	}
+
+	if config.DotfilesRoot != "" {
+		c.DotfilesRoot = config.DotfilesRoot
+	}
 }
 
 func (c *Config) readRepoConfig() {
@@ -83,7 +97,7 @@ func (c *Config) readRepoConfig() {
 		}
 	}
 
-	var content configContents
+	var content repoConfig
 	if err := json.Unmarshal(bytes, &content); err != nil {
 		panic(err)
 	}
