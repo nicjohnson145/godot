@@ -153,6 +153,7 @@ func TestConfig(t *testing.T) {
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
 		c.ManageFile("~/.some_config")
+		c.ManageFile("~/.config/init.vim")
 		err := c.Write()
 		if err != nil {
 			t.Fatalf("error writing config, %v", err)
@@ -162,6 +163,7 @@ func TestConfig(t *testing.T) {
 		expected := map[string]string{
 			"dot_zshrc":       "~/.zshrc",
 			"dot_some_config": "~/.some_config",
+			"init.vim": "~/.config/init.vim",
 		}
 
 		if !reflect.DeepEqual(actual, expected) {

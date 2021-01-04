@@ -35,5 +35,5 @@ func ToTemplateName(path string) string {
 	if strings.HasPrefix(name, ".") {
 		name = "dot_" + name[1:]
 	}
-	return strings.Replace(name, ".", "_dot_", -1)
+	return name
 }
