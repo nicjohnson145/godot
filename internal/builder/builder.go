@@ -30,14 +30,12 @@ func (b *Builder) Build(force bool) error {
 	for _, fl := range b.Config.GetTargetFiles() {
 		err = fl.Render(dir, vars, force)
 		if err != nil {
-			err = fmt.Errorf("error rendering template %q, %v", fl.DestinationPath, err)
-			return err
+			return fmt.Errorf("error rendering: %w", err)
 		}
 
 		err = fl.Symlink(dir)
 		if err != nil {
-			err = fmt.Errorf("error symlinking template %q, %v", fl.DestinationPath, err)
-			return err
+			return fmt.Errorf("error symlinking %q: %w", fl.DestinationPath, err)
 		}
 	}
 

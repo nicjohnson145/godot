@@ -53,16 +53,14 @@ func (f *File) Render(buildDir string, vars TemplateVars, force bool) error {
 	b := bytes.NewBufferString("")
 	err = tpl.Execute(b, vars)
 	if err != nil {
-		err = fmt.Errorf("error executing template, %v", err)
-		return err
+		return fmt.Errorf("error executing template: %w", err)
 	}
 
 	destPath := filepath.Join(buildDir, tmplName)
 
 	err = ioutil.WriteFile(destPath, b.Bytes(), 0600)
 	if err != nil {
-		err = fmt.Errorf("could not open %q for writing, %v", destPath, err)
-		return err
+		return fmt.Errorf("could not open %q for writing: %w", destPath, err)
 	}
 
 	return nil
@@ -133,8 +131,7 @@ func (f *File) Symlink(buildDir string) error {
 	}
 	err = os.Symlink(src, f.DestinationPath)
 	if err != nil {
-		err = fmt.Errorf("unable to symlink %q to %q, %v", src, f.DestinationPath, err)
-		return err
+		return fmt.Errorf("unable to symlink %q to %q, %w", src, f.DestinationPath, err)
 	}
 	return err
 }
