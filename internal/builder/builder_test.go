@@ -30,9 +30,7 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(false)
-		if err != nil {
-			t.Fatalf("error encountered, %v", err)
-		}
+		help.Ensure(t, err)
 
 		expected := "host zsh contents"
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
@@ -45,17 +43,12 @@ func TestBuilder(t *testing.T) {
 
 		build := filepath.Join(dotPath, "build")
 		err := os.Mkdir(build, 0744)
-		if err != nil {
-			t.Fatal(err)
-		}
+		help.Ensure(t, err)
 		help.WriteData(t, filepath.Join(build, "some_file"), "some_data")
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err = b.Build(false)
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		help.Ensure(t, err)
 		help.AssertDirectoryContents(t, build, []string{"dot_zshrc"})
 	})
 
@@ -65,19 +58,14 @@ func TestBuilder(t *testing.T) {
 		defer remove()
 
 		err := os.Mkdir(filepath.Join(dotPath, "build"), 0744)
-		if err != nil {
-			t.Fatalf("err creating dir, %v", err)
-		}
+		help.Ensure(t, err)
 		buildFile := filepath.Join(dotPath, "build/dot_zshrc")
 		help.WriteData(t, buildFile, "orig")
 		os.Symlink(filepath.Join(home, ".zshrc"), filepath.Join(dotPath, "build/dot_zshrc"))
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err = b.Build(false)
-		if err != nil {
-			t.Fatalf("error encountered, %v", err)
-		}
-
+		help.Ensure(t, err)
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
 	})
 
@@ -94,7 +82,6 @@ func TestBuilder(t *testing.T) {
 		if err == nil {
 			t.Fatalf("code should have errored")
 		}
-
 		help.AssertFileContents(t, destPath, "")
 	})
 
@@ -108,10 +95,7 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(true)
-		if err != nil {
-			t.Fatalf("error building, %v", err)
-		}
-
+		help.Ensure(t, err)
 		help.AssertFileContents(t, destPath, "zsh contents")
 	})
 

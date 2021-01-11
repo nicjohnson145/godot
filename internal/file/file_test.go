@@ -28,9 +28,7 @@ func TestFile(t *testing.T) {
 
 		vars := TemplateVars{}
 		err := f.Render(build, vars, false)
-		if err != nil {
-			t.Fatalf("error rendering, %v", err)
-		}
+		help.Ensure(t, err)
 
 		want := []string{"some_file"}
 		help.AssertDirectoryContents(t, build, want)
@@ -51,9 +49,7 @@ func TestFile(t *testing.T) {
 
 		vars := TemplateVars{Target: "host"}
 		err := f.Render(build, vars, false)
-		if err != nil {
-			t.Fatalf("error rendering, %v", err)
-		}
+		help.Ensure(t, err)
 
 		want := []string{"some_file"}
 		help.AssertDirectoryContents(t, build, want)
@@ -71,9 +67,7 @@ func TestFile(t *testing.T) {
 		}
 
 		state, err := f.getFileState()
-		if err != nil {
-			t.Fatalf("code should not error, got %v", err)
-		}
+		help.Ensure(t, err)
 		if state != RegularFile {
 			t.Fatalf("incorrect state, got %q want %q", state, RegularFile)
 		}
@@ -86,15 +80,11 @@ func TestFile(t *testing.T) {
 		dest := filepath.Join(dir, "some_file")
 		help.WriteData(t, dest, "")
 		err := os.Symlink(dest, filepath.Join(dir, "link_name"))
-		if err != nil {
-			t.Fatalf("error symlinking, %v", err)
-		}
+		help.Ensure(t, err)
 
 		f := File{DestinationPath: filepath.Join(dir, "link_name")}
 		state, err := f.getFileState()
-		if err != nil {
-			t.Fatalf("code should not error, got %v", err)
-		}
+		help.Ensure(t, err)
 		if state != Symlink {
 			t.Fatalf("incorrect state, got %q want %q", state, Symlink)
 		}

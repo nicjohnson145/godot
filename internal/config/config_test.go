@@ -19,9 +19,7 @@ func TestConfig(t *testing.T) {
 		c := NewConfig(&help.TempHomeDir{HomeDir: dir})
 
 		name, err := os.Hostname()
-		if err != nil {
-			t.Fatal(err)
-		}
+		help.Ensure(t, err)
 
 		if c.Target != name {
 			t.Errorf("incorrect target inferred, got %q want %q", c.Target, name)
@@ -136,9 +134,7 @@ func TestConfig(t *testing.T) {
 		c.ManageFile("~/.some_config")
 		c.ManageFile("~/.config/init.vim")
 		err := c.Write()
-		if err != nil {
-			t.Fatalf("error writing config, %v", err)
-		}
+		help.Ensure(t, err)
 
 		actual := help.GetAllFiles(t, dotPath)
 		expected := map[string]string{
@@ -158,13 +154,9 @@ func TestConfig(t *testing.T) {
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
 		_, err := c.ManageFile(filepath.Join(home, ".some_config"))
-		if err != nil {
-			t.Fatalf("%v", err)
-		}
+		help.Ensure(t, err)
 		err = c.Write()
-		if err != nil {
-			t.Fatalf("error writing config, %v", err)
-		}
+		help.Ensure(t, err)
 
 		actual := help.GetAllFiles(t, dotPath)
 		expected := map[string]string{
@@ -220,9 +212,7 @@ func TestConfig(t *testing.T) {
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
 		err := c.AddToTarget("my_host", "dot_zshrc")
-		if err != nil {
-			t.Fatalf("error adding, %v", err)
-		}
+		help.Ensure(t, err)
 		err = c.Write()
 		if err != nil {
 			t.Fatalf("error writing config, %v", err)
@@ -300,13 +290,9 @@ some_conf => ~/some_conf
 		}`)
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
 		err := c.RemoveFromTarget("home", "dot_zshrc")
-		if err != nil {
-			t.Fatal(err)
-		}
+		help.Ensure(t, err)
 		err = c.Write()
-		if err != nil {
-			t.Fatal(err)
-		}
+		help.Ensure(t, err)
 		help.AssertTargetContents(t, dotPath, "home", []string{"some_conf"})
 	})
 }
