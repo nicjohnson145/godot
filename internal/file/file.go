@@ -40,30 +40,41 @@ var funcs = template.FuncMap{
 	},
 }
 
+func (f *File) getTemplateName() string {
+	return filepath.Base(f.TemplatePath)
+}
+
 func (f *File) Render(buildDir string, vars TemplateVars, force bool) error {
 	err := f.checkFile(force)
 	if err != nil {
 		return err
 	}
-	tmplName := filepath.Base(f.TemplatePath)
+	b, err := f.Execute(vars)
+	if err != nil {
+		return err
+	}
+	return f.Write(buildDir, b)
+}
 
+func (f *File) Execute(vars TemplateVars) (*bytes.Buffer, error) {
+	tmplName := f.getTemplateName()
 	tpl := template.New(tmplName).Funcs(funcs)
-	_, err = tpl.ParseFiles(f.TemplatePath)
+	_, err := tpl.ParseFiles(f.TemplatePath)
+	if err != nil {
+		return nil, err
+	}
 
 	b := bytes.NewBufferString("")
 	err = tpl.Execute(b, vars)
 	if err != nil {
-		return fmt.Errorf("error executing template: %w", err)
+		return nil, fmt.Errorf("executing: %w", err)
 	}
+	return b, nil
+}
 
-	destPath := filepath.Join(buildDir, tmplName)
-
-	err = ioutil.WriteFile(destPath, b.Bytes(), 0600)
-	if err != nil {
-		return fmt.Errorf("could not open %q for writing: %w", destPath, err)
-	}
-
-	return nil
+func (f *File) Write(buildDir string, buf *bytes.Buffer) error {
+	destPath := filepath.Join(buildDir, f.getTemplateName())
+	return ioutil.WriteFile(destPath, buf.Bytes(), 0600)
 }
 
 type fileState string

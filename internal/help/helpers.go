@@ -209,3 +209,10 @@ func AssertAllFiles(t *testing.T, dotPath string, want map[string]string) {
 		t.Fatalf("all files not equal, got %q want %q", got, want)
 	}
 }
+
+func Ensure(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+}

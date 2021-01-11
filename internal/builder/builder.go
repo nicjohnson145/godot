@@ -20,13 +20,23 @@ type Builder struct {
 func (b *Builder) Build(force bool) error {
 	b.ensureConfig()
 
+	vars := b.makeTemplateVars()
+
+	// Before clearing the build directory, make sure nothing is going to error out, i.e fail safe
+	for _, fl := range b.Config.GetTargetFiles() {
+		_, err := fl.Execute(vars)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Clean out the build directory
 	dir, err := b.ensureBuildDir()
 	if err != nil {
 		return err
 	}
 
-	vars := b.makeTemplateVars()
-
+	// Actually render/symlink the files
 	for _, fl := range b.Config.GetTargetFiles() {
 		err = fl.Render(dir, vars, force)
 		if err != nil {

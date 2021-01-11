@@ -154,4 +154,37 @@ func TestBuilder(t *testing.T) {
 
 		help.AssertDirectoryContents(t, filepath.Join(dotPath, "templates"), []string{"other_name"})
 	})
+
+	t.Run("template error doesnt delete build dir", func(t *testing.T) {
+		home, dotPath, remove := help.SetupDirectories(t, "host")
+		defer remove()
+
+		help.WriteRepoConf(t, dotPath, `{
+			"all_files": {
+				"some_file": "~/some_file"
+			},
+			"renders": {
+				"host": ["some_file"]
+			}
+		}`)
+
+		// Touch some file in the build dir
+		buildDir := filepath.Join(dotPath, "build")
+		err := os.Mkdir(buildDir, 0744)
+		help.Ensure(t, err)
+		help.WriteData(t, filepath.Join(buildDir, "orphan_file"), "")
+
+		// Write an invalid template
+		template := filepath.Join(dotPath, "templates", "some_file")
+		help.WriteData(t, template, "{{ .NotAValidKey }}")
+
+		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
+		err = b.Build(true)
+
+		if err == nil {
+			t.Fatalf("code should have errored")
+		}
+
+		help.AssertDirectoryContents(t, buildDir, []string{"orphan_file"})
+	})
 }
