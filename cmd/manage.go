@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"github.com/nicjohnson145/godot/internal/builder"
-	"github.com/nicjohnson145/godot/internal/config"
-	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/nicjohnson145/godot/internal/controller"
 	"github.com/spf13/cobra"
 )
 
@@ -23,34 +21,9 @@ var (
 		Long:  "Import/create a file to be managed by godot at the specified location",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			getter := &util.OSHomeDir{}
-			return importFile(getter, args[0], as, add)
+			c := controller.Controller{}
+			return c.Import(args[0], as, controller.ImportOpts{NoGit: noGit, NoAdd: !add})
 		},
 	}
 )
 
-func importFile(getter util.HomeDirGetter, file string, as string, add bool) error {
-	conf := config.NewConfig(getter)
-	builder := builder.Builder{Config: conf, Getter: getter}
-
-	err := builder.Import(file, as)
-	if err != nil {
-		return err
-	}
-	var name string
-	if as != "" {
-		name, err = conf.AddFile(as, file)
-	} else {
-		name, err = conf.ManageFile(file)
-	}
-
-	if add {
-		err = conf.AddToTarget(conf.Target, name)
-	}
-
-	if err == nil {
-		err = conf.Write()
-	}
-
-	return err
-}

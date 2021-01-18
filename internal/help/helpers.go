@@ -35,6 +35,26 @@ func CreateTempDir(t *testing.T, pattern string) (string, func()) {
 func AssertDirectoryContents(t *testing.T, dir string, want []string) {
 	t.Helper()
 
+	files, err := ioutil.ReadDir(dir)
+	Ensure(t, err)
+
+	got := []string{}
+	for _, fl := range files {
+		got = append(got, fl.Name())
+	}
+
+	if len(got) == 0 && len(want) == 0 {
+		return
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("directory listings not equal got %v want %v", got, want)
+	}
+}
+
+func AssertDirectoryContentsRecursive(t *testing.T, dir string, want []string) {
+	t.Helper()
+
 	var allPaths []string
 
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -48,6 +68,10 @@ func AssertDirectoryContents(t *testing.T, dir string, want []string) {
 		return nil
 	})
 	sort.Strings(allPaths)
+
+	if len(allPaths) == 0 && len(want) == 0 {
+		return
+	}
 
 	if !reflect.DeepEqual(allPaths, want) {
 		t.Fatalf("directory listings not equal got %v want %v", allPaths, want)
@@ -214,5 +238,12 @@ func Ensure(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+func ShouldError(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("Code should have errored")
 	}
 }

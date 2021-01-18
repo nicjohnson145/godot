@@ -56,7 +56,6 @@ func TestConfig(t *testing.T) {
 		}
 	})
 
-
 	t.Run("malformed config errors", func(t *testing.T) {
 		dir, remove := help.CreateTempDir(t, "home")
 		defer remove()
@@ -197,9 +196,7 @@ func TestConfig(t *testing.T) {
 
 		c := NewConfig(&help.TempHomeDir{HomeDir: home})
 		_, err := c.ManageFile("~/subdir/.zshrc")
-		if err == nil {
-			t.Fatalf("Code should have errored")
-		}
+		help.ShouldError(t, err)
 		want := `template name "dot_zshrc" already exists`
 		if err.Error() != want {
 			t.Fatalf("incorrect error, got %q want %q", err, want)
@@ -294,5 +291,39 @@ some_conf => ~/some_conf
 		err = c.Write()
 		help.Ensure(t, err)
 		help.AssertTargetContents(t, dotPath, "home", []string{"some_conf"})
+	})
+
+	t.Run("get_template_path_from_full_path", func(t *testing.T) {
+		home, dotPath, remove := help.SetupDirectories(t, "home")
+		defer remove()
+
+		help.WriteRepoConf(t, dotPath, `{
+			"all_files": {
+				"dot_zshrc": "~/.zshrc"
+			}
+		}`)
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+		want := filepath.Join(dotPath, "templates", "dot_zshrc")
+		got, err := c.GetTemplateFromFullPath(filepath.Join(home, ".zshrc"))
+		help.Ensure(t, err)
+		if got != want {
+			t.Fatalf("incorrect template path, got %q want %q", got, want)
+		}
+	})
+
+	t.Run("get_template_path_from_full_path_not_found", func(t *testing.T) {
+		home, dotPath, remove := help.SetupDirectories(t, "home")
+		defer remove()
+
+		help.WriteRepoConf(t, dotPath, `{
+			"all_files": {
+				"dot_zshrc": "~/.zshrc"
+			}
+		}`)
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+		_, err := c.GetTemplateFromFullPath(filepath.Join(home, ".missing_config"))
+		help.ShouldError(t, err)
 	})
 }

@@ -49,7 +49,7 @@ func TestBuilder(t *testing.T) {
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err = b.Build(false)
 		help.Ensure(t, err)
-		help.AssertDirectoryContents(t, build, []string{"dot_zshrc"})
+		help.AssertDirectoryContentsRecursive(t, build, []string{"dot_zshrc"})
 	})
 
 	t.Run("file exists as symlink", func(t *testing.T) {
@@ -79,9 +79,7 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(false)
-		if err == nil {
-			t.Fatalf("code should have errored")
-		}
+		help.ShouldError(t, err)
 		help.AssertFileContents(t, destPath, "")
 	})
 
@@ -110,7 +108,7 @@ func TestBuilder(t *testing.T) {
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		b.Import(path, "")
 
-		help.AssertDirectoryContents(t, filepath.Join(dotPath, "templates"), []string{"dot_some_conf"})
+		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotPath, "templates"), []string{"dot_some_conf"})
 		help.AssertFileContents(t, filepath.Join(dotPath, "templates", "dot_some_conf"), expected)
 	})
 
@@ -123,7 +121,7 @@ func TestBuilder(t *testing.T) {
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		b.Import(path, "")
 
-		help.AssertDirectoryContents(t, filepath.Join(dotPath, "templates"), []string{"dot_some_conf"})
+		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotPath, "templates"), []string{"dot_some_conf"})
 		help.AssertFileContents(t, filepath.Join(dotPath, "templates", "dot_some_conf"), "")
 	})
 
@@ -136,7 +134,7 @@ func TestBuilder(t *testing.T) {
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		b.Import(path, "other_name")
 
-		help.AssertDirectoryContents(t, filepath.Join(dotPath, "templates"), []string{"other_name"})
+		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotPath, "templates"), []string{"other_name"})
 	})
 
 	t.Run("template error doesnt delete build dir", func(t *testing.T) {
@@ -164,11 +162,7 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err = b.Build(true)
-
-		if err == nil {
-			t.Fatalf("code should have errored")
-		}
-
-		help.AssertDirectoryContents(t, buildDir, []string{"orphan_file"})
+		help.ShouldError(t, err)
+		help.AssertDirectoryContentsRecursive(t, buildDir, []string{"orphan_file"})
 	})
 }

@@ -31,7 +31,7 @@ func TestFile(t *testing.T) {
 		help.Ensure(t, err)
 
 		want := []string{"some_file"}
-		help.AssertDirectoryContents(t, build, want)
+		help.AssertDirectoryContentsRecursive(t, build, want)
 		help.AssertFileContents(t, filepath.Join(build, "some_file"), "the contents")
 	})
 
@@ -52,7 +52,7 @@ func TestFile(t *testing.T) {
 		help.Ensure(t, err)
 
 		want := []string{"some_file"}
-		help.AssertDirectoryContents(t, build, want)
+		help.AssertDirectoryContentsRecursive(t, build, want)
 		help.AssertFileContents(t, filepath.Join(build, "some_file"), "the host contents")
 	})
 

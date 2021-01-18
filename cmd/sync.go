@@ -1,8 +1,7 @@
 package cmd
 
 import (
-	"github.com/nicjohnson145/godot/internal/builder"
-	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/nicjohnson145/godot/internal/controller"
 	"github.com/spf13/cobra"
 )
 
@@ -19,9 +18,9 @@ var (
 		Short: "Build and symlink dotfiles",
 		Long:  "Compile templates and symlink them to their final destinations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			b := builder.Builder{Getter: &util.OSHomeDir{}}
-			err := b.Build(force)
-			return err
+			c := &controller.Controller{}
+			return c.Sync(controller.SyncOpts{Force: force, NoGit: noGit})
 		},
 	}
 )
+

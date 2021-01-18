@@ -7,7 +7,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	rootCmd.PersistentFlags().BoolVarP(
+		&noGit,
+		"no-git",
+		"g",
+		false,
+		"Do not perform any git operations (this will require the git operations to be completed manually)",
+	)
+}
+
 var (
+	noGit bool
+
 	rootCmd = &cobra.Command{
 		Use:   "godot",
 		Short: "A dotfiles manager",

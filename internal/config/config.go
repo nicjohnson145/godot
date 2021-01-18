@@ -190,6 +190,15 @@ func (c *Config) getFilesByTarget(target string) map[string]file.File {
 	return files
 }
 
+func (c *Config) GetTemplateFromFullPath(path string) (string, error) {
+	for _, fl := range c.getAllFiles() {
+		if fl.DestinationPath == path {
+			return fl.TemplatePath, nil
+		}
+	}
+	return "", fmt.Errorf("Path %q is not managed by godot", path)
+}
+
 func (c *Config) ListAllFiles(w io.Writer) {
 	allFiles := c.getAllFiles()
 	c.writeFileMap(w, allFiles)

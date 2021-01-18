@@ -3,8 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/nicjohnson145/godot/internal/config"
-	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/nicjohnson145/godot/internal/controller"
 	"github.com/spf13/cobra"
 )
 
@@ -33,8 +32,8 @@ var (
 		Short: "List all files maintained by godot",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			conf := config.NewConfig(&util.OSHomeDir{})
-			conf.ListAllFiles(os.Stdout)
+			c := &controller.Controller{}
+			c.ListAll(os.Stdout)
 			return nil
 		},
 	}
@@ -45,12 +44,14 @@ var (
 		Long:  "Show current files assigned to a target, if target is not supplied, the current target will be used",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			conf := config.NewConfig(&util.OSHomeDir{})
-			if len(args) == 0 {
-				conf.ListTargetFiles(conf.Target, os.Stdout)
-			} else {
-				conf.ListTargetFiles(args[0], os.Stdout)
+			c := &controller.Controller{}
+
+			target := c.Config.Target
+			if len(args) == 1 {
+				target = args[0]
 			}
+
+			c.TargetShow(target, os.Stdout)
 			return nil
 		},
 	}
@@ -60,15 +61,11 @@ var (
 		Short: "Add a file to a target",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			conf := config.NewConfig(&util.OSHomeDir{})
+			c := &controller.Controller{}
 			if target == "" {
-				target = conf.Target
+				target = c.Config.Target
 			}
-			err := conf.AddToTarget(target, args[0])
-			if err == nil {
-				err = conf.Write()
-			}
-			return err
+			return c.TargetAdd(target, args[0], controller.AddOpts{NoGit: noGit})
 		},
 	}
 
@@ -77,15 +74,11 @@ var (
 		Short: "Remove a file from target",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			conf := config.NewConfig(&util.OSHomeDir{})
+			c := &controller.Controller{}
 			if target == "" {
-				target = conf.Target
+				target = c.Config.Target
 			}
-			err := conf.RemoveFromTarget(target, args[0])
-			if err == nil {
-				err = conf.Write()
-			}
-			return err
+			return c.TargetRemove(target, args[0], controller.RemoveOpts{NoGit: noGit})
 		},
 	}
 )
