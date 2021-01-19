@@ -15,7 +15,7 @@ func getController(t *testing.T, home string) Controller {
 	t.Helper()
 	return NewController(ControllerOpts{
 		HomeDirGetter: &help.TempHomeDir{HomeDir: home},
-		Repo: repo.NoopRepo{},
+		Repo:          repo.NoopRepo{},
 	})
 }
 

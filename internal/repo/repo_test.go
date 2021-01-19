@@ -18,7 +18,6 @@ func initRepo(t *testing.T) (shellGitRepo, func()) {
 	return NewShellGitRepo(dir), remove
 }
 
-
 func TestIsWorkdirClean(t *testing.T) {
 	t.Run("clean_workdir", func(t *testing.T) {
 		r, remove := initRepo(t)
@@ -63,4 +62,3 @@ func TestDirtyFiles(t *testing.T) {
 		}
 	})
 }
-

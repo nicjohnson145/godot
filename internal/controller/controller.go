@@ -64,9 +64,9 @@ func NewController(opts ControllerOpts) *controller {
 
 	return &controller{
 		homeDirGetter: getter,
-		Config: conf,
-		repo: r,
-		builder: b,
+		Config:        conf,
+		repo:          r,
+		builder:       b,
 	}
 }
 
@@ -178,7 +178,7 @@ func (c *controller) TargetRemove(target string, file string, opts RemoveOpts) e
 	if err != nil {
 		return err
 	}
-	
+
 	err = c.write()
 	if err != nil {
 		return err
@@ -212,7 +212,7 @@ func (c *controller) Edit(args []string, opts EditOpts) error {
 		return err
 	}
 
-	if !opts.NoSync{
+	if !opts.NoSync {
 		err = c.Sync(SyncOpts{NoGit: true})
 		if err != nil {
 			return err

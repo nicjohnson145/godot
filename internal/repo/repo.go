@@ -13,7 +13,7 @@ type Repo interface {
 }
 
 type shellGitRepo struct {
-	Path string
+	Path   string
 	gitDir string
 }
 
@@ -41,7 +41,9 @@ func (r shellGitRepo) dirtyFiles() ([]string, error) {
 
 	var files []string
 	for _, line := range strings.Split(stdout, "\n") {
-		if line == "" { continue }
+		if line == "" {
+			continue
+		}
 		files = append(files, line[3:])
 	}
 	return files, nil
@@ -96,7 +98,7 @@ func (r shellGitRepo) Push() error {
 	return err
 }
 
+type NoopRepo struct{}
 
-type NoopRepo struct {}
 func (n NoopRepo) Push() error { return nil }
 func (n NoopRepo) Pull() error { return nil }

@@ -13,7 +13,7 @@ type SyncOpts struct {
 }
 
 type EditOpts struct {
-	NoGit bool
+	NoGit  bool
 	NoSync bool
 }
 
@@ -36,4 +36,3 @@ type ControllerOpts struct {
 	Config        *config.Config
 	Builder       *builder.Builder
 }
-
