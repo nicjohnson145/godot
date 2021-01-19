@@ -3,9 +3,8 @@ package repo
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
-
-	"github.com/keegancsmith/shell"
 )
 
 type Repo interface {
@@ -26,8 +25,8 @@ func NewShellGitRepo(path string) shellGitRepo {
 
 func (r shellGitRepo) runCmd(args ...string) (string, string, error) {
 	var stdout, stderr bytes.Buffer
-	str := shell.Sprintf("git -C %s %S", r.Path, args)
-	cmd := shell.Commandf(str)
+	str := append([]string{"-C", r.Path}, args...)
+	cmd := exec.Command("git", str...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
