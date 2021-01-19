@@ -5,6 +5,11 @@ This project mostly functioned as a learning exercise for teaching myself Go. I 
 dotfiles manager in Python, so rewriting in Go seemed feasible since I knew my personal requirements
 , thus making it a "solved" problem for me.
 
+## Installation
+Compiled binaries can be found on the releases page [here](https://github.com/nicjohnson145/godot/releases/latest)
+. Optionally, clone this repository and run `go install`
+
+
 ## Setup
 
 godot depends on 2 distinct configuration files.
@@ -31,4 +36,54 @@ Example:
 ### <dotfiles_root>/config.json
 
 This is managed by godot, and contains what files are under its control, and what hosts should get
-what files
+what files. While this file can be managed by hand, it's better to let godot do it.
+
+
+## Templating
+
+The files stored in the dotfiles repository will be evaluated as go templates. Information about
+Go's templating can be found [here](https://golang.org/pkg/text/template/#hdr-Actions). Godot
+defines supplements that with the following
+
+<table>
+<tr>
+    <td>Value</td>
+    <td>Type</td>
+    <td>Meaning</td>
+    <td>Example Usage</td>
+</tr>
+<tr>
+    <td>Target</td>
+    <td>variable</td>
+    <td>The name of the current target</td>
+    <td>Export an environment variable with the current target name <br /><code>export GODOT_TARGET="{{ .Target }}"</code> </td>
+</tr>
+<tr>
+    <td>Submodules</td>
+    <td>variable</td>
+    <td>A special directory in the dotfiles repo for using git submodules</td>
+    <td><code>export PATH="{{ .Submodules }}/fzf/bin:${PATH}"</code> </td>
+</tr>
+<tr>
+    <td>Home</td>
+    <td>variable</td>
+    <td>Path to the current users home directory</td>
+    <td><code>export PATH={{ .Home }}/bin:${PATH}</code></td>
+</tr>
+<tr>
+    <td>oneOf</td>
+    <td>function</td>
+    <td>shorthand for evaulating if the current target is in a list</td>
+    <td><pre>
+{{ if oneOf . "work" "home" }}
+export FOO="bar"
+{{ end }}</pre></td>
+</tr>
+<tr>
+    <td>notOneOf</td>
+    <td>function</td>
+    <td>The inverse of <code>oneOf</code>, evaluates if the target is not one of the list</td>
+    <td></td>
+</tr>
+</table
+
