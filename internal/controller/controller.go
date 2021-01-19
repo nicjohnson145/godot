@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,8 +12,6 @@ import (
 	"github.com/nicjohnson145/godot/internal/repo"
 	"github.com/nicjohnson145/godot/internal/util"
 )
-
-var userCancelError = errors.New("user canceled")
 
 type Controller interface {
 	Sync(SyncOpts) error
@@ -207,7 +204,7 @@ func (c *controller) Edit(args []string, opts EditOpts) error {
 
 	path, err := c.getFile(args)
 	if err != nil {
-		if err == userCancelError {
+		if err == fuzzyfinder.ErrAbort {
 			fmt.Println("Aborting...")
 			return nil
 		}
@@ -239,15 +236,6 @@ func (c *controller) Edit(args []string, opts EditOpts) error {
 func (c *controller) getFile(args []string) (filePath string, outErr error) {
 	if len(args) == 0 {
 		targetFiles := c.Config.GetTargetFiles()
-		defer func() {
-			if err := recover(); err != nil {
-				// Ctrl-C ing inside fuzzy finder is a panic, catch that panic and abort the edit
-				// operation
-				filePath = ""
-				outErr = userCancelError
-			}
-		}()
-
 		idx, err := fuzzyfinder.Find(
 			targetFiles,
 			func(i int) string {
