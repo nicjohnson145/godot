@@ -32,7 +32,7 @@ var (
 		Short: "List all files maintained by godot",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := &controller.Controller{}
+			c := controller.NewController(controller.ControllerOpts{})
 			c.ListAll(os.Stdout)
 			return nil
 		},
@@ -44,7 +44,7 @@ var (
 		Long:  "Show current files assigned to a target, if target is not supplied, the current target will be used",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := &controller.Controller{}
+			c := controller.NewController(controller.ControllerOpts{})
 
 			target := c.Config.Target
 			if len(args) == 1 {
@@ -61,7 +61,7 @@ var (
 		Short: "Add a file to a target",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := &controller.Controller{}
+			c := controller.NewController(controller.ControllerOpts{})
 			if target == "" {
 				target = c.Config.Target
 			}
@@ -74,7 +74,7 @@ var (
 		Short: "Remove a file from target",
 		Args:  cobra.ExactArgs(0),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := &controller.Controller{}
+			c := controller.NewController(controller.ControllerOpts{})
 			if target == "" {
 				target = c.Config.Target
 			}

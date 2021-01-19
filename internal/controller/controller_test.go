@@ -11,12 +11,12 @@ import (
 	"github.com/nicjohnson145/godot/internal/repo"
 )
 
-func getController(t *testing.T, home string) *Controller {
+func getController(t *testing.T, home string) Controller {
 	t.Helper()
-	return &Controller{
-		homeDirGetter: &help.TempHomeDir{HomeDir: home},
-		repo: repo.NoopRepo{},
-	}
+	return NewController(ControllerOpts{
+		HomeDirGetter: &help.TempHomeDir{HomeDir: home},
+		Repo: repo.NoopRepo{},
+	})
 }
 
 func TestSync(t *testing.T) {}

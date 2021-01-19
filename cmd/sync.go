@@ -18,7 +18,7 @@ var (
 		Short: "Build and symlink dotfiles",
 		Long:  "Compile templates and symlink them to their final destinations",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := &controller.Controller{}
+			c := controller.NewController(controller.ControllerOpts{})
 			return c.Sync(controller.SyncOpts{Force: force, NoGit: noGit})
 		},
 	}

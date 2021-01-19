@@ -13,38 +13,64 @@ import (
 	"github.com/nicjohnson145/godot/internal/util"
 )
 
-type Controller struct {
+type Controller interface {
+	Sync(SyncOpts) error
+	Import(string, string, ImportOpts) error
+	ListAll(io.Writer)
+	TargetShow(string, io.Writer)
+	TargetAdd(string, string, AddOpts) error
+	TargetRemove(string, string, RemoveOpts) error
+	Edit([]string, EditOpts) error
+}
+
+type controller struct {
 	homeDirGetter util.HomeDirGetter
 	repo          repo.Repo
 	Config        *config.Config
 	builder       *builder.Builder
 }
 
-func (c *Controller) ensureSetup() {
-	if c.homeDirGetter == nil {
-		c.homeDirGetter = &util.OSHomeDir{}
+func NewController(opts ControllerOpts) *controller {
+	var getter util.HomeDirGetter
+	if opts.HomeDirGetter != nil {
+		getter = opts.HomeDirGetter
+	} else {
+		getter = &util.OSHomeDir{}
 	}
 
-	if c.Config == nil {
-		c.Config = config.NewConfig(c.homeDirGetter)
+	var conf *config.Config
+	if opts.Config != nil {
+		conf = opts.Config
+	} else {
+		conf = config.NewConfig(getter)
 	}
 
-	if c.repo == nil {
-		c.repo = repo.NewShellGitRepo(c.Config.DotfilesRoot)
+	var r repo.Repo
+	if opts.Repo != nil {
+		r = opts.Repo
+	} else {
+		r = repo.NewShellGitRepo(conf.DotfilesRoot)
 	}
 
-	if c.builder == nil {
-		c.builder = &builder.Builder{
-			Getter: c.homeDirGetter,
-			Config: c.Config,
+	var b *builder.Builder
+	if opts.Builder != nil {
+		b = opts.Builder
+	} else {
+		b = &builder.Builder{
+			Getter: getter,
+			Config: conf,
 		}
 	}
 
+	return &controller{
+		homeDirGetter: getter,
+		Config: conf,
+		repo: r,
+		builder: b,
+	}
 }
 
-func (c *Controller) Sync(opts SyncOpts) error {
-	c.ensureSetup()
-
+func (c *controller) Sync(opts SyncOpts) error {
 	if !opts.NoGit {
 		err := c.repo.Pull()
 		if err != nil {
@@ -55,9 +81,7 @@ func (c *Controller) Sync(opts SyncOpts) error {
 	return c.builder.Build(opts.Force)
 }
 
-func (c *Controller) Import(file string, as string, opts ImportOpts) error {
-	c.ensureSetup()
-
+func (c *controller) Import(file string, as string, opts ImportOpts) error {
 	if !opts.NoGit {
 		err := c.repo.Pull()
 		if err != nil {
@@ -102,23 +126,19 @@ func (c *Controller) Import(file string, as string, opts ImportOpts) error {
 	return err
 }
 
-func (c *Controller) write() error {
+func (c *controller) write() error {
 	return c.Config.Write()
 }
 
-func (c *Controller) ListAll(w io.Writer) {
-	c.ensureSetup()
+func (c *controller) ListAll(w io.Writer) {
 	c.Config.ListAllFiles(w)
 }
 
-func (c *Controller) TargetShow(target string, w io.Writer) {
-	c.ensureSetup()
+func (c *controller) TargetShow(target string, w io.Writer) {
 	c.Config.ListTargetFiles(target, w)
 }
 
-func (c *Controller) TargetAdd(target string, file string, opts AddOpts) error {
-	c.ensureSetup()
-
+func (c *controller) TargetAdd(target string, file string, opts AddOpts) error {
 	if !opts.NoGit {
 		err := c.repo.Pull()
 		if err != nil {
@@ -146,9 +166,7 @@ func (c *Controller) TargetAdd(target string, file string, opts AddOpts) error {
 	return nil
 }
 
-func (c *Controller) TargetRemove(target string, file string, opts RemoveOpts) error {
-	c.ensureSetup()
-
+func (c *controller) TargetRemove(target string, file string, opts RemoveOpts) error {
 	if !opts.NoGit {
 		err := c.repo.Pull()
 		if err != nil {
@@ -176,9 +194,7 @@ func (c *Controller) TargetRemove(target string, file string, opts RemoveOpts) e
 	return nil
 }
 
-func (c *Controller) Edit(args []string, opts EditOpts) error {
-	c.ensureSetup()
-
+func (c *controller) Edit(args []string, opts EditOpts) error {
 	if !opts.NoGit {
 		err := c.repo.Pull()
 		if err != nil {
@@ -213,7 +229,7 @@ func (c *Controller) Edit(args []string, opts EditOpts) error {
 	return nil
 }
 
-func (c *Controller) getFile(args []string) (string, error) {
+func (c *controller) getFile(args []string) (string, error) {
 	if len(args) == 0 {
 		targetFiles := c.Config.GetTargetFiles()
 		idx, err := fuzzyfinder.Find(
@@ -229,7 +245,7 @@ func (c *Controller) getFile(args []string) (string, error) {
 	}
 }
 
-func (c *Controller) editFile(path string, opts EditOpts) error {
+func (c *controller) editFile(path string, opts EditOpts) error {
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		return fmt.Errorf("'edit' requires $EDITOR to be set")
