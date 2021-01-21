@@ -1,5 +1,5 @@
 FROM golang:1.15.6 as intermediate
-ARG TYPE="apt_integration"
+ARG TYPE="integration"
 WORKDIR /app
 COPY . .
 RUN go test -c -o test_binary -tags="$TYPE" -i

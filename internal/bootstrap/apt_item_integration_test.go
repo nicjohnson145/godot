@@ -1,4 +1,4 @@
-// +build apt_integration
+// +build apt_integration integration
 
 package bootstrap 
 
