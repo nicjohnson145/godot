@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"reflect"
@@ -325,5 +326,50 @@ some_conf => ~/some_conf
 
 		_, err := c.GetTemplateFromFullPath(filepath.Join(home, ".missing_config"))
 		help.ShouldError(t, err)
+	})
+
+	t.Run("get_template_names_from_target", func(t *testing.T) {
+		home, dotPath, remove := help.SetupDirectories(t, "home")
+		defer remove()
+
+		help.WriteRepoConf(t, dotPath, `{
+			"all_files": {
+				"dot_zshrc": "~/.zshrc",
+				"other_file": "~/other_file"
+			},
+			"renders": {
+				"home": ["dot_zshrc"]
+			}
+		}`)
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		got := c.GetTemplatesNamesForTarget("home")
+		want := []string{"dot_zshrc"}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("incorrect files, got %q want %q", got, want)
+		}
+	})
+
+	t.Run("get_all_template_names", func(t *testing.T) {
+		home, dotPath, remove := help.SetupDirectories(t, "home")
+		defer remove()
+
+		help.WriteRepoConf(t, dotPath, `{
+			"all_files": {
+				"dot_zshrc": "~/.zshrc",
+				"other_file": "~/other_file"
+			},
+			"renders": {
+				"home": ["dot_zshrc"]
+			}
+		}`)
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		got := c.GetAllTemplateNames()
+		sort.Strings(got)
+		want := []string{"dot_zshrc", "other_file"}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("incorrect files, got %q want %q", got, want)
+		}
 	})
 }

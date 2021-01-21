@@ -75,10 +75,10 @@ func TestImport(t *testing.T) {
 }
 
 func TestTarget(t *testing.T) {
-	setup := func(t *testing.T) (string, string, func()) {
+	setup := func(t *testing.T, target string) (string, string, func()) {
 		t.Helper()
 
-		home, dotpath, remove := help.SetupDirectories(t, "home")
+		home, dotpath, remove := help.SetupDirectories(t, target)
 		help.WriteRepoConf(t, dotpath, `{
 			"all_files": {
 				"dot_zshrc": "~/.zshrc",
@@ -101,7 +101,7 @@ func TestTarget(t *testing.T) {
 	}
 
 	t.Run("list_all", func(t *testing.T) {
-		home, _, remove := setup(t)
+		home, _, remove := setup(t, "home")
 		defer remove()
 
 		c := getController(t, home)
@@ -120,7 +120,7 @@ func TestTarget(t *testing.T) {
 	})
 
 	t.Run("show target", func(t *testing.T) {
-		home, _, remove := setup(t)
+		home, _, remove := setup(t, "home")
 		defer remove()
 
 		c := getController(t, home)
@@ -149,20 +149,68 @@ func TestTarget(t *testing.T) {
 		assertStrings(t, got, want)
 	})
 
+	t.Run("show target no target", func(t *testing.T) {
+		home, _, remove := setup(t, "other")
+		defer remove()
+
+		c := getController(t, home)
+
+		w := bytes.NewBufferString("")
+		c.TargetShow("", w)
+
+		got := w.String()
+		want := strings.Join([]string{
+			"Target: other",
+			"last_conf => ~/last_conf",
+			"some_conf => ~/some_conf",
+		}, "\n") + "\n"
+
+		assertStrings(t, got, want)
+
+		w = bytes.NewBufferString("")
+		c.TargetShow("host", w)
+
+		got = w.String()
+		want = strings.Join([]string{
+			"Target: host",
+			"dot_zshrc => ~/.zshrc",
+		}, "\n") + "\n"
+
+		assertStrings(t, got, want)
+	})
+
 	t.Run("add target", func(t *testing.T) {
-		home, dotpath, remove := setup(t)
+		home, dotpath, remove := setup(t, "home")
 		defer remove()
 		c := getController(t, home)
-		err := c.TargetAdd("host", "last_conf", AddOpts{})
+		err := c.TargetAdd("host", []string{"last_conf"}, AddOpts{})
+		help.Ensure(t, err)
+		help.AssertTargetContents(t, dotpath, "host", []string{"dot_zshrc", "last_conf"})
+	})
+
+	t.Run("add target no target", func(t *testing.T) {
+		home, dotpath, remove := setup(t, "host")
+		defer remove()
+		c := getController(t, home)
+		err := c.TargetAdd("", []string{"last_conf"}, AddOpts{})
 		help.Ensure(t, err)
 		help.AssertTargetContents(t, dotpath, "host", []string{"dot_zshrc", "last_conf"})
 	})
 
 	t.Run("remove target", func(t *testing.T) {
-		home, dotpath, remove := setup(t)
+		home, dotpath, remove := setup(t, "home")
 		defer remove()
 		c := getController(t, home)
-		err := c.TargetRemove("other", "last_conf", RemoveOpts{})
+		err := c.TargetRemove("other", []string{"last_conf"}, RemoveOpts{})
+		help.Ensure(t, err)
+		help.AssertTargetContents(t, dotpath, "other", []string{"some_conf"})
+	})
+
+	t.Run("remove target no target", func(t *testing.T) {
+		home, dotpath, remove := setup(t, "other")
+		defer remove()
+		c := getController(t, home)
+		err := c.TargetRemove("", []string{"last_conf"}, RemoveOpts{})
 		help.Ensure(t, err)
 		help.AssertTargetContents(t, dotpath, "other", []string{"some_conf"})
 	})

@@ -167,6 +167,18 @@ func (c *Config) RemoveFromTarget(target string, name string) error {
 	return nil
 }
 
+func (c *Config) GetTemplatesNamesForTarget(target string) []string {
+	return c.content.Renders[target]
+}
+
+func (c *Config) GetAllTemplateNames() []string {
+	names := make([]string, 0, len(c.content.AllFiles))
+	for name := range c.content.AllFiles {
+		names = append(names, name)
+	}
+	return names
+}
+
 func (c *Config) IsValidFile(name string) bool {
 	_, ok := c.content.AllFiles[name]
 	return ok

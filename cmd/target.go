@@ -45,40 +45,28 @@ var (
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{})
-
-			target := c.Config.Target
-			if len(args) == 1 {
-				target = args[0]
-			}
-
 			c.TargetShow(target, os.Stdout)
 			return nil
 		},
 	}
 
 	addCmd = &cobra.Command{
-		Use:   "add <file>",
+		Use:   "add <file?>",
 		Short: "Add a file to a target",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{})
-			if target == "" {
-				target = c.Config.Target
-			}
-			return c.TargetAdd(target, args[0], controller.AddOpts{NoGit: noGit})
+			return c.TargetAdd(target, args, controller.AddOpts{NoGit: noGit})
 		},
 	}
 
 	removeCmd = &cobra.Command{
-		Use:   "remove <file>",
+		Use:   "remove <file?>",
 		Short: "Remove a file from target",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{})
-			if target == "" {
-				target = c.Config.Target
-			}
-			return c.TargetRemove(target, args[0], controller.RemoveOpts{NoGit: noGit})
+			return c.TargetRemove(target, args, controller.RemoveOpts{NoGit: noGit})
 		},
 	}
 )

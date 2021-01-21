@@ -18,8 +18,8 @@ type Controller interface {
 	Import(string, string, ImportOpts) error
 	ListAll(io.Writer)
 	TargetShow(string, io.Writer)
-	TargetAdd(string, string, AddOpts) error
-	TargetRemove(string, string, RemoveOpts) error
+	TargetAdd(string, []string, AddOpts) error
+	TargetRemove(string, []string, RemoveOpts) error
 	Edit([]string, EditOpts) error
 }
 
@@ -126,19 +126,22 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 	return err
 }
 
-func (c *controller) write() error {
-	return c.Config.Write()
-}
-
 func (c *controller) ListAll(w io.Writer) {
 	c.Config.ListAllFiles(w)
 }
 
 func (c *controller) TargetShow(target string, w io.Writer) {
+	if target == "" {
+		target = c.Config.Target
+	}
 	c.Config.ListTargetFiles(target, w)
 }
 
-func (c *controller) TargetAdd(target string, file string, opts AddOpts) error {
+func (c *controller) TargetAdd(target string, args []string, opts AddOpts) error {
+	if target == "" {
+		target = c.Config.Target
+	}
+
 	if !opts.NoGit {
 		err := c.repo.Pull()
 		if err != nil {
@@ -146,7 +149,17 @@ func (c *controller) TargetAdd(target string, file string, opts AddOpts) error {
 		}
 	}
 
-	err := c.Config.AddToTarget(target, file)
+	options := c.Config.GetAllTemplateNames()
+	tmpl, err := c.fuzzyOrArgs(args, options)
+	if err != nil {
+		if err == fuzzyfinder.ErrAbort {
+			fmt.Println("Aborting...")
+			return nil
+		}
+		return err
+	}
+
+	err = c.Config.AddToTarget(target, tmpl)
 	if err != nil {
 		return err
 	}
@@ -166,7 +179,11 @@ func (c *controller) TargetAdd(target string, file string, opts AddOpts) error {
 	return nil
 }
 
-func (c *controller) TargetRemove(target string, file string, opts RemoveOpts) error {
+func (c *controller) TargetRemove(target string, args []string, opts RemoveOpts) error {
+	if target == "" {
+		target = c.Config.Target
+	}
+
 	if !opts.NoGit {
 		err := c.repo.Pull()
 		if err != nil {
@@ -174,7 +191,17 @@ func (c *controller) TargetRemove(target string, file string, opts RemoveOpts) e
 		}
 	}
 
-	err := c.Config.RemoveFromTarget(target, file)
+	options := c.Config.GetTemplatesNamesForTarget(target)
+	tmpl, err := c.fuzzyOrArgs(args, options)
+	if err != nil {
+		if err == fuzzyfinder.ErrAbort {
+			fmt.Println("Aborting...")
+			return nil
+		}
+		return err
+	}
+
+	err = c.Config.RemoveFromTarget(target, tmpl)
 	if err != nil {
 		return err
 	}
@@ -234,24 +261,13 @@ func (c *controller) Edit(args []string, opts EditOpts) error {
 }
 
 func (c *controller) getFile(args []string) (filePath string, outErr error) {
-	if len(args) == 0 {
-		targetFiles := c.Config.GetTargetFiles()
-		idx, err := fuzzyfinder.Find(
-			targetFiles,
-			func(i int) string {
-				if i == -1 {
-					return ""
-				}
-				return targetFiles[i].DestinationPath
-			},
-		)
-		if err != nil {
-			return "", err
-		}
-		return targetFiles[idx].DestinationPath, nil
-	} else {
-		return args[0], nil
+	targetFiles := c.Config.GetTargetFiles()
+	options := make([]string, 0, len(targetFiles))
+	for _, fl := range targetFiles {
+		options = append(options, fl.DestinationPath)
 	}
+
+	return c.fuzzyOrArgs(args, options)
 }
 
 func (c *controller) editFile(path string, opts EditOpts) error {
@@ -269,4 +285,21 @@ func (c *controller) editFile(path string, opts EditOpts) error {
 	proc.Stdout = os.Stdout
 	proc.Stdin = os.Stdin
 	return proc.Run()
+}
+
+func (c *controller) fuzzyOrArgs(args []string, options []string) (string, error) {
+	if len(args) > 0 {
+		return args[0], nil
+	}
+
+	idx, err := fuzzyfinder.Find(options, func(i int) string { return options[i] })
+	if err != nil {
+		return "", err
+	}
+
+	return options[idx], nil
+}
+
+func (c *controller) write() error {
+	return c.Config.Write()
 }
