@@ -161,8 +161,6 @@ github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMo
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/gdamore/encoding v1.0.0 h1:+7OoQ1Bc6eTm5niUzBa0Ctsh6JbMW6Ra+YNuAtDBdko=
 github.com/gdamore/encoding v1.0.0/go.mod h1:alR0ol34c49FCSBLjhosxzcPHQbf2trDkoo5dl+VrEg=
-github.com/gdamore/tcell/v2 v2.0.0 h1:GRWG8aLfWAlekj9Q6W29bVvkHENc6hp79XOqG4AWDOs=
-github.com/gdamore/tcell/v2 v2.0.0/go.mod h1:vSVL/GV5mCSlPC6thFP5kfOFdM9MGZcalipmpTxTgQA=
 github.com/gdamore/tcell/v2 v2.1.0 h1:UnSmozHgBkQi2PGsFr+rpdXuAPRRucMegpQp3Z3kDro=
 github.com/gdamore/tcell/v2 v2.1.0/go.mod h1:vSVL/GV5mCSlPC6thFP5kfOFdM9MGZcalipmpTxTgQA=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
@@ -374,8 +372,6 @@ github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
 github.com/kr/text v0.2.0/go.mod h1:eLer722TekiGuMkidMxC/pM04lWEeraHUUmBw8l2grE=
 github.com/ktr0731/bump v0.1.0/go.mod h1:RaAnwhvNY1dzTpF3ptJA7Z9EBW8OuVYOGXBcr7iRcgg=
 github.com/ktr0731/dept v0.1.1/go.mod h1:RTx3aP/gE0/MNhYgOcxETTNBudO24Nbis4y4KImynVA=
-github.com/ktr0731/go-fuzzyfinder v0.3.1 h1:H+eA4VpzkvuX68+dE2OLAhQ+WfH6amOUSMYO4GXxHA0=
-github.com/ktr0731/go-fuzzyfinder v0.3.1/go.mod h1:i5JBfKNVpI35DYfoZm0ZHFz6DwYMcjQuBhsSxoWQ7qU=
 github.com/ktr0731/go-fuzzyfinder v0.3.2-0.20210103074256-28728ee1aef1 h1:5Cm3eNnewqQXDACmO2y46G179AGCCyZl3AHGRE6U+84=
 github.com/ktr0731/go-fuzzyfinder v0.3.2-0.20210103074256-28728ee1aef1/go.mod h1:TV3At6+MAHPXctuK8bd+tyR4n29V6ZgE1ylUpe2b82w=
 github.com/ktr0731/go-fuzzyfinder v0.3.2 h1:o8/aZ/tDTegJmMJzBCLdXS9YHjtheh17O+irvafC8GQ=
