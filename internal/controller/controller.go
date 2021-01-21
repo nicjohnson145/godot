@@ -26,7 +26,7 @@ type Controller interface {
 type controller struct {
 	homeDirGetter util.HomeDirGetter
 	repo          repo.Repo
-	Config        *config.Config
+	config        *config.Config
 	builder       *builder.Builder
 }
 
@@ -64,7 +64,7 @@ func NewController(opts ControllerOpts) *controller {
 
 	return &controller{
 		homeDirGetter: getter,
-		Config:        conf,
+		config:        conf,
 		repo:          r,
 		builder:       b,
 	}
@@ -98,9 +98,9 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 	// Add the file to the repos config
 	var name string
 	if as != "" {
-		name, err = c.Config.AddFile(as, file)
+		name, err = c.config.AddFile(as, file)
 	} else {
-		name, err = c.Config.ManageFile(file)
+		name, err = c.config.ManageFile(file)
 	}
 	if err != nil {
 		return err
@@ -108,12 +108,12 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 
 	// Potentially add the file to the current target
 	if !opts.NoAdd {
-		err = c.Config.AddToTarget(c.Config.Target, name)
+		err = c.config.AddToTarget(c.config.Target, name)
 	}
 
 	// If everything has gone right up to this point, write the config to disk
 	if err == nil {
-		err = c.Config.Write()
+		err = c.config.Write()
 	}
 
 	if !opts.NoGit {
@@ -127,19 +127,19 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 }
 
 func (c *controller) ListAll(w io.Writer) {
-	c.Config.ListAllFiles(w)
+	c.config.ListAllFiles(w)
 }
 
 func (c *controller) TargetShow(target string, w io.Writer) {
 	if target == "" {
-		target = c.Config.Target
+		target = c.config.Target
 	}
-	c.Config.ListTargetFiles(target, w)
+	c.config.ListTargetFiles(target, w)
 }
 
 func (c *controller) TargetAdd(target string, args []string, opts AddOpts) error {
 	if target == "" {
-		target = c.Config.Target
+		target = c.config.Target
 	}
 
 	if !opts.NoGit {
@@ -149,7 +149,7 @@ func (c *controller) TargetAdd(target string, args []string, opts AddOpts) error
 		}
 	}
 
-	options := c.Config.GetAllTemplateNames()
+	options := c.config.GetAllTemplateNames()
 	tmpl, err := c.fuzzyOrArgs(args, options)
 	if err != nil {
 		if err == fuzzyfinder.ErrAbort {
@@ -159,7 +159,7 @@ func (c *controller) TargetAdd(target string, args []string, opts AddOpts) error
 		return err
 	}
 
-	err = c.Config.AddToTarget(target, tmpl)
+	err = c.config.AddToTarget(target, tmpl)
 	if err != nil {
 		return err
 	}
@@ -181,7 +181,7 @@ func (c *controller) TargetAdd(target string, args []string, opts AddOpts) error
 
 func (c *controller) TargetRemove(target string, args []string, opts RemoveOpts) error {
 	if target == "" {
-		target = c.Config.Target
+		target = c.config.Target
 	}
 
 	if !opts.NoGit {
@@ -191,7 +191,7 @@ func (c *controller) TargetRemove(target string, args []string, opts RemoveOpts)
 		}
 	}
 
-	options := c.Config.GetTemplatesNamesForTarget(target)
+	options := c.config.GetTemplatesNamesForTarget(target)
 	tmpl, err := c.fuzzyOrArgs(args, options)
 	if err != nil {
 		if err == fuzzyfinder.ErrAbort {
@@ -201,7 +201,7 @@ func (c *controller) TargetRemove(target string, args []string, opts RemoveOpts)
 		return err
 	}
 
-	err = c.Config.RemoveFromTarget(target, tmpl)
+	err = c.config.RemoveFromTarget(target, tmpl)
 	if err != nil {
 		return err
 	}
@@ -261,7 +261,7 @@ func (c *controller) Edit(args []string, opts EditOpts) error {
 }
 
 func (c *controller) getFile(args []string) (filePath string, outErr error) {
-	targetFiles := c.Config.GetTargetFiles()
+	targetFiles := c.config.GetTargetFiles()
 	options := make([]string, 0, len(targetFiles))
 	for _, fl := range targetFiles {
 		options = append(options, fl.DestinationPath)
@@ -276,7 +276,7 @@ func (c *controller) editFile(path string, opts EditOpts) error {
 		return fmt.Errorf("'edit' requires $EDITOR to be set")
 	}
 
-	file, err := c.Config.GetTemplateFromFullPath(path)
+	file, err := c.config.GetTemplateFromFullPath(path)
 	if err != nil {
 		return err
 	}
@@ -301,5 +301,5 @@ func (c *controller) fuzzyOrArgs(args []string, options []string) (string, error
 }
 
 func (c *controller) write() error {
-	return c.Config.Write()
+	return c.config.Write()
 }
