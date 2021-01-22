@@ -88,6 +88,31 @@ func TestConfig(t *testing.T) {
 		}
 	})
 
+	t.Run("missing repo config can be added to", func(t *testing.T) {
+		home, remove := help.CreateTempDir(t, "home")
+		defer remove()
+
+		dotfiles, removeDots := help.CreateTempDir(t, "dotfiles")
+		defer removeDots()
+
+		userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotfiles)
+		help.WriteConfig(t, home, userConf)
+
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+		_, err := c.ManageFile(filepath.Join(home, ".some_conf"))
+		help.Ensure(t, err)
+
+		err = c.AddToTarget("my_target", "dot_some_conf")
+		help.Ensure(t, err)
+
+		err = c.Write()
+		help.Ensure(t, err)
+
+		help.AssertAllFiles(t, dotfiles, map[string]string{"dot_some_conf": "~/.some_conf"})
+		help.AssertTargetContents(t, dotfiles, "my_target", []string{"dot_some_conf"})
+	})
+
 	t.Run("target used to extract relevant files from repo config", func(t *testing.T) {
 		home, remove := help.CreateTempDir(t, "home")
 		defer remove()

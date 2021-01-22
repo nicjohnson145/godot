@@ -21,6 +21,17 @@ type repoConfig struct {
 	Renders  map[string][]string `json:"renders"`
 }
 
+func (c *repoConfig) makeMaps() {
+	if c.AllFiles == nil {
+		c.AllFiles = make(map[string]string)
+	}
+
+	if c.Renders == nil {
+		c.Renders = make(map[string][]string)
+	}
+}
+
+
 type usrConfig struct {
 	Target       string `json:"target"`
 	DotfilesRoot string `json:"dotfiles_root"`
@@ -44,6 +55,7 @@ func NewConfig(getter util.HomeDirGetter) *Config {
 	}
 	c.parseUserConfig()
 	c.readRepoConfig()
+	c.content.makeMaps()
 	return c
 }
 
@@ -67,7 +79,6 @@ func (c *Config) parseUserConfig() {
 	} else if err != nil {
 		panic(err)
 	}
-
 	bytes, err := ioutil.ReadFile(conf)
 	checkPanic(err)
 
@@ -90,7 +101,7 @@ func (c *Config) readRepoConfig() {
 	bytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			// TODO: touch the file?
+			c.content = repoConfig{}
 			return
 		} else {
 			panic(fmt.Errorf("error reading repo conf, %v", err))
