@@ -519,4 +519,75 @@ func TestBootstrapping(t *testing.T) {
 			}
 		})
 	}
+
+	addBootstrapItem := []struct{
+		name string
+		initial string
+		want map[string][]Bootstrap
+	}{
+		{
+			name: "empty_conf",
+			initial: "{}",
+			want: map[string][]Bootstrap{
+				"ripgrep": {
+					{Method: "apt", Name: "ripgrep"},
+				},
+			},
+		},
+		{
+			name: "bootstrap_exists",
+			initial: `{"all_bootstraps": {}}`,
+			want: map[string][]Bootstrap{
+				"ripgrep": {
+					{Method: "apt", Name: "ripgrep"},
+				},
+			},
+		},
+		{
+			name: "item_exists_different_manager",
+			initial: `{
+				"all_bootstraps": {
+					"ripgrep": {
+						"brew": "rip-grep"
+					}
+				}
+			}`,
+			want: map[string][]Bootstrap{
+				"ripgrep": {
+					{Method: "apt", Name: "ripgrep"},
+					{Method: "brew", Name: "rip-grep"},
+				},
+			},
+		},
+		{
+			name: "item_exists_same_manager",
+			initial: `{
+				"all_bootstraps": {
+					"ripgrep": {
+						"apt": "rip-grep"
+					}
+				}
+			}`,
+			want: map[string][]Bootstrap{
+				"ripgrep": {
+					{Method: "apt", Name: "ripgrep"},
+				},
+			},
+		},
+	}
+	for _, tc := range addBootstrapItem {
+		t.Run("add_target_" + tc.name, func(t *testing.T) {
+			c, remove := setup(t, tc.initial)
+			defer remove()
+
+			err := c.AddBootstrapItem("ripgrep", "apt", "ripgrep")
+			help.Ensure(t, err)
+			got := c.GetAllBootstraps()
+			sortBootstrapMap(got)
+
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("all bootstraps not equal, got %q want %q", got, tc.want)
+			}
+		})
+	}
 }

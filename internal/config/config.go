@@ -20,7 +20,19 @@ import (
 const (
 	APT = "apt"
 	BREW = "brew"
+	GIT = "git"
 )
+
+var validManagers = []string{APT, BREW}
+
+func IsValidPackageManager(candidate string) bool {
+	for _, val := range validManagers {
+		if candidate == val {
+			return true
+		}
+	}
+	return false
+}
 
 /*
 {
@@ -337,4 +349,19 @@ func (c *Config) GetBootstrapsForTarget(target string) map[string][]Bootstrap {
 	}
 
 	return ret
+}
+
+func (c *Config) AddBootstrapItem(item string, manager string, pkg string) error {
+	if !IsValidPackageManager(manager) {
+		return fmt.Errorf("Invalid package manager of %q", manager)
+	}
+
+	m, ok := c.content.AllBootstraps[item]
+	// Key didn't exist
+	if !ok {
+		m = make(map[string]string)
+	}
+	m[manager] = pkg
+	c.content.AllBootstraps[item] = m
+	return nil
 }
