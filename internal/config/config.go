@@ -19,6 +19,7 @@ import (
 
 const (
 	APT = "apt"
+	BREW = "brew"
 )
 
 /*
@@ -115,9 +116,9 @@ func (c *Config) parseUserConfig() {
 
 	switch runtime.GOOS {
 	case "darwin":
-		c.PackageManager = "brew"
+		c.PackageManager = BREW
 	case "linux":
-		c.PackageManager = "apt"
+		c.PackageManager = APT
 	}
 
 	conf := filepath.Join(c.Home, ".config", "godot", "config.json")
