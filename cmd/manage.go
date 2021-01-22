@@ -16,7 +16,7 @@ var (
 	add bool
 
 	manageCmd = &cobra.Command{
-		Use:   "manage <file>",
+		Use:   "manage [file]",
 		Short: "Add file to be managed by godot",
 		Long:  "Import/create a file to be managed by godot at the specified location",
 		Args:  cobra.ExactArgs(1),

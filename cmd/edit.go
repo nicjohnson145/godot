@@ -14,7 +14,7 @@ var (
 	noSync bool
 
 	editCmd = &cobra.Command{
-		Use:   "edit",
+		Use:   "edit [file]",
 		Short: "Edit a file managed by godot",
 		Long:  "Edit a file managed by godot, if no file is suppled a prompt will be displayed",
 		Args:  cobra.MaximumNArgs(1),

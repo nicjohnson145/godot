@@ -39,7 +39,7 @@ var (
 	}
 
 	showCmd = &cobra.Command{
-		Use:   "show <target?>",
+		Use:   "show [target]",
 		Short: "Show current files assigned to a target",
 		Long:  "Show current files assigned to a target, if target is not supplied, the current target will be used",
 		Args:  cobra.MaximumNArgs(1),
@@ -51,7 +51,7 @@ var (
 	}
 
 	addCmd = &cobra.Command{
-		Use:   "add <file?>",
+		Use:   "add [file]",
 		Short: "Add a file to a target",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -61,7 +61,7 @@ var (
 	}
 
 	removeCmd = &cobra.Command{
-		Use:   "remove <file?>",
+		Use:   "remove [file]",
 		Short: "Remove a file from target",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
