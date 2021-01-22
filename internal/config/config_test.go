@@ -435,6 +435,18 @@ func TestBootstrapping(t *testing.T) {
 		}
 	}
 
+	assertBootstrap := func(t *testing.T, got []string, want []string) {
+		t.Helper()
+
+		if len(got) == 0 && len(want) == 0 {
+			return
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("bootstraps not equal, got %q want %q", got, want)
+		}
+	}
+
 	t.Run("get_all_bootstraps_empty", func(t *testing.T) {
 		c, remove := setup(t, "{}")
 		defer remove()
@@ -590,4 +602,51 @@ func TestBootstrapping(t *testing.T) {
 			}
 		})
 	}
+
+	addBootstrapTarget := []struct{
+		name string
+		shouldError bool
+		host string
+		item string
+		want []string
+	}{
+		{
+			name: "bootstrap_item_missing",
+			shouldError: true,
+			host: "host1",
+			item: "not_an_item",
+		},
+		{
+			name: "target_doesnt_exist",
+			shouldError: false,
+			host: "host3",
+			item: "ripgrep",
+			want: []string{"ripgrep"},
+		},
+		{
+			name: "target_exists",
+			shouldError: false,
+			host: "host1",
+			item: "fd",
+			want: []string{"fd", "ripgrep"},
+		},
+	}
+	for _, tc := range addBootstrapTarget {
+		t.Run("add_boostrap_target_" + tc.name, func(t *testing.T) {
+			c, remove := baseSetup(t)
+			defer remove()
+
+			err := c.AddTargetBootstrap(tc.host, tc.item)
+			if tc.shouldError {
+				help.ShouldError(t, err)
+				return
+			} else {
+				help.Ensure(t, err)
+			}
+
+			got := c.content.Bootstraps[tc.host]
+			assertBootstrap(t, got, tc.want)
+		})
+	}
+
 }

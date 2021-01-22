@@ -365,3 +365,24 @@ func (c *Config) AddBootstrapItem(item string, manager string, pkg string) error
 	c.content.AllBootstraps[item] = m
 	return nil
 }
+
+func (c *Config) isValidBootstrap(name string) bool {
+	_, ok := c.content.AllBootstraps[name]
+	return ok
+}
+
+
+func (c *Config) AddTargetBootstrap(target string, name string) error {
+	if target == "" {
+		target = c.Target
+	}
+
+	if !c.isValidBootstrap(name) {
+		return fmt.Errorf("Unknown bootstrap item of %q", name)
+	}
+
+	current, _ := c.content.Bootstraps[name]
+	current = append(current, name)
+	c.content.Bootstraps[name] = current
+	return nil
+}
