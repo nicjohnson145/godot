@@ -398,3 +398,125 @@ some_conf => ~/some_conf
 		}
 	})
 }
+
+func TestBootstrapping(t *testing.T) {
+	setup := func(t *testing.T, conf string) (*Config, func()) {
+		home, dotpath, remove := help.SetupDirectories(t, "host1")
+		help.WriteRepoConf(t, dotpath, conf)
+		c := NewConfig(&help.TempHomeDir{HomeDir: home})
+		return c, remove
+	}
+
+	baseSetup := func(t *testing.T) (*Config, func()) {
+		return setup(t, `{
+			"all_bootstraps": {
+				"ripgrep": {
+					"brew": "rip-grep",
+					"apt": "ripgrep"
+				},
+				"fd": {
+					"brew": "fd",
+					"apt": "fd-find"
+				}
+			},
+			"bootstraps": {
+				"host1": ["ripgrep"],
+				"host2": ["ripgrep", "fd"]
+			}
+		}`)
+	}
+
+	sortBootstrapMap := func(m map[string][]Bootstrap) {
+		for key, arr := range m {
+			sort.Slice(arr, func(i int, j int) bool {
+				return arr[i].Method < arr[j].Method
+			})
+			m[key] = arr
+		}
+	}
+
+	t.Run("get_all_bootstraps_empty", func(t *testing.T) {
+		c, remove := setup(t, "{}")
+		defer remove()
+		got := c.GetAllBootstraps()
+
+		if len(got) != 0 {
+			t.Fatalf("bootstrap map should be empty, got %d", len(got))
+		}
+	})
+
+	t.Run("get_all_bootstraps", func(t *testing.T) {
+		c, remove := baseSetup(t)
+		defer remove()
+		got := c.GetAllBootstraps()
+		sortBootstrapMap(got)
+
+		want := map[string][]Bootstrap{
+			"ripgrep": {
+				{Method: "apt", Name: "ripgrep"},
+				{Method: "brew", Name: "rip-grep"},
+			},
+			"fd": {
+				{Method: "apt", Name: "fd-find"},
+				{Method: "brew", Name: "fd"},
+			},
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("All bootstraps not equal, got %q want %q", got, want)
+		}
+	})
+
+	getTargetTests := []struct{
+		name string
+		host string
+		want map[string][]Bootstrap
+	}{
+		{
+			name: "host2",
+			host: "host2",
+			want: map[string][]Bootstrap{
+				"ripgrep": {
+					{Method: "apt", Name: "ripgrep"},
+					{Method: "brew", Name: "rip-grep"},
+				},
+				"fd": {
+					{Method: "apt", Name: "fd-find"},
+					{Method: "brew", Name: "fd"},
+				},
+			},
+		},
+		{
+			name: "host1",
+			host: "",
+			want: map[string][]Bootstrap{
+				"ripgrep": {
+					{Method: "apt", Name: "ripgrep"},
+					{Method: "brew", Name: "rip-grep"},
+				},
+			},
+		},
+		{
+			name: "not_valid",
+			host: "not_valid",
+			want: map[string][]Bootstrap{},
+		},
+	}
+
+	for _, tc := range getTargetTests {
+		t.Run("bootstraps_for_target_" + tc.name, func(t *testing.T){
+			c, remove := baseSetup(t)
+			defer remove()
+
+			got := c.GetBootstrapsForTarget(tc.host)
+			sortBootstrapMap(got)
+
+			if len(tc.want) == 0 && len(got) == 0 {
+				return
+			}
+			if !reflect.DeepEqual(got, tc.want) {
+				t.Fatalf("bootstraps for %q not equal, got %q want %q", tc.host, got, tc.want)
+			}
+		})
+	}
+}

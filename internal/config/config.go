@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"text/tabwriter"
 
@@ -16,9 +17,40 @@ import (
 	"github.com/tidwall/pretty"
 )
 
+const (
+	APT = "apt"
+)
+
+/*
+{
+	"all_files": {
+		"dot_zshrc": "~/.zshrc"
+	},
+	"renders": {
+		"host1": ["dot_zshrc"]
+	},
+	"all_bootstraps": {
+		"ripgrep": {
+			"brew": "ripgrep",
+			"apt": "ripgrep"
+		}
+	},
+	"bootstraps": {
+		"host1": ["ripgrep"]
+	}
+}
+*/
+
 type repoConfig struct {
-	AllFiles map[string]string   `json:"all_files"`
-	Renders  map[string][]string `json:"renders"`
+	AllFiles      map[string]string            `json:"all_files"`
+	Renders       map[string][]string          `json:"renders"`
+	AllBootstraps map[string]map[string]string `json:"all_bootstraps"`
+	Bootstraps    map[string][]string          `json:"bootstraps"`
+}
+
+type Bootstrap struct {
+	Method string
+	Name   string
 }
 
 func (c *repoConfig) makeMaps() {
@@ -29,20 +61,29 @@ func (c *repoConfig) makeMaps() {
 	if c.Renders == nil {
 		c.Renders = make(map[string][]string)
 	}
+
+	if c.AllBootstraps == nil {
+		c.AllBootstraps = make(map[string]map[string]string)
+	}
+
+	if c.Bootstraps == nil {
+		c.Bootstraps = make(map[string][]string)
+	}
 }
 
-
 type usrConfig struct {
-	Target       string `json:"target"`
-	DotfilesRoot string `json:"dotfiles_root"`
+	Target         string `json:"target"`
+	DotfilesRoot   string `json:"dotfiles_root"`
+	PackageManager string `json:"package_manager"`
 }
 
 type Config struct {
-	Target       string     `json:"target"`
-	DotfilesRoot string     `json:"dotfiles_root"`
-	content      repoConfig // The raw json content
-	repoConfig   string     // Path to repo config, we'll need to rewrite it often
-	Home         string     // Users home directory
+	Target         string     // Name of the current target
+	DotfilesRoot   string     // Root of the dotfiles repo
+	content        repoConfig // The raw json content
+	repoConfig     string     // Path to repo config, we'll need to rewrite it often
+	Home           string     // Users home directory
+	PackageManager string     // Configured package manager for bootstrapping
 }
 
 func NewConfig(getter util.HomeDirGetter) *Config {
@@ -72,6 +113,13 @@ func (c *Config) parseUserConfig() {
 	c.Target = hostname
 	c.DotfilesRoot = filepath.Join(c.Home, "dotfiles")
 
+	switch runtime.GOOS {
+	case "darwin":
+		c.PackageManager = "brew"
+	case "linux":
+		c.PackageManager = "apt"
+	}
+
 	conf := filepath.Join(c.Home, ".config", "godot", "config.json")
 	if _, err := os.Stat(conf); os.IsNotExist(err) {
 		// Missing config file
@@ -92,6 +140,10 @@ func (c *Config) parseUserConfig() {
 
 	if config.DotfilesRoot != "" {
 		c.DotfilesRoot = config.DotfilesRoot
+	}
+
+	if config.PackageManager != "" {
+		c.PackageManager = config.PackageManager
 	}
 }
 
@@ -252,4 +304,36 @@ func (c *Config) ListTargetFiles(target string, w io.Writer) {
 	files := c.getFilesByTarget(target)
 	fmt.Fprintln(w, "Target: "+target)
 	c.writeFileMap(w, files)
+}
+
+func (c *Config) GetAllBootstraps() map[string][]Bootstrap {
+	ret := make(map[string][]Bootstrap)
+	for prog, installMap := range c.content.AllBootstraps {
+		arr := make([]Bootstrap, 0, len(installMap))
+		for method, name := range installMap {
+			arr = append(arr, Bootstrap{Method: method, Name: name})
+		}
+		ret[prog] = arr
+	}
+	return ret
+}
+
+func (c *Config) GetBootstrapsForTarget(target string) map[string][]Bootstrap {
+	if target == "" {
+		target = c.Target
+	}
+
+	ret := make(map[string][]Bootstrap)
+	keys, ok := c.content.Bootstraps[target]
+	if !ok {
+		return ret
+	}
+
+	all := c.GetAllBootstraps()
+
+	for _, key := range keys {
+		ret[key] = all[key]
+	}
+
+	return ret
 }
