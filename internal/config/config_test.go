@@ -442,6 +442,8 @@ func TestBootstrapping(t *testing.T) {
 			return
 		}
 
+		sort.Strings(got)
+
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("bootstraps not equal, got %q want %q", got, want)
 		}
@@ -632,7 +634,7 @@ func TestBootstrapping(t *testing.T) {
 		},
 	}
 	for _, tc := range addBootstrapTarget {
-		t.Run("add_boostrap_target_" + tc.name, func(t *testing.T) {
+		t.Run("add_bootstrap_target_" + tc.name, func(t *testing.T) {
 			c, remove := baseSetup(t)
 			defer remove()
 

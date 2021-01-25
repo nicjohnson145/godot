@@ -381,8 +381,8 @@ func (c *Config) AddTargetBootstrap(target string, name string) error {
 		return fmt.Errorf("Unknown bootstrap item of %q", name)
 	}
 
-	current, _ := c.content.Bootstraps[name]
+	current, _ := c.content.Bootstraps[target]
 	current = append(current, name)
-	c.content.Bootstraps[name] = current
+	c.content.Bootstraps[target] = current
 	return nil
 }
