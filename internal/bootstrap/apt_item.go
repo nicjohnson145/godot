@@ -36,7 +36,7 @@ func (i aptItem) Install() error {
 	return err
 }
 
-func (i aptItem) runCmd(bin string, args...string) (string, string, error) {
+func (i aptItem) runCmd(bin string, args ...string) (string, string, error) {
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Command(bin, args...)
 	cmd.Stdout = &stdout

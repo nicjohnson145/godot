@@ -481,7 +481,7 @@ func TestBootstrapping(t *testing.T) {
 		}
 	})
 
-	getTargetTests := []struct{
+	getTargetTests := []struct {
 		name string
 		host string
 		want map[string][]Bootstrap
@@ -518,7 +518,7 @@ func TestBootstrapping(t *testing.T) {
 	}
 
 	for _, tc := range getTargetTests {
-		t.Run("bootstraps_for_target_" + tc.name, func(t *testing.T){
+		t.Run("bootstraps_for_target_"+tc.name, func(t *testing.T) {
 			c, remove := baseSetup(t)
 			defer remove()
 
@@ -534,13 +534,13 @@ func TestBootstrapping(t *testing.T) {
 		})
 	}
 
-	addBootstrapItem := []struct{
-		name string
+	addBootstrapItem := []struct {
+		name    string
 		initial string
-		want map[string][]Bootstrap
+		want    map[string][]Bootstrap
 	}{
 		{
-			name: "empty_conf",
+			name:    "empty_conf",
 			initial: "{}",
 			want: map[string][]Bootstrap{
 				"ripgrep": {
@@ -549,7 +549,7 @@ func TestBootstrapping(t *testing.T) {
 			},
 		},
 		{
-			name: "bootstrap_exists",
+			name:    "bootstrap_exists",
 			initial: `{"all_bootstraps": {}}`,
 			want: map[string][]Bootstrap{
 				"ripgrep": {
@@ -590,7 +590,7 @@ func TestBootstrapping(t *testing.T) {
 		},
 	}
 	for _, tc := range addBootstrapItem {
-		t.Run("add_target_" + tc.name, func(t *testing.T) {
+		t.Run("add_target_"+tc.name, func(t *testing.T) {
 			c, remove := setup(t, tc.initial)
 			defer remove()
 
@@ -605,36 +605,36 @@ func TestBootstrapping(t *testing.T) {
 		})
 	}
 
-	addBootstrapTarget := []struct{
-		name string
+	addBootstrapTarget := []struct {
+		name        string
 		shouldError bool
-		host string
-		item string
-		want []string
+		host        string
+		item        string
+		want        []string
 	}{
 		{
-			name: "bootstrap_item_missing",
+			name:        "bootstrap_item_missing",
 			shouldError: true,
-			host: "host1",
-			item: "not_an_item",
+			host:        "host1",
+			item:        "not_an_item",
 		},
 		{
-			name: "target_doesnt_exist",
+			name:        "target_doesnt_exist",
 			shouldError: false,
-			host: "host3",
-			item: "ripgrep",
-			want: []string{"ripgrep"},
+			host:        "host3",
+			item:        "ripgrep",
+			want:        []string{"ripgrep"},
 		},
 		{
-			name: "target_exists",
+			name:        "target_exists",
 			shouldError: false,
-			host: "host1",
-			item: "fd",
-			want: []string{"fd", "ripgrep"},
+			host:        "host1",
+			item:        "fd",
+			want:        []string{"fd", "ripgrep"},
 		},
 	}
 	for _, tc := range addBootstrapTarget {
-		t.Run("add_bootstrap_target_" + tc.name, func(t *testing.T) {
+		t.Run("add_bootstrap_target_"+tc.name, func(t *testing.T) {
 			c, remove := baseSetup(t)
 			defer remove()
 
@@ -651,39 +651,39 @@ func TestBootstrapping(t *testing.T) {
 		})
 	}
 
-	removeBootstrapTarget := []struct{
-		name string
-		shouldError bool
+	removeBootstrapTarget := []struct {
+		name            string
+		shouldError     bool
 		shouldBePresent bool
-		host string
-		item string
-		want []string
+		host            string
+		item            string
+		want            []string
 	}{
 		{
-			name: "unknown_target",
+			name:        "unknown_target",
 			shouldError: true,
-			host: "not_a_host",
-			item: "not_an_item",
+			host:        "not_a_host",
+			item:        "not_an_item",
 		},
 		{
-			name: "valid_remove_still_items_left",
-			shouldError: false,
+			name:            "valid_remove_still_items_left",
+			shouldError:     false,
 			shouldBePresent: true,
-			host: "host2",
-			item: "fd",
-			want: []string{"ripgrep"},
+			host:            "host2",
+			item:            "fd",
+			want:            []string{"ripgrep"},
 		},
 		{
-			name: "valid_remove_last_item",
-			shouldError: false,
+			name:            "valid_remove_last_item",
+			shouldError:     false,
 			shouldBePresent: false,
-			host: "host1",
-			item: "ripgrep",
-			want: []string{},
+			host:            "host1",
+			item:            "ripgrep",
+			want:            []string{},
 		},
 	}
 	for _, tc := range removeBootstrapTarget {
-		t.Run("remove_bootstrap_target_" + tc.name, func(t *testing.T) {
+		t.Run("remove_bootstrap_target_"+tc.name, func(t *testing.T) {
 			c, remove := baseSetup(t)
 			defer remove()
 

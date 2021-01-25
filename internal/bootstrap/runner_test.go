@@ -4,16 +4,16 @@ package bootstrap
 
 import (
 	"fmt"
-	"testing"
 	"github.com/nicjohnson145/godot/internal/help"
+	"testing"
 )
 
 type mockItem struct {
-	CheckReturn bool
-	CheckError error
+	CheckReturn  bool
+	CheckError   error
 	InstallError error
 
-	CheckCalls int
+	CheckCalls   int
 	InstallCalls int
 }
 

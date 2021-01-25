@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	APT = "apt"
+	APT  = "apt"
 	BREW = "brew"
-	GIT = "git"
+	GIT  = "git"
 )
 
 var validManagers = []string{APT, BREW}
@@ -370,7 +370,6 @@ func (c *Config) isValidBootstrap(name string) bool {
 	_, ok := c.content.AllBootstraps[name]
 	return ok
 }
-
 
 func (c *Config) AddTargetBootstrap(target string, name string) error {
 	if target == "" {
