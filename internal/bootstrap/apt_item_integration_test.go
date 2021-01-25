@@ -1,8 +1,9 @@
 // +build apt_integration integration
 
-package bootstrap 
+package bootstrap
 
 import (
+	"os/exec"
 	"testing"
 )
 
@@ -33,6 +34,11 @@ func TestAptItem(t *testing.T) {
 	if !installed {
 		t.Fatalf("ripgrep should show as installed")
 	}
+
+	// Double check that it's installed
+	cmd := exec.Command("rg", "--version")
+	err = cmd.Run()
+	ensure(t, err)
 
 	// Now ensure a bad install will error out
 	item = NewAptItem("not_a_binary_at_all")
