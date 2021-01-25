@@ -55,7 +55,7 @@ func IsValidPackageManager(candidate string) bool {
 */
 
 type repoConfig struct {
-	AllFiles      map[string]string            `json:"all_files"`
+	Files      map[string]string            `json:"files"`
 	Renders       map[string][]string          `json:"renders"`
 	AllBootstraps map[string]map[string]string `json:"all_bootstraps"`
 	Bootstraps    map[string][]string          `json:"bootstraps"`
@@ -67,8 +67,8 @@ type Bootstrap struct {
 }
 
 func (c *repoConfig) makeMaps() {
-	if c.AllFiles == nil {
-		c.AllFiles = make(map[string]string)
+	if c.Files == nil {
+		c.Files = make(map[string]string)
 	}
 
 	if c.Renders == nil {
@@ -184,7 +184,7 @@ func (c *Config) readRepoConfig() {
 func (c *Config) getAllFiles() map[string]file.File {
 	allFiles := make(map[string]file.File)
 
-	for key, path := range c.content.AllFiles {
+	for key, path := range c.content.Files {
 		allFiles[key] = file.File{
 			DestinationPath: util.ReplacePrefix(path, "~/", c.Home),
 			TemplatePath:    filepath.Join(c.DotfilesRoot, "templates", key),
@@ -215,7 +215,7 @@ func (c *Config) AddFile(template string, destination string) (string, error) {
 		return "", errors.New(fmt.Sprintf("template name %q already exists", template))
 	}
 	newDest := util.ReplacePrefix(destination, c.Home, "~")
-	c.content.AllFiles[template] = newDest
+	c.content.Files[template] = newDest
 	return template, nil
 }
 
@@ -248,15 +248,15 @@ func (c *Config) GetTemplatesNamesForTarget(target string) []string {
 }
 
 func (c *Config) GetAllTemplateNames() []string {
-	names := make([]string, 0, len(c.content.AllFiles))
-	for name := range c.content.AllFiles {
+	names := make([]string, 0, len(c.content.Files))
+	for name := range c.content.Files {
 		names = append(names, name)
 	}
 	return names
 }
 
 func (c *Config) IsValidFile(name string) bool {
-	_, ok := c.content.AllFiles[name]
+	_, ok := c.content.Files[name]
 	return ok
 }
 

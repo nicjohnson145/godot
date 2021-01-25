@@ -13,6 +13,32 @@ import (
 	"github.com/nicjohnson145/godot/internal/help"
 )
 
+func setup (t *testing.T, conf string) (*Config, func()) {
+	home, dotpath, remove := help.SetupDirectories(t, "host1")
+	help.WriteRepoConf(t, dotpath, conf)
+	c := NewConfig(&help.TempHomeDir{HomeDir: home})
+	return c, remove
+}
+
+func baseSetup(t *testing.T) (*Config, func()) {
+	return setup(t, `{
+		"all_bootstraps": {
+			"ripgrep": {
+				"brew": "rip-grep",
+				"apt": "ripgrep"
+			},
+			"fd": {
+				"brew": "fd",
+				"apt": "fd-find"
+			}
+		},
+		"bootstraps": {
+			"host1": ["ripgrep"],
+			"host2": ["ripgrep", "fd"]
+		}
+	}`)
+}
+
 func TestConfig(t *testing.T) {
 	t.Run("missing config file ok", func(t *testing.T) {
 		dir, remove := help.CreateTempDir(t, "home")
