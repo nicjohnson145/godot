@@ -21,8 +21,8 @@ var (
 		Long:  "Import/create a file to be managed by godot at the specified location",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{})
-			return c.Import(args[0], as, controller.ImportOpts{NoGit: noGit, NoAdd: !add})
+			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
+			return c.Import(args[0], as, controller.ImportOpts{NoAdd: !add})
 		},
 	}
 )

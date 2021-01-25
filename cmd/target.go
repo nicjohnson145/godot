@@ -55,8 +55,8 @@ var (
 		Short: "Add a file to a target",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{})
-			return c.TargetAdd(target, args, controller.AddOpts{NoGit: noGit})
+			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
+			return c.TargetAdd(target, args)
 		},
 	}
 
@@ -65,8 +65,8 @@ var (
 		Short: "Remove a file from target",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{})
-			return c.TargetRemove(target, args, controller.RemoveOpts{NoGit: noGit})
+			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
+			return c.TargetRemove(target, args)
 		},
 	}
 )

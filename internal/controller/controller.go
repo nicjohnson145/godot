@@ -18,8 +18,8 @@ type Controller interface {
 	Import(string, string, ImportOpts) error
 	ListAll(io.Writer)
 	TargetShow(string, io.Writer)
-	TargetAdd(string, []string, AddOpts) error
-	TargetRemove(string, []string, RemoveOpts) error
+	TargetAdd(string, []string) error
+	TargetRemove(string, []string) error
 	Edit([]string, EditOpts) error
 }
 
@@ -49,7 +49,11 @@ func NewController(opts ControllerOpts) *controller {
 	if opts.Repo != nil {
 		r = opts.Repo
 	} else {
-		r = repo.NewShellGitRepo(conf.DotfilesRoot)
+		if opts.NoGit {
+			r = repo.NoopRepo{}
+		} else {
+			r = repo.NewShellGitRepo(conf.DotfilesRoot)
+		}
 	}
 
 	var b *builder.Builder
@@ -71,22 +75,15 @@ func NewController(opts ControllerOpts) *controller {
 }
 
 func (c *controller) Sync(opts SyncOpts) error {
-	if !opts.NoGit {
-		err := c.repo.Pull()
-		if err != nil {
-			return err
-		}
+	if err := c.repo.Pull(); err != nil {
+		return err
 	}
-
 	return c.builder.Build(opts.Force)
 }
 
 func (c *controller) Import(file string, as string, opts ImportOpts) error {
-	if !opts.NoGit {
-		err := c.repo.Pull()
-		if err != nil {
-			return err
-		}
+	if err := c.repo.Pull(); err != nil {
+		return err
 	}
 
 	// import the file into the repo
@@ -116,11 +113,8 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 		err = c.config.Write()
 	}
 
-	if !opts.NoGit {
-		err = c.repo.Push()
-		if err != nil {
-			return err
-		}
+	if err := c.repo.Push(); err != nil {
+		return err
 	}
 
 	return err
@@ -137,16 +131,13 @@ func (c *controller) TargetShow(target string, w io.Writer) {
 	c.config.ListTargetFiles(target, w)
 }
 
-func (c *controller) TargetAdd(target string, args []string, opts AddOpts) error {
+func (c *controller) TargetAdd(target string, args []string) error {
 	if target == "" {
 		target = c.config.Target
 	}
 
-	if !opts.NoGit {
-		err := c.repo.Pull()
-		if err != nil {
-			return err
-		}
+	if err := c.repo.Pull(); err != nil {
+		return err
 	}
 
 	options := c.config.GetAllTemplateNames()
@@ -168,27 +159,19 @@ func (c *controller) TargetAdd(target string, args []string, opts AddOpts) error
 	if err != nil {
 		return err
 	}
-
-	if !opts.NoGit {
-		err := c.repo.Push()
-		if err != nil {
-			return err
-		}
+if err := c.repo.Push(); err != nil {
+		return err
 	}
-
 	return nil
 }
 
-func (c *controller) TargetRemove(target string, args []string, opts RemoveOpts) error {
+func (c *controller) TargetRemove(target string, args []string) error {
 	if target == "" {
 		target = c.config.Target
 	}
 
-	if !opts.NoGit {
-		err := c.repo.Pull()
-		if err != nil {
-			return err
-		}
+	if err := c.repo.Pull(); err != nil {
+		return err
 	}
 
 	options := c.config.GetTemplatesNamesForTarget(target)
@@ -211,22 +194,15 @@ func (c *controller) TargetRemove(target string, args []string, opts RemoveOpts)
 		return err
 	}
 
-	if !opts.NoGit {
-		err := c.repo.Push()
-		if err != nil {
-			return err
-		}
+	if err := c.repo.Push(); err != nil {
+		return err
 	}
-
 	return nil
 }
 
 func (c *controller) Edit(args []string, opts EditOpts) error {
-	if !opts.NoGit {
-		err := c.repo.Pull()
-		if err != nil {
-			return err
-		}
+	if err := c.repo.Pull(); err != nil {
+		return err
 	}
 
 	path, err := c.getFile(args)
@@ -244,17 +220,14 @@ func (c *controller) Edit(args []string, opts EditOpts) error {
 	}
 
 	if !opts.NoSync {
-		err = c.Sync(SyncOpts{NoGit: true})
+		err = c.Sync(SyncOpts{})
 		if err != nil {
 			return err
 		}
 	}
 
-	if !opts.NoGit {
-		err = c.repo.Push()
-		if err != nil {
-			return err
-		}
+	if err := c.repo.Push(); err != nil {
+		return err
 	}
 
 	return nil
