@@ -74,6 +74,13 @@ func NewController(opts ControllerOpts) *controller {
 	}
 }
 
+func (c *controller) getTarget(t string) string {
+	if t == "" {
+		t = c.config.Target
+	}
+	return t
+}
+
 func (c *controller) Sync(opts SyncOpts) error {
 	if err := c.repo.Pull(); err != nil {
 		return err
@@ -125,16 +132,12 @@ func (c *controller) ListAll(w io.Writer) {
 }
 
 func (c *controller) TargetShow(target string, w io.Writer) {
-	if target == "" {
-		target = c.config.Target
-	}
+	target = c.getTarget(target)
 	c.config.ListTargetFiles(target, w)
 }
 
 func (c *controller) TargetAdd(target string, args []string) error {
-	if target == "" {
-		target = c.config.Target
-	}
+	target = c.getTarget(target)
 
 	if err := c.repo.Pull(); err != nil {
 		return err
@@ -166,9 +169,7 @@ if err := c.repo.Push(); err != nil {
 }
 
 func (c *controller) TargetRemove(target string, args []string) error {
-	if target == "" {
-		target = c.config.Target
-	}
+	target = c.getTarget(target)
 
 	if err := c.repo.Pull(); err != nil {
 		return err
