@@ -651,4 +651,61 @@ func TestBootstrapping(t *testing.T) {
 		})
 	}
 
+	removeBootstrapTarget := []struct{
+		name string
+		shouldError bool
+		shouldBePresent bool
+		host string
+		item string
+		want []string
+	}{
+		{
+			name: "unknown_target",
+			shouldError: true,
+			host: "not_a_host",
+			item: "not_an_item",
+		},
+		{
+			name: "valid_remove_still_items_left",
+			shouldError: false,
+			shouldBePresent: true,
+			host: "host2",
+			item: "fd",
+			want: []string{"ripgrep"},
+		},
+		{
+			name: "valid_remove_last_item",
+			shouldError: false,
+			shouldBePresent: false,
+			host: "host1",
+			item: "ripgrep",
+			want: []string{},
+		},
+	}
+	for _, tc := range removeBootstrapTarget {
+		t.Run("remove_bootstrap_target_" + tc.name, func(t *testing.T) {
+			c, remove := baseSetup(t)
+			defer remove()
+
+			err := c.RemoveTargetBootstrap(tc.host, tc.item)
+			if tc.shouldError {
+				help.ShouldError(t, err)
+				return
+			} else {
+				help.Ensure(t, err)
+			}
+
+			got, ok := c.content.Bootstraps[tc.host]
+			if (tc.shouldBePresent && !ok) || (!tc.shouldBePresent && ok) {
+				var verb string
+				if tc.shouldBePresent {
+					verb = "should"
+				} else {
+					verb = "should not"
+				}
+				t.Fatalf("key %q %v be present", tc.host, verb)
+			}
+			assertBootstrap(t, got, tc.want)
+		})
+	}
 }

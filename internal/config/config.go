@@ -386,3 +386,31 @@ func (c *Config) AddTargetBootstrap(target string, name string) error {
 	c.content.Bootstraps[target] = current
 	return nil
 }
+
+func (c *Config) RemoveTargetBootstrap(target string, name string) error {
+	if target == "" {
+		target = c.Target
+	}
+
+	current, ok := c.content.Bootstraps[target]
+	if !ok {
+		return fmt.Errorf("Unknown target of %q", target)
+	}
+
+	new := make([]string, 0, len(current))
+	for _, item := range current {
+		if item == name {
+			continue
+		}
+
+		new = append(new, item)
+	}
+
+	if len(new) == 0 {
+		delete(c.content.Bootstraps, target)
+	} else {
+		c.content.Bootstraps[target] = new
+	}
+
+	return nil
+}
