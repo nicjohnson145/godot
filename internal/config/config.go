@@ -34,36 +34,23 @@ func IsValidPackageManager(candidate string) bool {
 	return false
 }
 
-/*
-{
-	"all_files": {
-		"dot_zshrc": "~/.zshrc"
-	},
-	"renders": {
-		"host1": ["dot_zshrc"]
-	},
-	"all_bootstraps": {
-		"ripgrep": {
-			"brew": "ripgrep",
-			"apt": "ripgrep"
-		}
-	},
-	"bootstraps": {
-		"host1": ["ripgrep"]
-	}
-}
-*/
-
 type repoConfig struct {
-	Files      map[string]string            `json:"files"`
-	Renders       map[string][]string          `json:"renders"`
-	AllBootstraps map[string]map[string]string `json:"all_bootstraps"`
-	Bootstraps    map[string][]string          `json:"bootstraps"`
+	Files      map[string]string    `json:"files"`
+	Renders    map[string][]string  `json:"renders"`
+	Bootstraps map[string]Bootstrap `json:"bootstraps"`
+	Hosts      map[string]Host      `json:"hosts"`
 }
 
-type Bootstrap struct {
-	Method string
-	Name   string
+type BootstrapItem struct {
+	Name     string `json:"name"`
+	Location string `json:"location,omitempty"`
+}
+
+type Bootstrap map[string]BootstrapItem
+
+type Host struct {
+	Files      []string `json:"files"`
+	Bootstraps []string `json:"bootstraps"`
 }
 
 func (c *repoConfig) makeMaps() {
@@ -75,12 +62,12 @@ func (c *repoConfig) makeMaps() {
 		c.Renders = make(map[string][]string)
 	}
 
-	if c.AllBootstraps == nil {
-		c.AllBootstraps = make(map[string]map[string]string)
+	if c.Bootstraps == nil {
+		c.Bootstraps = make(map[string]Bootstrap)
 	}
 
-	if c.Bootstraps == nil {
-		c.Bootstraps = make(map[string][]string)
+	if c.Hosts == nil {
+		c.Hosts = make(map[string]Host)
 	}
 }
 
@@ -193,6 +180,30 @@ func (c *Config) getAllFiles() map[string]file.File {
 	return allFiles
 }
 
+func (c *Config) GetAllFiles() map[string]string {
+	return c.content.Files
+}
+
+func (c *Config) GetFilesForTarget(target string) map[string]string {
+	if target == "" {
+		target = c.Target
+	}
+
+	ret := make(map[string]string)
+	all := c.GetAllFiles()
+
+	host, ok := c.content.Hosts[target]
+	if !ok {
+		return ret
+	}
+
+	for _, file := range host.Files {
+		ret[file] = all[file]
+	}
+
+	return ret
+}
+
 func (c *Config) Write() error {
 	bytes, err := json.Marshal(c.content)
 	if err != nil {
@@ -202,15 +213,10 @@ func (c *Config) Write() error {
 	return ioutil.WriteFile(c.repoConfig, prettyContents, 0644)
 }
 
-func (c *Config) ManageFile(destination string) (string, error) {
-	templateName := util.ToTemplateName(destination)
-	if c.IsValidFile(templateName) {
-		return "", errors.New(fmt.Sprintf("template name %q already exists", templateName))
-	}
-	return c.AddFile(templateName, destination)
-}
-
 func (c *Config) AddFile(template string, destination string) (string, error) {
+	if template == "" {
+		template = util.ToTemplateName(destination)
+	}
 	if c.IsValidFile(template) {
 		return "", errors.New(fmt.Sprintf("template name %q already exists", template))
 	}
@@ -319,55 +325,41 @@ func (c *Config) ListTargetFiles(target string, w io.Writer) {
 	c.writeFileMap(w, files)
 }
 
-func (c *Config) GetAllBootstraps() map[string][]Bootstrap {
-	ret := make(map[string][]Bootstrap)
-	for prog, installMap := range c.content.AllBootstraps {
-		arr := make([]Bootstrap, 0, len(installMap))
-		for method, name := range installMap {
-			arr = append(arr, Bootstrap{Method: method, Name: name})
-		}
-		ret[prog] = arr
-	}
-	return ret
+func (c *Config) GetAllBootstraps() map[string]Bootstrap {
+	return c.content.Bootstraps
 }
 
-func (c *Config) GetBootstrapsForTarget(target string) map[string][]Bootstrap {
+func (c *Config) GetBootstrapsForTarget(target string) map[string]Bootstrap {
 	if target == "" {
 		target = c.Target
 	}
 
-	ret := make(map[string][]Bootstrap)
-	keys, ok := c.content.Bootstraps[target]
+	all := c.GetAllBootstraps()
+	ret := make(map[string]Bootstrap)
+
+	host, ok := c.content.Hosts[target]
 	if !ok {
 		return ret
 	}
 
-	all := c.GetAllBootstraps()
-
-	for _, key := range keys {
+	for _, key := range host.Bootstraps {
 		ret[key] = all[key]
-	}
+	}	
 
 	return ret
 }
 
-func (c *Config) AddBootstrapItem(item string, manager string, pkg string) error {
-	if !IsValidPackageManager(manager) {
-		return fmt.Errorf("Invalid package manager of %q", manager)
-	}
-
-	m, ok := c.content.AllBootstraps[item]
-	// Key didn't exist
+func (c *Config) AddBootstrapItem(item, manager, pkg, location string) {
+	itemMap, ok := c.content.Bootstraps[item]
 	if !ok {
-		m = make(map[string]string)
+		itemMap = make(map[string]BootstrapItem)
 	}
-	m[manager] = pkg
-	c.content.AllBootstraps[item] = m
-	return nil
+	itemMap[manager] = BootstrapItem{Name: pkg, Location: location}
+	c.content.Bootstraps[item] = itemMap
 }
 
 func (c *Config) isValidBootstrap(name string) bool {
-	_, ok := c.content.AllBootstraps[name]
+	_, ok := c.content.Bootstraps[name]
 	return ok
 }
 
@@ -380,9 +372,12 @@ func (c *Config) AddTargetBootstrap(target string, name string) error {
 		return fmt.Errorf("Unknown bootstrap item of %q", name)
 	}
 
-	current, _ := c.content.Bootstraps[target]
-	current = append(current, name)
-	c.content.Bootstraps[target] = current
+	current, ok := c.content.Hosts[target]
+	if !ok {
+		current = Host{}
+	}
+	current.Bootstraps = append(current.Bootstraps, name)
+	c.content.Hosts[target] = current
 	return nil
 }
 
@@ -391,25 +386,21 @@ func (c *Config) RemoveTargetBootstrap(target string, name string) error {
 		target = c.Target
 	}
 
-	current, ok := c.content.Bootstraps[target]
+	host, ok := c.content.Hosts[target]
 	if !ok {
 		return fmt.Errorf("Unknown target of %q", target)
 	}
 
-	new := make([]string, 0, len(current))
-	for _, item := range current {
+	new := make([]string, 0, len(host.Bootstraps))
+	for _, item := range host.Bootstraps {
 		if item == name {
 			continue
 		}
-
 		new = append(new, item)
 	}
 
-	if len(new) == 0 {
-		delete(c.content.Bootstraps, target)
-	} else {
-		c.content.Bootstraps[target] = new
-	}
+	host.Bootstraps = new
+	c.content.Hosts[target] = host
 
 	return nil
 }

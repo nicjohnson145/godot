@@ -22,19 +22,39 @@ func setup (t *testing.T, conf string) (*Config, func()) {
 
 func baseSetup(t *testing.T) (*Config, func()) {
 	return setup(t, `{
-		"all_bootstraps": {
-			"ripgrep": {
-				"brew": "rip-grep",
-				"apt": "ripgrep"
-			},
-			"fd": {
-				"brew": "fd",
-				"apt": "fd-find"
-			}
+		"files": {
+			"dot_zshrc": "~/.zshrc",
+			"some_conf": "~/some_conf",
+			"odd_conf": "/etc/odd_conf"
 		},
 		"bootstraps": {
-			"host1": ["ripgrep"],
-			"host2": ["ripgrep", "fd"]
+			"ripgrep": {
+				"brew": {
+					"name": "rip-grep"
+				},
+				"apt": {
+					"name": "ripgrep"
+				}
+			},
+			"pyenv": {
+				"brew": {
+					"name": "pyenv"
+				},
+				"git": {
+					"name": "https://github.com/pyenv/pyenv.git",
+					"location": "~/.pyenv"
+				}
+			}
+		},
+		"hosts": {
+			"host1": {
+				"files": ["dot_zshrc", "some_conf"],
+				"bootstraps": ["ripgrep"]
+			},
+			"host2": {
+				"files": ["some_conf"],
+				"bootstraps": ["ripgrep", "pyenv"]
+			}
 		}
 	}`)
 }
@@ -425,42 +445,57 @@ some_conf => ~/some_conf
 	})
 }
 
-func TestBootstrapping(t *testing.T) {
-	setup := func(t *testing.T, conf string) (*Config, func()) {
-		home, dotpath, remove := help.SetupDirectories(t, "host1")
-		help.WriteRepoConf(t, dotpath, conf)
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		return c, remove
-	}
+func TestFiles(t *testing.T) {
+	t.Run("GetAllFiles_empty", func(t *testing.T) {
+		c, remove := setup(t, "{}")
+		defer remove()
 
-	baseSetup := func(t *testing.T) (*Config, func()) {
-		return setup(t, `{
-			"all_bootstraps": {
-				"ripgrep": {
-					"brew": "rip-grep",
-					"apt": "ripgrep"
-				},
-				"fd": {
-					"brew": "fd",
-					"apt": "fd-find"
-				}
-			},
-			"bootstraps": {
-				"host1": ["ripgrep"],
-				"host2": ["ripgrep", "fd"]
-			}
-		}`)
-	}
+		got := c.GetAllFiles()
+		want := map[string]string{}
+		help.Equals(t, want, got)
+	})
 
-	sortBootstrapMap := func(m map[string][]Bootstrap) {
-		for key, arr := range m {
-			sort.Slice(arr, func(i int, j int) bool {
-				return arr[i].Method < arr[j].Method
-			})
-			m[key] = arr
+	t.Run("GetAllFiles", func(t *testing.T) {
+		c, remove := baseSetup(t)
+		defer remove()
+
+		got := c.GetAllFiles()
+		want := map[string]string{
+			"dot_zshrc": "~/.zshrc",
+			"some_conf": "~/some_conf",
+			"odd_conf": "/etc/odd_conf",
 		}
-	}
+		help.Equals(t, want, got)
+	})
 
+	getFilesForTarget := []struct{
+		name string
+		host string
+		want map[string]string
+	}{
+		{
+			name: "missing_host",
+			host: "not_a_host",
+			want: map[string]string{},
+		},
+		{
+			name: "valid_host",
+			host: "host1",
+			want: map[string]string{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
+		},
+	}
+	for _, tc := range getFilesForTarget{
+		t.Run("GetFilesForTarget_" + tc.name, func(t *testing.T) {
+			c, remove := baseSetup(t)
+			defer remove()
+
+			got := c.GetFilesForTarget(tc.host)
+			help.Equals(t, tc.want, got)
+		})
+	}
+}
+
+func TestBootstrapping(t *testing.T) {
 	assertBootstrap := func(t *testing.T, got []string, want []string) {
 		t.Helper()
 
@@ -475,7 +510,7 @@ func TestBootstrapping(t *testing.T) {
 		}
 	}
 
-	t.Run("get_all_bootstraps_empty", func(t *testing.T) {
+	t.Run("GetAllBootstraps_empty", func(t *testing.T) {
 		c, remove := setup(t, "{}")
 		defer remove()
 		got := c.GetAllBootstraps()
@@ -485,20 +520,22 @@ func TestBootstrapping(t *testing.T) {
 		}
 	})
 
-	t.Run("get_all_bootstraps", func(t *testing.T) {
+	t.Run("GetAllBootstraps", func(t *testing.T) {
 		c, remove := baseSetup(t)
 		defer remove()
 		got := c.GetAllBootstraps()
-		sortBootstrapMap(got)
 
-		want := map[string][]Bootstrap{
+		want := map[string]Bootstrap{
 			"ripgrep": {
-				{Method: "apt", Name: "ripgrep"},
-				{Method: "brew", Name: "rip-grep"},
+				"brew": {Name: "rip-grep"},
+				"apt": {Name: "ripgrep"},
 			},
-			"fd": {
-				{Method: "apt", Name: "fd-find"},
-				{Method: "brew", Name: "fd"},
+			"pyenv": {
+				"brew": {Name: "pyenv"},
+				"git": {
+					Name: "https://github.com/pyenv/pyenv.git",
+					Location: "~/.pyenv",
+				},
 			},
 		}
 
@@ -510,46 +547,47 @@ func TestBootstrapping(t *testing.T) {
 	getTargetTests := []struct {
 		name string
 		host string
-		want map[string][]Bootstrap
+		want map[string]Bootstrap
 	}{
 		{
 			name: "host2",
 			host: "host2",
-			want: map[string][]Bootstrap{
+			want: map[string]Bootstrap{
 				"ripgrep": {
-					{Method: "apt", Name: "ripgrep"},
-					{Method: "brew", Name: "rip-grep"},
+					"brew": {Name: "rip-grep"},
+					"apt": {Name: "ripgrep"},
 				},
-				"fd": {
-					{Method: "apt", Name: "fd-find"},
-					{Method: "brew", Name: "fd"},
+				"pyenv": {
+					"brew": {Name: "pyenv"},
+					"git": {
+						Name: "https://github.com/pyenv/pyenv.git",
+						Location: "~/.pyenv",
+					},
 				},
 			},
 		},
 		{
 			name: "host1",
 			host: "",
-			want: map[string][]Bootstrap{
+			want: map[string]Bootstrap{
 				"ripgrep": {
-					{Method: "apt", Name: "ripgrep"},
-					{Method: "brew", Name: "rip-grep"},
+					"brew": {Name: "rip-grep"},
+					"apt": {Name: "ripgrep"},
 				},
 			},
 		},
 		{
 			name: "not_valid",
 			host: "not_valid",
-			want: map[string][]Bootstrap{},
+			want: map[string]Bootstrap{},
 		},
 	}
-
 	for _, tc := range getTargetTests {
-		t.Run("bootstraps_for_target_"+tc.name, func(t *testing.T) {
+		t.Run("GetBootstrapsForTarget_"+tc.name, func(t *testing.T) {
 			c, remove := baseSetup(t)
 			defer remove()
 
 			got := c.GetBootstrapsForTarget(tc.host)
-			sortBootstrapMap(got)
 
 			if len(tc.want) == 0 && len(got) == 0 {
 				return
@@ -563,67 +601,53 @@ func TestBootstrapping(t *testing.T) {
 	addBootstrapItem := []struct {
 		name    string
 		initial string
-		want    map[string][]Bootstrap
+		want    map[string]Bootstrap
 	}{
 		{
 			name:    "empty_conf",
 			initial: "{}",
-			want: map[string][]Bootstrap{
+			want: map[string]Bootstrap{
 				"ripgrep": {
-					{Method: "apt", Name: "ripgrep"},
+					"apt": {Name: "ripgrep"},
 				},
 			},
 		},
 		{
 			name:    "bootstrap_exists",
-			initial: `{"all_bootstraps": {}}`,
-			want: map[string][]Bootstrap{
+			initial: `{"bootstraps": {}}`,
+			want: map[string]Bootstrap{
 				"ripgrep": {
-					{Method: "apt", Name: "ripgrep"},
+					"apt": {Name: "ripgrep"},
 				},
 			},
 		},
 		{
-			name: "item_exists_different_manager",
-			initial: `{
-				"all_bootstraps": {
-					"ripgrep": {
-						"brew": "rip-grep"
-					}
-				}
-			}`,
-			want: map[string][]Bootstrap{
+			name:    "item_exists_different_manager",
+			initial: `{"bootstraps": {"ripgrep": {"brew": {"name": "rip-grep"}}}}`,
+			want: map[string]Bootstrap{
 				"ripgrep": {
-					{Method: "apt", Name: "ripgrep"},
-					{Method: "brew", Name: "rip-grep"},
+					"apt": {Name: "ripgrep"},
+					"brew": {Name: "rip-grep"},
 				},
 			},
 		},
 		{
-			name: "item_exists_same_manager",
-			initial: `{
-				"all_bootstraps": {
-					"ripgrep": {
-						"apt": "rip-grep"
-					}
-				}
-			}`,
-			want: map[string][]Bootstrap{
+			name:    "item_exists_same_manager",
+			initial: `{"bootstraps": {"ripgrep": {"apt": {"name": "rip-grep"}}}}`,
+			want: map[string]Bootstrap{
 				"ripgrep": {
-					{Method: "apt", Name: "ripgrep"},
+					"apt": {Name: "ripgrep"},
 				},
 			},
 		},
 	}
 	for _, tc := range addBootstrapItem {
-		t.Run("add_target_"+tc.name, func(t *testing.T) {
+		t.Run("AddBootstrapItem_"+tc.name, func(t *testing.T) {
 			c, remove := setup(t, tc.initial)
 			defer remove()
 
-			err := c.AddBootstrapItem("ripgrep", "apt", "ripgrep")
-			help.Ensure(t, err)
+			c.AddBootstrapItem("ripgrep", "apt", "ripgrep", "")
 			got := c.GetAllBootstraps()
-			sortBootstrapMap(got)
 
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Fatalf("all bootstraps not equal, got %q want %q", got, tc.want)
@@ -655,8 +679,8 @@ func TestBootstrapping(t *testing.T) {
 			name:        "target_exists",
 			shouldError: false,
 			host:        "host1",
-			item:        "fd",
-			want:        []string{"fd", "ripgrep"},
+			item:        "pyenv",
+			want:        []string{"pyenv", "ripgrep"},
 		},
 	}
 	for _, tc := range addBootstrapTarget {
@@ -672,7 +696,7 @@ func TestBootstrapping(t *testing.T) {
 				help.Ensure(t, err)
 			}
 
-			got := c.content.Bootstraps[tc.host]
+			got := c.content.Hosts[tc.host].Bootstraps
 			assertBootstrap(t, got, tc.want)
 		})
 	}
@@ -680,7 +704,6 @@ func TestBootstrapping(t *testing.T) {
 	removeBootstrapTarget := []struct {
 		name            string
 		shouldError     bool
-		shouldBePresent bool
 		host            string
 		item            string
 		want            []string
@@ -694,15 +717,13 @@ func TestBootstrapping(t *testing.T) {
 		{
 			name:            "valid_remove_still_items_left",
 			shouldError:     false,
-			shouldBePresent: true,
 			host:            "host2",
-			item:            "fd",
+			item:            "pyenv",
 			want:            []string{"ripgrep"},
 		},
 		{
 			name:            "valid_remove_last_item",
 			shouldError:     false,
-			shouldBePresent: false,
 			host:            "host1",
 			item:            "ripgrep",
 			want:            []string{},
@@ -721,17 +742,8 @@ func TestBootstrapping(t *testing.T) {
 				help.Ensure(t, err)
 			}
 
-			got, ok := c.content.Bootstraps[tc.host]
-			if (tc.shouldBePresent && !ok) || (!tc.shouldBePresent && ok) {
-				var verb string
-				if tc.shouldBePresent {
-					verb = "should"
-				} else {
-					verb = "should not"
-				}
-				t.Fatalf("key %q %v be present", tc.host, verb)
-			}
-			assertBootstrap(t, got, tc.want)
+			host, _ := c.content.Hosts[tc.host]
+			assertBootstrap(t, host.Bootstraps, tc.want)
 		})
 	}
 }
