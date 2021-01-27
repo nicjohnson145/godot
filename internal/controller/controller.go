@@ -16,8 +16,8 @@ import (
 type Controller interface {
 	Sync(SyncOpts) error
 	Import(string, string, ImportOpts) error
-	ListAll(io.Writer)
-	TargetShow(string, io.Writer)
+	ListAllFiles(io.Writer) error
+	TargetShow(string, io.Writer) error
 	TargetAdd(string, []string) error
 	TargetRemove(string, []string) error
 	Edit([]string, EditOpts) error
@@ -100,10 +100,7 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 	}
 
 	// Add the file to the repos config
-	var name string
-	if as != "" {
-		name, err = c.config.AddFile(as, file)
-	}
+	name, err := c.config.AddFile(as, file)
 	if err != nil {
 		return err
 	}
@@ -125,13 +122,13 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 	return err
 }
 
-func (c *controller) ListAll(w io.Writer) {
-	c.config.ListAllFiles(w)
+func (c *controller) ListAllFiles(w io.Writer) error {
+	return c.config.ListAllFiles(w)
 }
 
-func (c *controller) TargetShow(target string, w io.Writer) {
+func (c *controller) TargetShow(target string, w io.Writer) error {
 	target = c.getTarget(target)
-	c.config.ListTargetFiles(target, w)
+	return c.config.ListTargetFiles(target, w)
 }
 
 func (c *controller) TargetAdd(target string, args []string) error {
@@ -173,7 +170,7 @@ func (c *controller) TargetRemove(target string, args []string) error {
 		return err
 	}
 
-	options := c.config.GetTemplatesNamesForTarget(target)
+	options := c.config.GetAllTemplateNamesForTarget(target)
 	tmpl, err := c.fuzzyOrArgs(args, options)
 	if err != nil {
 		if err == fuzzyfinder.ErrAbort {
@@ -213,7 +210,7 @@ func (c *controller) Edit(args []string, opts EditOpts) error {
 		return err
 	}
 
-	err = c.editFile(path, opts)
+	err = c.editFile(util.ReplacePrefix(path, "~/", c.config.Home), opts)
 	if err != nil {
 		return err
 	}
@@ -233,10 +230,10 @@ func (c *controller) Edit(args []string, opts EditOpts) error {
 }
 
 func (c *controller) getFile(args []string) (filePath string, outErr error) {
-	targetFiles := c.config.GetTargetFiles()
-	options := make([]string, 0, len(targetFiles))
-	for _, fl := range targetFiles {
-		options = append(options, fl.DestinationPath)
+	allFiles := c.config.GetAllFiles()
+	options := make([]string, 0, len(allFiles))
+	for _, dest := range allFiles {
+		options = append(options, dest)
 	}
 
 	return c.fuzzyOrArgs(args, options)

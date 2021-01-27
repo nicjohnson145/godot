@@ -33,8 +33,7 @@ var (
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{})
-			c.ListAll(os.Stdout)
-			return nil
+			return c.ListAllFiles(os.Stdout)
 		},
 	}
 
@@ -45,8 +44,7 @@ var (
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{})
-			c.TargetShow(target, os.Stdout)
-			return nil
+			return c.TargetShow(target, os.Stdout)
 		},
 	}
 

@@ -43,14 +43,7 @@ func TestImport(t *testing.T) {
 
 		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotPath, "templates"), []string{"dot_some_conf"})
 		help.AssertTargetContents(t, dotPath, "home", []string{"dot_some_conf"})
-		help.AssertAllFiles(
-			t,
-			dotPath,
-			map[string]string{
-				"dot_some_conf": "~/.some_conf",
-				"dot_zshrc":     "~/.zshrc",
-			},
-		)
+		help.AssertPresentInAllFiles(t, dotPath, map[string]string{"dot_some_conf": "~/.some_conf"})
 	})
 
 	t.Run("import as", func(t *testing.T) {
@@ -63,14 +56,7 @@ func TestImport(t *testing.T) {
 
 		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotPath, "templates"), []string{"other_name"})
 		help.AssertTargetContents(t, dotPath, "home", []string{})
-		help.AssertAllFiles(
-			t,
-			dotPath,
-			map[string]string{
-				"other_name": "~/.some_conf",
-				"dot_zshrc":  "~/.zshrc",
-			},
-		)
+		help.AssertPresentInAllFiles(t, dotPath, map[string]string{"other_name": "~/.some_conf"})
 	})
 }
 
@@ -80,24 +66,22 @@ func TestTarget(t *testing.T) {
 
 		home, dotpath, remove := help.SetupDirectories(t, target)
 		help.WriteRepoConf(t, dotpath, `{
-			"all_files": {
+			"files": {
 				"dot_zshrc": "~/.zshrc",
 				"some_conf": "~/some_conf",
 				"last_conf": "~/last_conf"
 			},
-			"renders": {
-				"host": ["dot_zshrc"],
-				"other": ["some_conf", "last_conf"]
+			"hosts": {
+				"host": {
+					"files": ["dot_zshrc"]
+				},
+				"other": {
+					"files": ["some_conf", "last_conf"]
+				}
 			}
 		}`)
 
 		return home, dotpath, remove
-	}
-
-	assertStrings := func(t *testing.T, got, want string) {
-		if got != want {
-			t.Fatalf("incorrect output, got %q want %q", got, want)
-		}
 	}
 
 	t.Run("list_all", func(t *testing.T) {
@@ -107,7 +91,7 @@ func TestTarget(t *testing.T) {
 		c := getController(t, home)
 		w := bytes.NewBufferString("")
 
-		c.ListAll(w)
+		help.Ok(t, c.ListAllFiles(w))
 
 		got := w.String()
 		want := strings.Join([]string{
@@ -116,7 +100,7 @@ func TestTarget(t *testing.T) {
 			"some_conf => ~/some_conf",
 		}, "\n") + "\n"
 
-		assertStrings(t, got, want)
+		help.Equals(t, want, got)
 	})
 
 	t.Run("show target", func(t *testing.T) {
@@ -130,23 +114,21 @@ func TestTarget(t *testing.T) {
 
 		got := w.String()
 		want := strings.Join([]string{
-			"Target: other",
 			"last_conf => ~/last_conf",
 			"some_conf => ~/some_conf",
 		}, "\n") + "\n"
 
-		assertStrings(t, got, want)
+		help.Equals(t, want, got)
 
 		w = bytes.NewBufferString("")
 		c.TargetShow("host", w)
 
 		got = w.String()
 		want = strings.Join([]string{
-			"Target: host",
 			"dot_zshrc => ~/.zshrc",
 		}, "\n") + "\n"
 
-		assertStrings(t, got, want)
+		help.Equals(t, want, got)
 	})
 
 	t.Run("show target no target", func(t *testing.T) {
@@ -160,23 +142,21 @@ func TestTarget(t *testing.T) {
 
 		got := w.String()
 		want := strings.Join([]string{
-			"Target: other",
 			"last_conf => ~/last_conf",
 			"some_conf => ~/some_conf",
 		}, "\n") + "\n"
 
-		assertStrings(t, got, want)
+		help.Equals(t, want, got)
 
 		w = bytes.NewBufferString("")
 		c.TargetShow("host", w)
 
 		got = w.String()
 		want = strings.Join([]string{
-			"Target: host",
 			"dot_zshrc => ~/.zshrc",
 		}, "\n") + "\n"
 
-		assertStrings(t, got, want)
+		help.Equals(t, want, got)
 	})
 
 	t.Run("add target", func(t *testing.T) {
@@ -222,11 +202,13 @@ func TestEdit(t *testing.T) {
 
 		home, dotpath, remove := help.SetupDirectories(t, "host")
 		help.WriteRepoConf(t, dotpath, `{
-			"all_files": {
+			"files": {
 				"some_conf": "~/some_conf"
 			},
-			"renders": {
-				"host": ["some_conf"]
+			"hosts": {
+				"host": {
+					"files": ["some_conf"]
+				}
 			}
 		}`)
 		return home, dotpath, remove

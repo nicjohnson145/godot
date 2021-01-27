@@ -19,42 +19,7 @@ func setup (t *testing.T, conf string) (*Config, func()) {
 }
 
 func baseSetup(t *testing.T) (*Config, func()) {
-	return setup(t, `{
-		"files": {
-			"dot_zshrc": "~/.zshrc",
-			"some_conf": "~/some_conf",
-			"odd_conf": "/etc/odd_conf"
-		},
-		"bootstraps": {
-			"ripgrep": {
-				"brew": {
-					"name": "rip-grep"
-				},
-				"apt": {
-					"name": "ripgrep"
-				}
-			},
-			"pyenv": {
-				"brew": {
-					"name": "pyenv"
-				},
-				"git": {
-					"name": "https://github.com/pyenv/pyenv.git",
-					"location": "~/.pyenv"
-				}
-			}
-		},
-		"hosts": {
-			"host1": {
-				"files": ["dot_zshrc", "some_conf"],
-				"bootstraps": ["ripgrep"]
-			},
-			"host2": {
-				"files": ["some_conf"],
-				"bootstraps": ["ripgrep", "pyenv"]
-			}
-		}
-	}`)
+	return setup(t, help.SAMPLE_CONFIG)
 }
 
 func getErrFunc(t *testing.T, shouldError bool) func(*testing.T, error) {
@@ -456,7 +421,7 @@ func TestFiles(t *testing.T) {
 		defer remove()
 
 		got := c.GetAllFiles()
-		want := map[string]string{}
+		want := FileMap{}
 		help.Equals(t, want, got)
 	})
 
@@ -465,7 +430,7 @@ func TestFiles(t *testing.T) {
 		defer remove()
 
 		got := c.GetAllFiles()
-		want := map[string]string{
+		want := FileMap{
 			"dot_zshrc": "~/.zshrc",
 			"some_conf": "~/some_conf",
 			"odd_conf": "/etc/odd_conf",
@@ -476,17 +441,17 @@ func TestFiles(t *testing.T) {
 	getFilesForTarget := []struct{
 		name string
 		host string
-		want map[string]string
+		want FileMap
 	}{
 		{
 			name: "missing_host",
 			host: "not_a_host",
-			want: map[string]string{},
+			want: FileMap{},
 		},
 		{
 			name: "valid_host",
 			host: "host1",
-			want: map[string]string{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
+			want: FileMap{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
 		},
 	}
 	for _, tc := range getFilesForTarget{
@@ -505,21 +470,21 @@ func TestFiles(t *testing.T) {
 		destination string
 		shouldError bool
 		initial string
-		want map[string]string
+		want FileMap
 	}{
 		{
 			name: "happy_path",
 			template: "new_conf",
 			destination: "~/new_conf",
 			initial: "{}",
-			want: map[string]string{"new_conf": "~/new_conf"},
+			want: FileMap{"new_conf": "~/new_conf"},
 		},
 		{
 			name: "no_template",
 			template: "",
 			destination: "~/.new_conf",
 			initial: "{}",
-			want: map[string]string{"dot_new_conf": "~/.new_conf"},
+			want: FileMap{"dot_new_conf": "~/.new_conf"},
 		},
 		{
 			name: "template_exists",
@@ -527,7 +492,7 @@ func TestFiles(t *testing.T) {
 			destination: "~/.new_conf",
 			shouldError: true,
 			initial: `{"files": {"dot_new_conf": "~/.not_this_file"}}`,
-			want: map[string]string{"dot_new_conf": "~/.not_this_file"},
+			want: FileMap{"dot_new_conf": "~/.not_this_file"},
 		},
 	}
 	for _, tc := range addFile {
@@ -546,19 +511,19 @@ func TestFiles(t *testing.T) {
 		name string
 		shouldError bool
 		template string
-		want map[string]string
+		want FileMap
 	}{
 		{
 			name: "happy_path",
 			shouldError: false,
 			template: "dot_zshrc",
-			want: map[string]string{"dot_zshrc": "~/.zshrc"},
+			want: FileMap{"dot_zshrc": "~/.zshrc"},
 		},
 		{
 			name: "unknown_template",
 			shouldError: true,
 			template: "not_a_template",
-			want: map[string]string{},
+			want: FileMap{},
 		},
 	}
 	for _, tc := range addToTarget {
@@ -580,28 +545,28 @@ func TestFiles(t *testing.T) {
 		shouldError bool
 		target string
 		template string
-		want map[string]string
+		want FileMap
 	}{
 		{
 			name: "happy_path",
 			shouldError: false,
 			target: "host1",
 			template: "dot_zshrc",
-			want: map[string]string{"some_conf": "~/some_conf"},
+			want: FileMap{"some_conf": "~/some_conf"},
 		},
 		{
 			name: "unknown_target",
 			shouldError: true,
 			target: "not_a_target",
 			template: "dot_zshrc",
-			want: map[string]string{},
+			want: FileMap{},
 		},
 		{
 			name: "unknown_template",
 			shouldError: true,
 			target: "host1",
 			template: "not_a_template",
-			want: map[string]string{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
+			want: FileMap{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
 		},
 	}
 	for _, tc := range removeFromTarget {

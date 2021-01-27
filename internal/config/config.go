@@ -12,7 +12,6 @@ import (
 	"sort"
 	"text/tabwriter"
 
-	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/tidwall/pretty"
 )
@@ -34,8 +33,10 @@ func IsValidPackageManager(candidate string) bool {
 	return false
 }
 
+type FileMap map[string]string
+
 type repoConfig struct {
-	Files      map[string]string    `json:"files"`
+	Files      FileMap    `json:"files"`
 	Renders    map[string][]string  `json:"renders"`
 	Bootstraps map[string]Bootstrap `json:"bootstraps"`
 	Hosts      map[string]Host      `json:"hosts"`
@@ -55,7 +56,7 @@ type Host struct {
 
 func (c *repoConfig) makeMaps() {
 	if c.Files == nil {
-		c.Files = make(map[string]string)
+		c.Files = make(FileMap)
 	}
 
 	if c.Renders == nil {
@@ -80,6 +81,7 @@ type usrConfig struct {
 type Config struct {
 	Target         string     // Name of the current target
 	DotfilesRoot   string     // Root of the dotfiles repo
+	TemplateRoot   string     // Template directory inside of dotfiles repo
 	content        repoConfig // The raw json content
 	repoConfig     string     // Path to repo config, we'll need to rewrite it often
 	Home           string     // Users home directory
@@ -112,6 +114,7 @@ func (c *Config) parseUserConfig() {
 
 	c.Target = hostname
 	c.DotfilesRoot = filepath.Join(c.Home, "dotfiles")
+	c.TemplateRoot = filepath.Join(c.DotfilesRoot, "templates")
 
 	switch runtime.GOOS {
 	case "darwin":
@@ -140,6 +143,7 @@ func (c *Config) parseUserConfig() {
 
 	if config.DotfilesRoot != "" {
 		c.DotfilesRoot = config.DotfilesRoot
+		c.TemplateRoot = filepath.Join(config.DotfilesRoot, "templates")
 	}
 
 	if config.PackageManager != "" {
@@ -168,28 +172,25 @@ func (c *Config) readRepoConfig() {
 	c.content = content
 }
 
-func (c *Config) getAllFiles() map[string]file.File {
-	allFiles := make(map[string]file.File)
-
-	for key, path := range c.content.Files {
-		allFiles[key] = file.File{
-			DestinationPath: util.ReplacePrefix(path, "~/", c.Home),
-			TemplatePath:    filepath.Join(c.DotfilesRoot, "templates", key),
-		}
+func (c *Config) Write() error {
+	bytes, err := json.Marshal(c.content)
+	if err != nil {
+		return err
 	}
-	return allFiles
+	prettyContents := pretty.PrettyOptions(bytes, &pretty.Options{Indent: "    "})
+	return ioutil.WriteFile(c.repoConfig, prettyContents, 0644)
 }
 
-func (c *Config) GetAllFiles() map[string]string {
+func (c *Config) GetAllFiles() FileMap {
 	return c.content.Files
 }
 
-func (c *Config) GetFilesForTarget(target string) map[string]string {
+func (c *Config) GetFilesForTarget(target string) FileMap {
 	if target == "" {
 		target = c.Target
 	}
 
-	ret := make(map[string]string)
+	ret := make(FileMap)
 	all := c.GetAllFiles()
 
 	host, ok := c.content.Hosts[target]
@@ -202,15 +203,6 @@ func (c *Config) GetFilesForTarget(target string) map[string]string {
 	}
 
 	return ret
-}
-
-func (c *Config) Write() error {
-	bytes, err := json.Marshal(c.content)
-	if err != nil {
-		return err
-	}
-	prettyContents := pretty.PrettyOptions(bytes, &pretty.Options{Indent: "    "})
-	return ioutil.WriteFile(c.repoConfig, prettyContents, 0644)
 }
 
 func (c *Config) AddFile(template string, destination string) (string, error) {
@@ -253,10 +245,6 @@ func (c *Config) RemoveTargetFile(target string, name string) error {
 	return nil
 }
 
-func (c *Config) GetTemplatesNamesForTarget(target string) []string {
-	return c.content.Renders[target]
-}
-
 func (c *Config) GetAllTemplateNames() []string {
 	names := make([]string, 0, len(c.content.Files))
 	for name := range c.content.Files {
@@ -265,68 +253,53 @@ func (c *Config) GetAllTemplateNames() []string {
 	return names
 }
 
+func (c *Config) GetAllTemplateNamesForTarget(target string) []string {
+	host, ok := c.content.Hosts[target]
+	if !ok {
+		host = Host{}
+	}
+	return host.Files
+}
+
 func (c *Config) IsKnownFile(name string) bool {
 	_, ok := c.content.Files[name]
 	return ok
 }
 
-func (c *Config) GetTargetFiles() []file.File {
-	var files []file.File
-	for _, value := range c.getFilesByTarget(c.Target) {
-		files = append(files, value)
-	}
-	return files
-}
-
-func (c *Config) getFilesByTarget(target string) map[string]file.File {
-	files := make(map[string]file.File)
-
-	allFiles := c.getAllFiles()
-	for _, name := range c.content.Renders[target] {
-		files[name] = allFiles[name]
-	}
-	return files
-}
-
 func (c *Config) GetTemplateFromFullPath(path string) (string, error) {
-	for _, fl := range c.getAllFiles() {
-		if fl.DestinationPath == path {
-			return fl.TemplatePath, nil
+	for template, dest := range c.GetAllFiles() {
+		fullDest := util.ReplacePrefix(dest, "~/", c.Home)
+		if fullDest == path {
+			return filepath.Join(c.TemplateRoot, template), nil
 		}
 	}
 	return "", fmt.Errorf("Path %q is not managed by godot", path)
 }
 
-func (c *Config) ListAllFiles(w io.Writer) {
-	allFiles := c.getAllFiles()
-	c.writeFileMap(w, allFiles)
+func (c *Config) ListAllFiles(w io.Writer) error {
+	return c.writeFileMap(w, c.GetAllFiles())
 }
 
-func (c *Config) writeFileMap(w io.Writer, files map[string]file.File) {
-	keys := make([]string, 0)
-	for key := range files {
+func (c *Config) ListTargetFiles(target string, w io.Writer) error {
+	return c.writeFileMap(w, c.GetFilesForTarget(target))
+}
+
+func (c *Config) writeFileMap(w io.Writer, m FileMap) error {
+	keys := make([]string, 0, len(m))
+	for key := range m {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
+
 	tw := tabwriter.NewWriter(w, 0, 1, 0, ' ', tabwriter.AlignRight)
 	for _, key := range keys {
-		fl := files[key]
-		subbedDest := util.ReplacePrefix(fl.DestinationPath, c.Home, "~")
-		_, err := fmt.Fprintln(tw, fmt.Sprintf("%v\t => %v", key, subbedDest))
+		_, err := fmt.Fprintln(tw, fmt.Sprintf("%v\t => %v", key, m[key]))
 		if err != nil {
-			panic(fmt.Sprintf("error listing files, %v", err))
+			return err
 		}
 	}
-	err := tw.Flush()
-	if err != nil {
-		panic(err)
-	}
-}
 
-func (c *Config) ListTargetFiles(target string, w io.Writer) {
-	files := c.getFilesByTarget(target)
-	fmt.Fprintln(w, "Target: "+target)
-	c.writeFileMap(w, files)
+	return tw.Flush()
 }
 
 func (c *Config) GetAllBootstraps() map[string]Bootstrap {
@@ -348,7 +321,7 @@ func (c *Config) GetBootstrapsForTarget(target string) map[string]Bootstrap {
 
 	for _, key := range host.Bootstraps {
 		ret[key] = all[key]
-	}	
+	}
 
 	return ret
 }
@@ -418,4 +391,3 @@ func (c *Config) removeItem(slice []string, item string) ([]string, error) {
 	}
 	return newSlice, err
 }
-
