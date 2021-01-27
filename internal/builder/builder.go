@@ -90,7 +90,7 @@ func (b *Builder) Import(path string, as string) error {
 		as = util.ToTemplateName(path)
 	}
 
-	if b.Config.IsValidFile(as) {
+	if b.Config.IsKnownFile(as) {
 		return errors.New("file %q already managed, use --as to give it a different name")
 	}
 

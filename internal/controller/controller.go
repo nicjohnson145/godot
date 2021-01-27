@@ -103,8 +103,6 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 	var name string
 	if as != "" {
 		name, err = c.config.AddFile(as, file)
-	} else {
-		name, err = c.config.ManageFile(file)
 	}
 	if err != nil {
 		return err
@@ -112,7 +110,7 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 
 	// Potentially add the file to the current target
 	if !opts.NoAdd {
-		err = c.config.AddToTarget(c.config.Target, name)
+		err = c.config.AddTargetFile(c.config.Target, name)
 	}
 
 	// If everything has gone right up to this point, write the config to disk
@@ -153,7 +151,7 @@ func (c *controller) TargetAdd(target string, args []string) error {
 		return err
 	}
 
-	err = c.config.AddToTarget(target, tmpl)
+	err = c.config.AddTargetFile(target, tmpl)
 	if err != nil {
 		return err
 	}
@@ -185,7 +183,7 @@ func (c *controller) TargetRemove(target string, args []string) error {
 		return err
 	}
 
-	err = c.config.RemoveFromTarget(target, tmpl)
+	err = c.config.RemoveTargetFile(target, tmpl)
 	if err != nil {
 		return err
 	}

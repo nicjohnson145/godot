@@ -1,10 +1,6 @@
 package config
 
 import (
-	"bytes"
-	"fmt"
-	"os"
-	"path/filepath"
 	"sort"
 	"testing"
 
@@ -13,8 +9,10 @@ import (
 	"github.com/nicjohnson145/godot/internal/help"
 )
 
+const TARGET = "host1"
+
 func setup (t *testing.T, conf string) (*Config, func()) {
-	home, dotpath, remove := help.SetupDirectories(t, "host1")
+	home, dotpath, remove := help.SetupDirectories(t, TARGET)
 	help.WriteRepoConf(t, dotpath, conf)
 	c := NewConfig(&help.TempHomeDir{HomeDir: home})
 	return c, remove
@@ -59,391 +57,398 @@ func baseSetup(t *testing.T) (*Config, func()) {
 	}`)
 }
 
-func TestConfig(t *testing.T) {
-	t.Run("missing config file ok", func(t *testing.T) {
-		dir, remove := help.CreateTempDir(t, "home")
-		defer remove()
-		c := NewConfig(&help.TempHomeDir{HomeDir: dir})
-
-		name, err := os.Hostname()
-		help.Ensure(t, err)
-
-		if c.Target != name {
-			t.Errorf("incorrect target inferred, got %q want %q", c.Target, name)
-		}
-
-		expected := filepath.Join(dir, "dotfiles")
-		if c.DotfilesRoot != expected {
-			t.Errorf("dotfiles root not inferred, got %q want %q", c.DotfilesRoot, expected)
-		}
-	})
-
-	t.Run("build target pulled from file", func(t *testing.T) {
-		dir, remove := help.CreateTempDir(t, "home")
-		defer remove()
-
-		help.WriteConfig(t, dir, `{"target": "my_host"}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: dir})
-
-		if c.Target != "my_host" {
-			t.Errorf("incorrect target, got %q want %q", c.Target, "my_host")
-		}
-	})
-
-	t.Run("dotfiles root can be overridden", func(t *testing.T) {
-		dir, remove := help.CreateTempDir(t, "home")
-		defer remove()
-
-		help.WriteConfig(t, dir, `{"target": "my_host", "dotfiles_root": "some_path"}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: dir})
-
-		expected := "some_path"
-		if c.DotfilesRoot != expected {
-			t.Errorf("dotfiles root not pulled from file, got %q want %q", c.DotfilesRoot, expected)
-		}
-	})
-
-	t.Run("malformed config errors", func(t *testing.T) {
-		dir, remove := help.CreateTempDir(t, "home")
-		defer remove()
-
-		defer func() {
-			if r := recover(); r == nil {
-				t.Errorf("Code did not panic")
-			}
-		}()
-
-		help.WriteConfig(t, dir, `{"target": "my_host"`)
-		// Should panic
-		NewConfig(&help.TempHomeDir{HomeDir: dir})
-	})
-
-	t.Run("missing repo config means no files", func(t *testing.T) {
-		home, remove := help.CreateTempDir(t, "home")
-		defer remove()
-
-		dotfiles, removeDots := help.CreateTempDir(t, "dotfiles")
-		defer removeDots()
-
-		userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotfiles)
-		help.WriteConfig(t, home, userConf)
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-
-		if len(c.GetTargetFiles()) != 0 {
-			t.Errorf("missing repo config should result in 0 files, got %v", len(c.GetTargetFiles()))
-		}
-	})
-
-	t.Run("missing repo config can be added to", func(t *testing.T) {
-		home, remove := help.CreateTempDir(t, "home")
-		defer remove()
-
-		dotfiles, removeDots := help.CreateTempDir(t, "dotfiles")
-		defer removeDots()
-
-		userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotfiles)
-		help.WriteConfig(t, home, userConf)
-
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-
-		_, err := c.ManageFile(filepath.Join(home, ".some_conf"))
-		help.Ensure(t, err)
-
-		err = c.AddToTarget("my_target", "dot_some_conf")
-		help.Ensure(t, err)
-
-		err = c.Write()
-		help.Ensure(t, err)
-
-		help.AssertAllFiles(t, dotfiles, map[string]string{"dot_some_conf": "~/.some_conf"})
-		help.AssertTargetContents(t, dotfiles, "my_target", []string{"dot_some_conf"})
-	})
-
-	t.Run("target used to extract relevant files from repo config", func(t *testing.T) {
-		home, remove := help.CreateTempDir(t, "home")
-		defer remove()
-
-		dotfiles, removeDots := help.CreateTempDir(t, "dotfiles")
-		defer removeDots()
-
-		userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotfiles)
-		help.WriteConfig(t, home, userConf)
-
-		confData := fmt.Sprintf(`{
-			"all_files": {"dot_zshrc": "~/.zshrc", "init.vim": "~/.config/nvim/init.vim"},
-			"renders": {
-				"my_host": ["init.vim"],
-				"other_host": ["dot_zshrc", "init.vim"]
-			}
-		}`)
-		help.WriteRepoConf(t, dotfiles, confData)
-
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-
-		targetFiles := c.GetTargetFiles()
-		if len(targetFiles) != 1 {
-			t.Errorf("Expected 1 file, got %v", len(targetFiles))
-		}
-
-		f := targetFiles[0]
-		expectedDest := filepath.Join(home, ".config/nvim/init.vim")
-		if f.DestinationPath != expectedDest {
-			t.Errorf("incorrect destination, got %q want %q", f.DestinationPath, expectedDest)
-		}
-
-		expectedTemplate := filepath.Join(dotfiles, "templates", "init.vim")
-		if f.TemplatePath != expectedTemplate {
-			t.Errorf("incorrect template path, got %q want %q", f.TemplatePath, expectedTemplate)
-		}
-	})
-
-	t.Run("add files to repo config", func(t *testing.T) {
-		home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
-		defer remove()
-
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		c.ManageFile("~/.some_config")
-		c.ManageFile("~/.config/init.vim")
-		err := c.Write()
-		help.Ensure(t, err)
-
-		actual := help.GetAllFiles(t, dotPath)
-		expected := map[string]string{
-			"dot_zshrc":       "~/.zshrc",
-			"dot_some_config": "~/.some_config",
-			"init.vim":        "~/.config/init.vim",
-		}
-
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("all files incorrect, got %v want %v", actual, expected)
-		}
-	})
-
-	t.Run("add files to repo config with home substitution", func(t *testing.T) {
-		home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
-		defer remove()
-
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		_, err := c.ManageFile(filepath.Join(home, ".some_config"))
-		help.Ensure(t, err)
-		err = c.Write()
-		help.Ensure(t, err)
-
-		actual := help.GetAllFiles(t, dotPath)
-		expected := map[string]string{
-			"dot_zshrc":       "~/.zshrc",
-			"dot_some_config": "~/.some_config",
-		}
-
-		if !reflect.DeepEqual(actual, expected) {
-			t.Errorf("all files incorrect, got %v want %v", actual, expected)
-		}
-	})
-
-	t.Run("is valid file", func(t *testing.T) {
-		home, dotPath, remove := help.SetupDirectories(t, "home")
-		defer remove()
-
-		help.WriteRepoConf(t, dotPath, `{
-			"all_files": {
-				"dot_zshrc": "~/.zshrc"
-			}
-		}`)
-
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-
-		if c.IsValidFile("dot_zshrc") != true {
-			t.Fatalf("dot_zshrc should be a valid file")
-		}
-
-		if c.IsValidFile("invalid_file") != false {
-			t.Fatalf("invalid_file should not be a valid file")
-		}
-	})
-
-	t.Run("add files to repo already exists", func(t *testing.T) {
-		// should setup a "dot_zshrc" file
-		home, _, remove := help.SetupFullConfig(t, "home", nil)
-		defer remove()
-
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		_, err := c.ManageFile("~/subdir/.zshrc")
-		help.ShouldError(t, err)
-		want := `template name "dot_zshrc" already exists`
-		if err.Error() != want {
-			t.Fatalf("incorrect error, got %q want %q", err, want)
-		}
-	})
-
-	t.Run("add file to target", func(t *testing.T) {
-		home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
-		defer remove()
-
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		err := c.AddToTarget("my_host", "dot_zshrc")
-		help.Ensure(t, err)
-		err = c.Write()
-		if err != nil {
-			t.Fatalf("error writing config, %v", err)
-		}
-
-		help.AssertTargetContents(t, dotPath, "my_host", []string{"dot_zshrc"})
-	})
-
-	t.Run("list all files", func(t *testing.T) {
-		home, dotPath, remove := help.SetupDirectories(t, "home")
-		defer remove()
-
-		help.WriteRepoConf(t, dotPath, `{
-			"all_files": {
-				"dot_zshrc": "~/.zshrc",
-				"some_conf": "~/some_conf"
-			}
-		}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		s := bytes.NewBufferString("")
-		c.ListAllFiles(s)
-
-		want := `dot_zshrc => ~/.zshrc
-some_conf => ~/some_conf
-`
-
-		got := s.String()
-		if got != want {
-			t.Errorf("incorrect data printed, got %q want %q", got, want)
-		}
-	})
-
-	t.Run("list target files", func(t *testing.T) {
-		home, dotPath, remove := help.SetupDirectories(t, "home")
-		defer remove()
-
-		help.WriteRepoConf(t, dotPath, `{
-			"all_files": {
-				"dot_zshrc": "~/.zshrc",
-				"some_conf": "~/some_conf",
-				"other_conf": "~/other_conf"
-			},
-			"renders": {
-				"home": ["dot_zshrc", "some_conf"],
-				"work": ["other_conf"]
-			}
-		}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		s := bytes.NewBufferString("")
-		c.ListTargetFiles(c.Target, s)
-
-		want := `Target: home
-dot_zshrc => ~/.zshrc
-some_conf => ~/some_conf
-`
-
-		got := s.String()
-		if got != want {
-			t.Errorf("incorrect data printed, got %q want %q", got, want)
-		}
-	})
-
-	t.Run("remove_file_from_target", func(t *testing.T) {
-		home, dotPath, remove := help.SetupDirectories(t, "home")
-		defer remove()
-
-		help.WriteRepoConf(t, dotPath, `{
-			"all_files": {
-				"dot_zshrc": "~/.zshrc",
-				"some_conf": "~/some_conf"
-			},
-			"renders": {
-				"home": ["dot_zshrc", "some_conf"]
-			}
-		}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		err := c.RemoveFromTarget("home", "dot_zshrc")
-		help.Ensure(t, err)
-		err = c.Write()
-		help.Ensure(t, err)
-		help.AssertTargetContents(t, dotPath, "home", []string{"some_conf"})
-	})
-
-	t.Run("get_template_path_from_full_path", func(t *testing.T) {
-		home, dotPath, remove := help.SetupDirectories(t, "home")
-		defer remove()
-
-		help.WriteRepoConf(t, dotPath, `{
-			"all_files": {
-				"dot_zshrc": "~/.zshrc"
-			}
-		}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-
-		want := filepath.Join(dotPath, "templates", "dot_zshrc")
-		got, err := c.GetTemplateFromFullPath(filepath.Join(home, ".zshrc"))
-		help.Ensure(t, err)
-		if got != want {
-			t.Fatalf("incorrect template path, got %q want %q", got, want)
-		}
-	})
-
-	t.Run("get_template_path_from_full_path_not_found", func(t *testing.T) {
-		home, dotPath, remove := help.SetupDirectories(t, "home")
-		defer remove()
-
-		help.WriteRepoConf(t, dotPath, `{
-			"all_files": {
-				"dot_zshrc": "~/.zshrc"
-			}
-		}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-
-		_, err := c.GetTemplateFromFullPath(filepath.Join(home, ".missing_config"))
-		help.ShouldError(t, err)
-	})
-
-	t.Run("get_template_names_from_target", func(t *testing.T) {
-		home, dotPath, remove := help.SetupDirectories(t, "home")
-		defer remove()
-
-		help.WriteRepoConf(t, dotPath, `{
-			"all_files": {
-				"dot_zshrc": "~/.zshrc",
-				"other_file": "~/other_file"
-			},
-			"renders": {
-				"home": ["dot_zshrc"]
-			}
-		}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		got := c.GetTemplatesNamesForTarget("home")
-		want := []string{"dot_zshrc"}
-
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("incorrect files, got %q want %q", got, want)
-		}
-	})
-
-	t.Run("get_all_template_names", func(t *testing.T) {
-		home, dotPath, remove := help.SetupDirectories(t, "home")
-		defer remove()
-
-		help.WriteRepoConf(t, dotPath, `{
-			"all_files": {
-				"dot_zshrc": "~/.zshrc",
-				"other_file": "~/other_file"
-			},
-			"renders": {
-				"home": ["dot_zshrc"]
-			}
-		}`)
-		c := NewConfig(&help.TempHomeDir{HomeDir: home})
-		got := c.GetAllTemplateNames()
-		sort.Strings(got)
-		want := []string{"dot_zshrc", "other_file"}
-
-		if !reflect.DeepEqual(got, want) {
-			t.Fatalf("incorrect files, got %q want %q", got, want)
-		}
-	})
+func getErrFunc(t *testing.T, shouldError bool) func(*testing.T, error) {
+	t.Helper()
+	if shouldError {
+		return help.ShouldError
+	} else {
+		return help.Ok
+	}
 }
+
+//func TestConfig(t *testing.T) {
+//    t.Run("missing config file ok", func(t *testing.T) {
+//        dir, remove := help.CreateTempDir(t, "home")
+//        defer remove()
+//        c := NewConfig(&help.TempHomeDir{HomeDir: dir})
+
+//        name, err := os.Hostname()
+//        help.Ensure(t, err)
+
+//        if c.Target != name {
+//            t.Errorf("incorrect target inferred, got %q want %q", c.Target, name)
+//        }
+
+//        expected := filepath.Join(dir, "dotfiles")
+//        if c.DotfilesRoot != expected {
+//            t.Errorf("dotfiles root not inferred, got %q want %q", c.DotfilesRoot, expected)
+//        }
+//    })
+
+//    t.Run("build target pulled from file", func(t *testing.T) {
+//        dir, remove := help.CreateTempDir(t, "home")
+//        defer remove()
+
+//        help.WriteConfig(t, dir, `{"target": "my_host"}`)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: dir})
+
+//        if c.Target != "my_host" {
+//            t.Errorf("incorrect target, got %q want %q", c.Target, "my_host")
+//        }
+//    })
+
+//    t.Run("dotfiles root can be overridden", func(t *testing.T) {
+//        dir, remove := help.CreateTempDir(t, "home")
+//        defer remove()
+
+//        help.WriteConfig(t, dir, `{"target": "my_host", "dotfiles_root": "some_path"}`)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: dir})
+
+//        expected := "some_path"
+//        if c.DotfilesRoot != expected {
+//            t.Errorf("dotfiles root not pulled from file, got %q want %q", c.DotfilesRoot, expected)
+//        }
+//    })
+
+//    t.Run("malformed config errors", func(t *testing.T) {
+//        dir, remove := help.CreateTempDir(t, "home")
+//        defer remove()
+
+//        defer func() {
+//            if r := recover(); r == nil {
+//                t.Errorf("Code did not panic")
+//            }
+//        }()
+
+//        help.WriteConfig(t, dir, `{"target": "my_host"`)
+//        // Should panic
+//        NewConfig(&help.TempHomeDir{HomeDir: dir})
+//    })
+
+//    t.Run("missing repo config means no files", func(t *testing.T) {
+//        home, remove := help.CreateTempDir(t, "home")
+//        defer remove()
+
+//        dotfiles, removeDots := help.CreateTempDir(t, "dotfiles")
+//        defer removeDots()
+
+//        userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotfiles)
+//        help.WriteConfig(t, home, userConf)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+//        if len(c.GetTargetFiles()) != 0 {
+//            t.Errorf("missing repo config should result in 0 files, got %v", len(c.GetTargetFiles()))
+//        }
+//    })
+
+//    t.Run("missing repo config can be added to", func(t *testing.T) {
+//        home, remove := help.CreateTempDir(t, "home")
+//        defer remove()
+
+//        dotfiles, removeDots := help.CreateTempDir(t, "dotfiles")
+//        defer removeDots()
+
+//        userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotfiles)
+//        help.WriteConfig(t, home, userConf)
+
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+//        _, err := c.ManageFile(filepath.Join(home, ".some_conf"))
+//        help.Ensure(t, err)
+
+//        err = c.AddToTarget("my_target", "dot_some_conf")
+//        help.Ensure(t, err)
+
+//        err = c.Write()
+//        help.Ensure(t, err)
+
+//        help.AssertAllFiles(t, dotfiles, map[string]string{"dot_some_conf": "~/.some_conf"})
+//        help.AssertTargetContents(t, dotfiles, "my_target", []string{"dot_some_conf"})
+//    })
+
+//    t.Run("target used to extract relevant files from repo config", func(t *testing.T) {
+//        home, remove := help.CreateTempDir(t, "home")
+//        defer remove()
+
+//        dotfiles, removeDots := help.CreateTempDir(t, "dotfiles")
+//        defer removeDots()
+
+//        userConf := fmt.Sprintf(`{"target": "my_host", "dotfiles_root": "%v"}`, dotfiles)
+//        help.WriteConfig(t, home, userConf)
+
+//        confData := fmt.Sprintf(`{
+//            "all_files": {"dot_zshrc": "~/.zshrc", "init.vim": "~/.config/nvim/init.vim"},
+//            "renders": {
+//                "my_host": ["init.vim"],
+//                "other_host": ["dot_zshrc", "init.vim"]
+//            }
+//        }`)
+//        help.WriteRepoConf(t, dotfiles, confData)
+
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+//        targetFiles := c.GetTargetFiles()
+//        if len(targetFiles) != 1 {
+//            t.Errorf("Expected 1 file, got %v", len(targetFiles))
+//        }
+
+//        f := targetFiles[0]
+//        expectedDest := filepath.Join(home, ".config/nvim/init.vim")
+//        if f.DestinationPath != expectedDest {
+//            t.Errorf("incorrect destination, got %q want %q", f.DestinationPath, expectedDest)
+//        }
+
+//        expectedTemplate := filepath.Join(dotfiles, "templates", "init.vim")
+//        if f.TemplatePath != expectedTemplate {
+//            t.Errorf("incorrect template path, got %q want %q", f.TemplatePath, expectedTemplate)
+//        }
+//    })
+
+//    t.Run("add files to repo config", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
+//        defer remove()
+
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+//        c.ManageFile("~/.some_config")
+//        c.ManageFile("~/.config/init.vim")
+//        err := c.Write()
+//        help.Ensure(t, err)
+
+//        actual := help.GetAllFiles(t, dotPath)
+//        expected := map[string]string{
+//            "dot_zshrc":       "~/.zshrc",
+//            "dot_some_config": "~/.some_config",
+//            "init.vim":        "~/.config/init.vim",
+//        }
+
+//        if !reflect.DeepEqual(actual, expected) {
+//            t.Errorf("all files incorrect, got %v want %v", actual, expected)
+//        }
+//    })
+
+//    t.Run("add files to repo config with home substitution", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
+//        defer remove()
+
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+//        _, err := c.ManageFile(filepath.Join(home, ".some_config"))
+//        help.Ensure(t, err)
+//        err = c.Write()
+//        help.Ensure(t, err)
+
+//        actual := help.GetAllFiles(t, dotPath)
+//        expected := map[string]string{
+//            "dot_zshrc":       "~/.zshrc",
+//            "dot_some_config": "~/.some_config",
+//        }
+
+//        if !reflect.DeepEqual(actual, expected) {
+//            t.Errorf("all files incorrect, got %v want %v", actual, expected)
+//        }
+//    })
+
+//    t.Run("is valid file", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupDirectories(t, "home")
+//        defer remove()
+
+//        help.WriteRepoConf(t, dotPath, `{
+//            "all_files": {
+//                "dot_zshrc": "~/.zshrc"
+//            }
+//        }`)
+
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+//        if c.IsValidFile("dot_zshrc") != true {
+//            t.Fatalf("dot_zshrc should be a valid file")
+//        }
+
+//        if c.IsValidFile("invalid_file") != false {
+//            t.Fatalf("invalid_file should not be a valid file")
+//        }
+//    })
+
+//    t.Run("add files to repo already exists", func(t *testing.T) {
+//        // should setup a "dot_zshrc" file
+//        home, _, remove := help.SetupFullConfig(t, "home", nil)
+//        defer remove()
+
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+//        _, err := c.ManageFile("~/subdir/.zshrc")
+//        help.ShouldError(t, err)
+//        want := `template name "dot_zshrc" already exists`
+//        if err.Error() != want {
+//            t.Fatalf("incorrect error, got %q want %q", err, want)
+//        }
+//    })
+
+//    t.Run("add file to target", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
+//        defer remove()
+
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+//        err := c.AddToTarget("my_host", "dot_zshrc")
+//        help.Ensure(t, err)
+//        err = c.Write()
+//        if err != nil {
+//            t.Fatalf("error writing config, %v", err)
+//        }
+
+//        help.AssertTargetContents(t, dotPath, "my_host", []string{"dot_zshrc"})
+//    })
+
+//    t.Run("list all files", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupDirectories(t, "home")
+//        defer remove()
+
+//        help.WriteRepoConf(t, dotPath, `{
+//            "all_files": {
+//                "dot_zshrc": "~/.zshrc",
+//                "some_conf": "~/some_conf"
+//            }
+//        }`)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+//        s := bytes.NewBufferString("")
+//        c.ListAllFiles(s)
+
+//        want := `dot_zshrc => ~/.zshrc
+//some_conf => ~/some_conf
+//`
+
+//        got := s.String()
+//        if got != want {
+//            t.Errorf("incorrect data printed, got %q want %q", got, want)
+//        }
+//    })
+
+//    t.Run("list target files", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupDirectories(t, "home")
+//        defer remove()
+
+//        help.WriteRepoConf(t, dotPath, `{
+//            "all_files": {
+//                "dot_zshrc": "~/.zshrc",
+//                "some_conf": "~/some_conf",
+//                "other_conf": "~/other_conf"
+//            },
+//            "renders": {
+//                "home": ["dot_zshrc", "some_conf"],
+//                "work": ["other_conf"]
+//            }
+//        }`)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+//        s := bytes.NewBufferString("")
+//        c.ListTargetFiles(c.Target, s)
+
+//        want := `Target: home
+//dot_zshrc => ~/.zshrc
+//some_conf => ~/some_conf
+//`
+
+//        got := s.String()
+//        if got != want {
+//            t.Errorf("incorrect data printed, got %q want %q", got, want)
+//        }
+//    })
+
+//    t.Run("remove_file_from_target", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupDirectories(t, "home")
+//        defer remove()
+
+//        help.WriteRepoConf(t, dotPath, `{
+//            "all_files": {
+//                "dot_zshrc": "~/.zshrc",
+//                "some_conf": "~/some_conf"
+//            },
+//            "renders": {
+//                "home": ["dot_zshrc", "some_conf"]
+//            }
+//        }`)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+//        err := c.RemoveFromTarget("home", "dot_zshrc")
+//        help.Ensure(t, err)
+//        err = c.Write()
+//        help.Ensure(t, err)
+//        help.AssertTargetContents(t, dotPath, "home", []string{"some_conf"})
+//    })
+
+//    t.Run("get_template_path_from_full_path", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupDirectories(t, "home")
+//        defer remove()
+
+//        help.WriteRepoConf(t, dotPath, `{
+//            "all_files": {
+//                "dot_zshrc": "~/.zshrc"
+//            }
+//        }`)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+//        want := filepath.Join(dotPath, "templates", "dot_zshrc")
+//        got, err := c.GetTemplateFromFullPath(filepath.Join(home, ".zshrc"))
+//        help.Ensure(t, err)
+//        if got != want {
+//            t.Fatalf("incorrect template path, got %q want %q", got, want)
+//        }
+//    })
+
+//    t.Run("get_template_path_from_full_path_not_found", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupDirectories(t, "home")
+//        defer remove()
+
+//        help.WriteRepoConf(t, dotPath, `{
+//            "all_files": {
+//                "dot_zshrc": "~/.zshrc"
+//            }
+//        }`)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+
+//        _, err := c.GetTemplateFromFullPath(filepath.Join(home, ".missing_config"))
+//        help.ShouldError(t, err)
+//    })
+
+//    t.Run("get_template_names_from_target", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupDirectories(t, "home")
+//        defer remove()
+
+//        help.WriteRepoConf(t, dotPath, `{
+//            "all_files": {
+//                "dot_zshrc": "~/.zshrc",
+//                "other_file": "~/other_file"
+//            },
+//            "renders": {
+//                "home": ["dot_zshrc"]
+//            }
+//        }`)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+//        got := c.GetTemplatesNamesForTarget("home")
+//        want := []string{"dot_zshrc"}
+
+//        if !reflect.DeepEqual(got, want) {
+//            t.Fatalf("incorrect files, got %q want %q", got, want)
+//        }
+//    })
+
+//    t.Run("get_all_template_names", func(t *testing.T) {
+//        home, dotPath, remove := help.SetupDirectories(t, "home")
+//        defer remove()
+
+//        help.WriteRepoConf(t, dotPath, `{
+//            "all_files": {
+//                "dot_zshrc": "~/.zshrc",
+//                "other_file": "~/other_file"
+//            },
+//            "renders": {
+//                "home": ["dot_zshrc"]
+//            }
+//        }`)
+//        c := NewConfig(&help.TempHomeDir{HomeDir: home})
+//        got := c.GetAllTemplateNames()
+//        sort.Strings(got) want := []string{"dot_zshrc", "other_file"}
+//        if !reflect.DeepEqual(got, want) {
+//            t.Fatalf("incorrect files, got %q want %q", got, want)
+//        }
+//    })
+//}
 
 func TestFiles(t *testing.T) {
 	t.Run("GetAllFiles_empty", func(t *testing.T) {
@@ -490,6 +495,135 @@ func TestFiles(t *testing.T) {
 			defer remove()
 
 			got := c.GetFilesForTarget(tc.host)
+			help.Equals(t, tc.want, got)
+		})
+	}
+
+	addFile := []struct{
+		name string
+		template string
+		destination string
+		shouldError bool
+		initial string
+		want map[string]string
+	}{
+		{
+			name: "happy_path",
+			template: "new_conf",
+			destination: "~/new_conf",
+			initial: "{}",
+			want: map[string]string{"new_conf": "~/new_conf"},
+		},
+		{
+			name: "no_template",
+			template: "",
+			destination: "~/.new_conf",
+			initial: "{}",
+			want: map[string]string{"dot_new_conf": "~/.new_conf"},
+		},
+		{
+			name: "template_exists",
+			template: "",
+			destination: "~/.new_conf",
+			shouldError: true,
+			initial: `{"files": {"dot_new_conf": "~/.not_this_file"}}`,
+			want: map[string]string{"dot_new_conf": "~/.not_this_file"},
+		},
+	}
+	for _, tc := range addFile {
+		t.Run("AddFile_" + tc.name, func(t *testing.T){
+			c, remove := setup(t, tc.initial)
+			defer remove()
+
+			_, err := c.AddFile(tc.template, tc.destination)
+			getErrFunc(t, tc.shouldError)(t, err)
+			got := c.GetAllFiles()
+			help.Equals(t, tc.want, got)
+		})
+	}
+
+	addToTarget := []struct{
+		name string
+		shouldError bool
+		template string
+		want map[string]string
+	}{
+		{
+			name: "happy_path",
+			shouldError: false,
+			template: "dot_zshrc",
+			want: map[string]string{"dot_zshrc": "~/.zshrc"},
+		},
+		{
+			name: "unknown_template",
+			shouldError: true,
+			template: "not_a_template",
+			want: map[string]string{},
+		},
+	}
+	for _, tc := range addToTarget {
+		t.Run("AddTargetFile_" + tc.name, func(t *testing.T){
+			initial := `{"files": {"dot_zshrc": "~/.zshrc"}}`
+			c, remove := setup(t, initial)
+			defer remove()
+
+			err := c.AddTargetFile(TARGET, tc.template)
+			getErrFunc(t, tc.shouldError)(t, err)
+
+			got := c.GetFilesForTarget(TARGET)
+			help.Equals(t, tc.want, got)
+		})
+	}
+
+	removeFromTarget := []struct{
+		name string
+		shouldError bool
+		target string
+		template string
+		want map[string]string
+	}{
+		{
+			name: "happy_path",
+			shouldError: false,
+			target: "host1",
+			template: "dot_zshrc",
+			want: map[string]string{"some_conf": "~/some_conf"},
+		},
+		{
+			name: "unknown_target",
+			shouldError: true,
+			target: "not_a_target",
+			template: "dot_zshrc",
+			want: map[string]string{},
+		},
+		{
+			name: "unknown_template",
+			shouldError: true,
+			target: "host1",
+			template: "not_a_template",
+			want: map[string]string{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
+		},
+	}
+	for _, tc := range removeFromTarget {
+		t.Run("RemoveTargetFile_" + tc.name, func(t *testing.T){
+			initial := `{
+				"files": {
+					"dot_zshrc": "~/.zshrc",
+					"some_conf": "~/some_conf"
+				},
+				"hosts": {
+					"host1": {
+						"files": ["dot_zshrc", "some_conf"]
+					}
+				}
+			}`
+			c, remove := setup(t, initial)
+			defer remove()
+	
+			err := c.RemoveTargetFile(tc.target, tc.template)
+			getErrFunc(t, tc.shouldError)(t, err)
+
+			got := c.GetFilesForTarget(tc.target)
 			help.Equals(t, tc.want, got)
 		})
 	}
@@ -715,6 +849,13 @@ func TestBootstrapping(t *testing.T) {
 			item:        "not_an_item",
 		},
 		{
+			name:        "unknown_item",
+			shouldError: true,
+			host:        "host1",
+			item:        "not_an_item",
+			want:            []string{"ripgrep"},
+		},
+		{
 			name:            "valid_remove_still_items_left",
 			shouldError:     false,
 			host:            "host2",
@@ -730,17 +871,12 @@ func TestBootstrapping(t *testing.T) {
 		},
 	}
 	for _, tc := range removeBootstrapTarget {
-		t.Run("remove_bootstrap_target_"+tc.name, func(t *testing.T) {
+		t.Run("RemoveTargetBootstrap_" + tc.name, func(t *testing.T) {
 			c, remove := baseSetup(t)
 			defer remove()
 
 			err := c.RemoveTargetBootstrap(tc.host, tc.item)
-			if tc.shouldError {
-				help.ShouldError(t, err)
-				return
-			} else {
-				help.Ensure(t, err)
-			}
+			getErrFunc(t, tc.shouldError)(t, err)
 
 			host, _ := c.content.Hosts[tc.host]
 			assertBootstrap(t, host.Bootstraps, tc.want)

@@ -217,7 +217,7 @@ func (c *Config) AddFile(template string, destination string) (string, error) {
 	if template == "" {
 		template = util.ToTemplateName(destination)
 	}
-	if c.IsValidFile(template) {
+	if c.IsKnownFile(template) {
 		return "", errors.New(fmt.Sprintf("template name %q already exists", template))
 	}
 	newDest := util.ReplacePrefix(destination, c.Home, "~")
@@ -225,27 +225,31 @@ func (c *Config) AddFile(template string, destination string) (string, error) {
 	return template, nil
 }
 
-func (c *Config) AddToTarget(target string, name string) error {
-	if !c.IsValidFile(name) {
+func (c *Config) AddTargetFile(target string, name string) error {
+	if !c.IsKnownFile(name) {
 		return errors.New(fmt.Sprintf("unknown file name of %q", name))
 	}
-	c.content.Renders[target] = append(c.content.Renders[target], name)
+	host, ok := c.content.Hosts[target]
+	if !ok {
+		host = Host{}
+	}
+	host.Files = append(host.Files, name)
+	c.content.Hosts[target] = host
 	return nil
 }
 
-func (c *Config) RemoveFromTarget(target string, name string) error {
-	files, ok := c.content.Renders[target]
+func (c *Config) RemoveTargetFile(target string, name string) error {
+	host, ok := c.content.Hosts[target]
 	if !ok {
-		return errors.New(fmt.Sprintf("unknown target %q", target))
+		return fmt.Errorf("unknown target %q", target)
 	}
-	var newFiles []string
-	for _, fl := range files {
-		if fl == name {
-			continue
-		}
-		newFiles = append(newFiles, fl)
+
+	newFiles, err := c.removeItem(host.Files, name)
+	if err != nil {
+		return fmt.Errorf("remove target file: %w", err)
 	}
-	c.content.Renders[target] = newFiles
+	host.Files = newFiles
+	c.content.Hosts[target] = host
 	return nil
 }
 
@@ -261,7 +265,7 @@ func (c *Config) GetAllTemplateNames() []string {
 	return names
 }
 
-func (c *Config) IsValidFile(name string) bool {
+func (c *Config) IsKnownFile(name string) bool {
 	_, ok := c.content.Files[name]
 	return ok
 }
@@ -391,16 +395,30 @@ func (c *Config) RemoveTargetBootstrap(target string, name string) error {
 		return fmt.Errorf("Unknown target of %q", target)
 	}
 
-	new := make([]string, 0, len(host.Bootstraps))
-	for _, item := range host.Bootstraps {
-		if item == name {
-			continue
-		}
-		new = append(new, item)
+	new, err := c.removeItem(host.Bootstraps, name)
+	if err != nil {
+		return err
 	}
-
 	host.Bootstraps = new
 	c.content.Hosts[target] = host
 
 	return nil
+}
+
+func (c *Config) removeItem(slice []string, item string) ([]string, error) {
+	newSlice := make([]string, 0, len(slice))
+	found := false
+	for _, val := range slice {
+		if val == item {
+			found = true
+			continue
+		}
+		newSlice = append(newSlice, val)
+	}
+
+	var err error
+	if !found {
+		err = fmt.Errorf("item %q not found", item)
+	}
+	return newSlice, err
 }
