@@ -227,7 +227,7 @@ func (c *Config) AddFile(template string, destination string) (string, error) {
 
 func (c *Config) AddTargetFile(target string, name string) error {
 	if !c.IsKnownFile(name) {
-		return errors.New(fmt.Sprintf("unknown file name of %q", name))
+		return fmt.Errorf("Unknown template of %q", name)
 	}
 	host, ok := c.content.Hosts[target]
 	if !ok {
@@ -368,10 +368,6 @@ func (c *Config) isValidBootstrap(name string) bool {
 }
 
 func (c *Config) AddTargetBootstrap(target string, name string) error {
-	if target == "" {
-		target = c.Target
-	}
-
 	if !c.isValidBootstrap(name) {
 		return fmt.Errorf("Unknown bootstrap item of %q", name)
 	}
@@ -422,3 +418,4 @@ func (c *Config) removeItem(slice []string, item string) ([]string, error) {
 	}
 	return newSlice, err
 }
+
