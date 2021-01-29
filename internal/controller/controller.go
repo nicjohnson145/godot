@@ -261,6 +261,19 @@ func (c *controller) ListAllBootstrapsForTarget(target string, w io.Writer) erro
 	return c.git_pullOnly(f)
 }
 
+func (c *controller) AddBootstrapItem(item, manager, pkg, location string) error {
+	f := func() error {
+		if !config.IsValidPackageManager(manager) {
+			return fmt.Errorf("non-supported package manager of %q", manager)
+		}
+
+		c.config.AddBootstrapItem(item, manager, pkg, location)
+		return c.write()
+	}
+
+	return c.git_pushAndPull(f)
+}
+
 func (c *controller) AddTargetBootstrap(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)

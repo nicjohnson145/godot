@@ -24,10 +24,10 @@ const (
 	CURRENT = "<CURRENT>"
 )
 
-var validManagers = []string{APT, BREW}
+var ValidManagers = []string{APT, BREW, GIT}
 
 func IsValidPackageManager(candidate string) bool {
-	for _, val := range validManagers {
+	for _, val := range ValidManagers {
 		if candidate == val {
 			return true
 		}
