@@ -235,6 +235,18 @@ func (c *controller) EditFile(args []string, opts EditOpts) error {
 	return c.git_pushAndPull(f)
 }
 
+func (c *controller) ShowBootstrapsEntry(target string, w io.Writer) error {
+	f := func() error {
+		if c.targetIsSet(target) {
+			return c.ListAllBootstrapsForTarget(target, os.Stdout)
+		} else {
+			return c.ListAllBootstraps(os.Stdout)
+		}
+	}
+
+	return c.git_pullOnly(f)
+}
+
 func (c *controller) ListAllBootstraps(w io.Writer) error {
 	f := func() error {
 		return c.config.ListAllBootstraps(w)
@@ -242,7 +254,7 @@ func (c *controller) ListAllBootstraps(w io.Writer) error {
 	return c.git_pullOnly(f)
 }
 
-func (c *controller) ListAllBootstrapsForTarget(w io.Writer, target string) error {
+func (c *controller) ListAllBootstrapsForTarget(target string, w io.Writer) error {
 	f := func() error {
 		return c.config.ListBootstrapsForTarget(w, target)
 	}

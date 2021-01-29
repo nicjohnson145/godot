@@ -7,6 +7,7 @@ import (
 
 func init() {
 	ceaseCmd.AddCommand(ceaseFileCmd)
+	ceaseCmd.AddCommand(ceaseBootstrapCmd)
 	rootCmd.AddCommand(ceaseCmd)
 }
 
@@ -25,6 +26,18 @@ var (
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
 			return c.TargetRemoveFile(target, args)
+		},
+	}
+
+	ceaseBootstrapCmd = &cobra.Command{
+		Use: "bootstrap [bootstrap]",
+		Short: "Remove an item to be bootstrapped from a target",
+		Long: "Remove an item to be bootstrapped from a target. If a bootstrap name is not given, a " +
+			  "selection prompt wil open. If no target is given, the current target will be used",
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
+			return c.RemoveTargetBootstrap(target, args)
 		},
 	}
 )
