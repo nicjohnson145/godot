@@ -235,6 +235,67 @@ func (c *controller) EditFile(args []string, opts EditOpts) error {
 	return c.git_pushAndPull(f)
 }
 
+func (c *controller) ListAllBootstraps(w io.Writer) error {
+	f := func() error {
+		return c.config.ListAllBootstraps(w)
+	}
+	return c.git_pullOnly(f)
+}
+
+func (c *controller) ListAllBootstrapsForTarget(w io.Writer, target string) error {
+	f := func() error {
+		return c.config.ListBootstrapsForTarget(w, target)
+	}
+	return c.git_pullOnly(f)
+}
+
+func (c *controller) AddTargetBootstrap(target string, args []string) error {
+	f := func() error {
+		target = c.getTarget(target)
+
+		all := c.config.GetAllBootstraps()
+		if len(all) == 0 {
+			return fmt.Errorf("No bootstraps defined")
+		}
+
+		options := make([]string, 0, len(all))
+		for key := range all {
+			options = append(options, key)
+		}
+		bootstrap, err := c.fuzzyOrArgs(args, options)
+		if err != nil {
+			if err == fuzzyfinder.ErrAbort {
+				fmt.Println("Aborting...")
+				return nil
+			}
+			return err
+		}
+
+		return c.config.AddTargetBootstrap(target, bootstrap)
+	}
+
+	return c.git_pushAndPull(f)
+}
+
+func (c *controller) RemoveTargetBootstrap(target string, args []string) error {
+	f := func() error {
+		target = c.getTarget(target)
+		options := c.config.GetBootstrapTargetsForTarget(target)
+		bootstrap, err := c.fuzzyOrArgs(args, options)
+		if err != nil {
+			if err == fuzzyfinder.ErrAbort {
+				fmt.Println("Aborting...")
+				return nil
+			}
+			return err
+		}
+
+		return c.config.RemoveTargetBootstrap(target, bootstrap)
+	}
+
+	return c.git_pushAndPull(f)
+}
+
 func (c *controller) getFile(args []string) (filePath string, outErr error) {
 	allFiles := c.config.GetAllFiles()
 	options := make([]string, 0, len(allFiles))

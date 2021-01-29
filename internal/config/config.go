@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/nicjohnson145/godot/internal/util"
@@ -49,6 +50,16 @@ type BootstrapItem struct {
 }
 
 type Bootstrap map[string]BootstrapItem
+
+func (b Bootstrap) MethodsString() string {
+	keys := make([]string, 0, len(b))
+	for key := range b {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	return strings.Join(keys, ", ")
+}
 
 type Host struct {
 	Files      []string `json:"files"`
@@ -325,6 +336,31 @@ func (c *Config) GetBootstrapsForTarget(target string) map[string]Bootstrap {
 	}
 
 	return ret
+}
+
+func (c *Config) GetBootstrapTargetsForTarget(target string) []string {
+	if target == "" {
+		target = c.Target
+	}
+	return c.content.Hosts[target].Bootstraps
+}
+
+func (c *Config) ListAllBootstraps(w io.Writer) error {
+	m := c.bootstrapToStringMap(c.GetAllBootstraps())
+	return c.writeStringMap(w, m)
+}
+
+func (c *Config) ListBootstrapsForTarget(w io.Writer, target string) error {
+	m := c.bootstrapToStringMap(c.GetBootstrapsForTarget(target))
+	return c.writeStringMap(w, m)
+}
+
+func (c *Config) bootstrapToStringMap(m map[string]Bootstrap) StringMap {
+	new := make(StringMap)
+	for key, value := range m {
+		new[key] = value.MethodsString()
+	}
+	return new
 }
 
 func (c *Config) AddBootstrapItem(item, manager, pkg, location string) {
