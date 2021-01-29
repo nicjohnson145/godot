@@ -16,15 +16,15 @@ var (
 	as string
 
 	addCmd = &cobra.Command{
-		Use: "add [object]",
+		Use:   "add [object]",
 		Short: "Add an object",
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 	}
 
 	addFile = &cobra.Command{
-		Use: "file [file]",
+		Use:   "file [file]",
 		Short: "Add a file",
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
 			return c.Import(args[0], as, controller.ImportOpts{})

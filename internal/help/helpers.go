@@ -80,6 +80,7 @@ func Equals(tb testing.TB, exp, act interface{}) {
 		tb.FailNow()
 	}
 }
+
 // }}
 
 func CreateTempDir(t *testing.T, pattern string) (string, func()) {
@@ -299,7 +300,7 @@ func AssertAllFiles(t *testing.T, dotPath string, want map[string]string) {
 
 func AssertPresentInAllFiles(t *testing.T, dotpath string, want map[string]string) {
 	t.Helper()
-	
+
 	allFiles := GetAllFiles(t, dotpath)
 	for key, value := range want {
 		actualVal, ok := allFiles[key]

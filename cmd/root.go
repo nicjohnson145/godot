@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/spf13/cobra"
 )
 
 func init() {
@@ -27,7 +27,7 @@ func init() {
 }
 
 var (
-	noGit bool
+	noGit  bool
 	target string
 
 	rootCmd = &cobra.Command{

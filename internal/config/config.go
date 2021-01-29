@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	APT  = "apt"
-	BREW = "brew"
-	GIT  = "git"
+	APT     = "apt"
+	BREW    = "brew"
+	GIT     = "git"
 	CURRENT = "<CURRENT>"
 )
 
@@ -37,7 +37,7 @@ func IsValidPackageManager(candidate string) bool {
 type StringMap map[string]string
 
 type repoConfig struct {
-	Files      StringMap    `json:"files"`
+	Files      StringMap            `json:"files"`
 	Renders    map[string][]string  `json:"renders"`
 	Bootstraps map[string]Bootstrap `json:"bootstraps"`
 	Hosts      map[string]Host      `json:"hosts"`

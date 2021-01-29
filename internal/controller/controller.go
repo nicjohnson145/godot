@@ -85,7 +85,7 @@ func (c *controller) getTarget(t string) string {
 	return t
 }
 
-func (c *controller) git_pushAndPull(function func()error) error {
+func (c *controller) git_pushAndPull(function func() error) error {
 	if err := c.repo.Pull(); err != nil {
 		return err
 	}
@@ -97,7 +97,7 @@ func (c *controller) git_pushAndPull(function func()error) error {
 	return c.repo.Push()
 }
 
-func (c *controller) git_pullOnly(function func()error) error {
+func (c *controller) git_pullOnly(function func() error) error {
 	if err := c.repo.Pull(); err != nil {
 		return err
 	}
@@ -234,8 +234,6 @@ func (c *controller) EditFile(args []string, opts EditOpts) error {
 
 	return c.git_pushAndPull(f)
 }
-
-
 
 func (c *controller) getFile(args []string) (filePath string, outErr error) {
 	allFiles := c.config.GetAllFiles()

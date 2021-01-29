@@ -11,7 +11,7 @@ import (
 
 const TARGET = "host1"
 
-func setup (t *testing.T, conf string) (*Config, func()) {
+func setup(t *testing.T, conf string) (*Config, func()) {
 	home, dotpath, remove := help.SetupDirectories(t, TARGET)
 	help.WriteRepoConf(t, dotpath, conf)
 	c := NewConfig(&help.TempHomeDir{HomeDir: home})
@@ -433,12 +433,12 @@ func TestFiles(t *testing.T) {
 		want := StringMap{
 			"dot_zshrc": "~/.zshrc",
 			"some_conf": "~/some_conf",
-			"odd_conf": "/etc/odd_conf",
+			"odd_conf":  "/etc/odd_conf",
 		}
 		help.Equals(t, want, got)
 	})
 
-	getFilesForTarget := []struct{
+	getFilesForTarget := []struct {
 		name string
 		host string
 		want StringMap
@@ -454,8 +454,8 @@ func TestFiles(t *testing.T) {
 			want: StringMap{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
 		},
 	}
-	for _, tc := range getFilesForTarget{
-		t.Run("GetFilesForTarget_" + tc.name, func(t *testing.T) {
+	for _, tc := range getFilesForTarget {
+		t.Run("GetFilesForTarget_"+tc.name, func(t *testing.T) {
 			c, remove := baseSetup(t)
 			defer remove()
 
@@ -464,39 +464,39 @@ func TestFiles(t *testing.T) {
 		})
 	}
 
-	addFile := []struct{
-		name string
-		template string
+	addFile := []struct {
+		name        string
+		template    string
 		destination string
 		shouldError bool
-		initial string
-		want StringMap
+		initial     string
+		want        StringMap
 	}{
 		{
-			name: "happy_path",
-			template: "new_conf",
+			name:        "happy_path",
+			template:    "new_conf",
 			destination: "~/new_conf",
-			initial: "{}",
-			want: StringMap{"new_conf": "~/new_conf"},
+			initial:     "{}",
+			want:        StringMap{"new_conf": "~/new_conf"},
 		},
 		{
-			name: "no_template",
-			template: "",
+			name:        "no_template",
+			template:    "",
 			destination: "~/.new_conf",
-			initial: "{}",
-			want: StringMap{"dot_new_conf": "~/.new_conf"},
+			initial:     "{}",
+			want:        StringMap{"dot_new_conf": "~/.new_conf"},
 		},
 		{
-			name: "template_exists",
-			template: "",
+			name:        "template_exists",
+			template:    "",
 			destination: "~/.new_conf",
 			shouldError: true,
-			initial: `{"files": {"dot_new_conf": "~/.not_this_file"}}`,
-			want: StringMap{"dot_new_conf": "~/.not_this_file"},
+			initial:     `{"files": {"dot_new_conf": "~/.not_this_file"}}`,
+			want:        StringMap{"dot_new_conf": "~/.not_this_file"},
 		},
 	}
 	for _, tc := range addFile {
-		t.Run("AddFile_" + tc.name, func(t *testing.T){
+		t.Run("AddFile_"+tc.name, func(t *testing.T) {
 			c, remove := setup(t, tc.initial)
 			defer remove()
 
@@ -507,27 +507,27 @@ func TestFiles(t *testing.T) {
 		})
 	}
 
-	addToTarget := []struct{
-		name string
+	addToTarget := []struct {
+		name        string
 		shouldError bool
-		template string
-		want StringMap
+		template    string
+		want        StringMap
 	}{
 		{
-			name: "happy_path",
+			name:        "happy_path",
 			shouldError: false,
-			template: "dot_zshrc",
-			want: StringMap{"dot_zshrc": "~/.zshrc"},
+			template:    "dot_zshrc",
+			want:        StringMap{"dot_zshrc": "~/.zshrc"},
 		},
 		{
-			name: "unknown_template",
+			name:        "unknown_template",
 			shouldError: true,
-			template: "not_a_template",
-			want: StringMap{},
+			template:    "not_a_template",
+			want:        StringMap{},
 		},
 	}
 	for _, tc := range addToTarget {
-		t.Run("AddTargetFile_" + tc.name, func(t *testing.T){
+		t.Run("AddTargetFile_"+tc.name, func(t *testing.T) {
 			initial := `{"files": {"dot_zshrc": "~/.zshrc"}}`
 			c, remove := setup(t, initial)
 			defer remove()
@@ -540,37 +540,37 @@ func TestFiles(t *testing.T) {
 		})
 	}
 
-	removeFromTarget := []struct{
-		name string
+	removeFromTarget := []struct {
+		name        string
 		shouldError bool
-		target string
-		template string
-		want StringMap
+		target      string
+		template    string
+		want        StringMap
 	}{
 		{
-			name: "happy_path",
+			name:        "happy_path",
 			shouldError: false,
-			target: "host1",
-			template: "dot_zshrc",
-			want: StringMap{"some_conf": "~/some_conf"},
+			target:      "host1",
+			template:    "dot_zshrc",
+			want:        StringMap{"some_conf": "~/some_conf"},
 		},
 		{
-			name: "unknown_target",
+			name:        "unknown_target",
 			shouldError: true,
-			target: "not_a_target",
-			template: "dot_zshrc",
-			want: StringMap{},
+			target:      "not_a_target",
+			template:    "dot_zshrc",
+			want:        StringMap{},
 		},
 		{
-			name: "unknown_template",
+			name:        "unknown_template",
 			shouldError: true,
-			target: "host1",
-			template: "not_a_template",
-			want: StringMap{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
+			target:      "host1",
+			template:    "not_a_template",
+			want:        StringMap{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
 		},
 	}
 	for _, tc := range removeFromTarget {
-		t.Run("RemoveTargetFile_" + tc.name, func(t *testing.T){
+		t.Run("RemoveTargetFile_"+tc.name, func(t *testing.T) {
 			initial := `{
 				"files": {
 					"dot_zshrc": "~/.zshrc",
@@ -584,7 +584,7 @@ func TestFiles(t *testing.T) {
 			}`
 			c, remove := setup(t, initial)
 			defer remove()
-	
+
 			err := c.RemoveTargetFile(tc.target, tc.template)
 			getErrFunc(t, tc.shouldError)(t, err)
 
@@ -627,12 +627,12 @@ func TestBootstrapping(t *testing.T) {
 		want := map[string]Bootstrap{
 			"ripgrep": {
 				"brew": {Name: "rip-grep"},
-				"apt": {Name: "ripgrep"},
+				"apt":  {Name: "ripgrep"},
 			},
 			"pyenv": {
 				"brew": {Name: "pyenv"},
 				"git": {
-					Name: "https://github.com/pyenv/pyenv.git",
+					Name:     "https://github.com/pyenv/pyenv.git",
 					Location: "~/.pyenv",
 				},
 			},
@@ -654,12 +654,12 @@ func TestBootstrapping(t *testing.T) {
 			want: map[string]Bootstrap{
 				"ripgrep": {
 					"brew": {Name: "rip-grep"},
-					"apt": {Name: "ripgrep"},
+					"apt":  {Name: "ripgrep"},
 				},
 				"pyenv": {
 					"brew": {Name: "pyenv"},
 					"git": {
-						Name: "https://github.com/pyenv/pyenv.git",
+						Name:     "https://github.com/pyenv/pyenv.git",
 						Location: "~/.pyenv",
 					},
 				},
@@ -671,7 +671,7 @@ func TestBootstrapping(t *testing.T) {
 			want: map[string]Bootstrap{
 				"ripgrep": {
 					"brew": {Name: "rip-grep"},
-					"apt": {Name: "ripgrep"},
+					"apt":  {Name: "ripgrep"},
 				},
 			},
 		},
@@ -725,7 +725,7 @@ func TestBootstrapping(t *testing.T) {
 			initial: `{"bootstraps": {"ripgrep": {"brew": {"name": "rip-grep"}}}}`,
 			want: map[string]Bootstrap{
 				"ripgrep": {
-					"apt": {Name: "ripgrep"},
+					"apt":  {Name: "ripgrep"},
 					"brew": {Name: "rip-grep"},
 				},
 			},
@@ -801,11 +801,11 @@ func TestBootstrapping(t *testing.T) {
 	}
 
 	removeBootstrapTarget := []struct {
-		name            string
-		shouldError     bool
-		host            string
-		item            string
-		want            []string
+		name        string
+		shouldError bool
+		host        string
+		item        string
+		want        []string
 	}{
 		{
 			name:        "unknown_target",
@@ -818,25 +818,25 @@ func TestBootstrapping(t *testing.T) {
 			shouldError: true,
 			host:        "host1",
 			item:        "not_an_item",
-			want:            []string{"ripgrep"},
+			want:        []string{"ripgrep"},
 		},
 		{
-			name:            "valid_remove_still_items_left",
-			shouldError:     false,
-			host:            "host2",
-			item:            "pyenv",
-			want:            []string{"ripgrep"},
+			name:        "valid_remove_still_items_left",
+			shouldError: false,
+			host:        "host2",
+			item:        "pyenv",
+			want:        []string{"ripgrep"},
 		},
 		{
-			name:            "valid_remove_last_item",
-			shouldError:     false,
-			host:            "host1",
-			item:            "ripgrep",
-			want:            []string{},
+			name:        "valid_remove_last_item",
+			shouldError: false,
+			host:        "host1",
+			item:        "ripgrep",
+			want:        []string{},
 		},
 	}
 	for _, tc := range removeBootstrapTarget {
-		t.Run("RemoveTargetBootstrap_" + tc.name, func(t *testing.T) {
+		t.Run("RemoveTargetBootstrap_"+tc.name, func(t *testing.T) {
 			c, remove := baseSetup(t)
 			defer remove()
 

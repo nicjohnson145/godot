@@ -56,7 +56,7 @@ func (b *Builder) buildFileObjs(m config.StringMap) []file.File {
 	files := make([]file.File, 0, len(m))
 	for tmpl, dest := range m {
 		files = append(files, file.File{
-			TemplatePath: filepath.Join(b.Config.TemplateRoot, tmpl),
+			TemplatePath:    filepath.Join(b.Config.TemplateRoot, tmpl),
 			DestinationPath: util.ReplacePrefix(dest, "~/", b.Config.Home),
 		})
 	}
