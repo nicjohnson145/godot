@@ -271,7 +271,11 @@ func (c *controller) AddTargetBootstrap(target string, args []string) error {
 			return err
 		}
 
-		return c.config.AddTargetBootstrap(target, bootstrap)
+		if err := c.config.AddTargetBootstrap(target, bootstrap); err != nil {
+			return err
+		}
+
+		return c.write()
 	}
 
 	return c.git_pushAndPull(f)
@@ -290,7 +294,11 @@ func (c *controller) RemoveTargetBootstrap(target string, args []string) error {
 			return err
 		}
 
-		return c.config.RemoveTargetBootstrap(target, bootstrap)
+		if err := c.config.RemoveTargetBootstrap(target, bootstrap); err != nil {
+			return err
+		}
+
+		return c.write()
 	}
 
 	return c.git_pushAndPull(f)
