@@ -24,7 +24,7 @@ var (
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
-			return c.TargetRemove(target, args)
+			return c.TargetRemoveFile(target, args)
 		},
 	}
 )

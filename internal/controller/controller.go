@@ -126,9 +126,9 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 	return err
 }
 
-func (c *controller) ShowEntry(target string, w io.Writer) error {
+func (c *controller) ShowFilesEntry(target string, w io.Writer) error {
 	if c.targetIsSet(target) {
-		return c.TargetShow(target, os.Stdout)
+		return c.TargetShowFiles(target, os.Stdout)
 	} else {
 		return c.ListAllFiles(os.Stdout)
 	}
@@ -138,12 +138,12 @@ func (c *controller) ListAllFiles(w io.Writer) error {
 	return c.config.ListAllFiles(w)
 }
 
-func (c *controller) TargetShow(target string, w io.Writer) error {
+func (c *controller) TargetShowFiles(target string, w io.Writer) error {
 	target = c.getTarget(target)
 	return c.config.ListTargetFiles(target, w)
 }
 
-func (c *controller) TargetAdd(target string, args []string) error {
+func (c *controller) TargetAddFile(target string, args []string) error {
 	target = c.getTarget(target)
 
 	if err := c.repo.Pull(); err != nil {
@@ -175,7 +175,7 @@ if err := c.repo.Push(); err != nil {
 	return nil
 }
 
-func (c *controller) TargetRemove(target string, args []string) error {
+func (c *controller) TargetRemoveFile(target string, args []string) error {
 	target = c.getTarget(target)
 
 	if err := c.repo.Pull(); err != nil {
@@ -208,7 +208,7 @@ func (c *controller) TargetRemove(target string, args []string) error {
 	return nil
 }
 
-func (c *controller) Edit(args []string, opts EditOpts) error {
+func (c *controller) EditFile(args []string, opts EditOpts) error {
 	if err := c.repo.Pull(); err != nil {
 		return err
 	}
@@ -240,6 +240,8 @@ func (c *controller) Edit(args []string, opts EditOpts) error {
 
 	return nil
 }
+
+
 
 func (c *controller) getFile(args []string) (filePath string, outErr error) {
 	allFiles := c.config.GetAllFiles()

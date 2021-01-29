@@ -20,7 +20,7 @@ var (
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
-			return c.Edit(args, controller.EditOpts{NoSync: noSync})
+			return c.EditFile(args, controller.EditOpts{NoSync: noSync})
 		},
 	}
 )

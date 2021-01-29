@@ -24,7 +24,7 @@ var (
 		Long: "List files managed by godot, if -t/--target is given, only that targets files will be listed",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
-			return c.ShowEntry(target, os.Stdout)
+			return c.ShowFilesEntry(target, os.Stdout)
 		},
 	}
 )
