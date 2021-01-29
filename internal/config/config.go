@@ -34,10 +34,10 @@ func IsValidPackageManager(candidate string) bool {
 	return false
 }
 
-type FileMap map[string]string
+type StringMap map[string]string
 
 type repoConfig struct {
-	Files      FileMap    `json:"files"`
+	Files      StringMap    `json:"files"`
 	Renders    map[string][]string  `json:"renders"`
 	Bootstraps map[string]Bootstrap `json:"bootstraps"`
 	Hosts      map[string]Host      `json:"hosts"`
@@ -57,7 +57,7 @@ type Host struct {
 
 func (c *repoConfig) makeMaps() {
 	if c.Files == nil {
-		c.Files = make(FileMap)
+		c.Files = make(StringMap)
 	}
 
 	if c.Renders == nil {
@@ -182,16 +182,16 @@ func (c *Config) Write() error {
 	return ioutil.WriteFile(c.repoConfig, prettyContents, 0644)
 }
 
-func (c *Config) GetAllFiles() FileMap {
+func (c *Config) GetAllFiles() StringMap {
 	return c.content.Files
 }
 
-func (c *Config) GetFilesForTarget(target string) FileMap {
+func (c *Config) GetFilesForTarget(target string) StringMap {
 	if target == "" {
 		target = c.Target
 	}
 
-	ret := make(FileMap)
+	ret := make(StringMap)
 	all := c.GetAllFiles()
 
 	host, ok := c.content.Hosts[target]
@@ -278,14 +278,14 @@ func (c *Config) GetTemplateFromFullPath(path string) (string, error) {
 }
 
 func (c *Config) ListAllFiles(w io.Writer) error {
-	return c.writeFileMap(w, c.GetAllFiles())
+	return c.writeStringMap(w, c.GetAllFiles())
 }
 
 func (c *Config) ListTargetFiles(target string, w io.Writer) error {
-	return c.writeFileMap(w, c.GetFilesForTarget(target))
+	return c.writeStringMap(w, c.GetFilesForTarget(target))
 }
 
-func (c *Config) writeFileMap(w io.Writer, m FileMap) error {
+func (c *Config) writeStringMap(w io.Writer, m StringMap) error {
 	keys := make([]string, 0, len(m))
 	for key := range m {
 		keys = append(keys, key)

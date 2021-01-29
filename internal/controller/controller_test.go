@@ -110,7 +110,7 @@ func TestTarget(t *testing.T) {
 		c := getController(t, home)
 
 		w := bytes.NewBufferString("")
-		c.TargetShow("other", w)
+		c.TargetShowFiles("other", w)
 
 		got := w.String()
 		want := strings.Join([]string{
@@ -121,7 +121,7 @@ func TestTarget(t *testing.T) {
 		help.Equals(t, want, got)
 
 		w = bytes.NewBufferString("")
-		c.TargetShow("host", w)
+		c.TargetShowFiles("host", w)
 
 		got = w.String()
 		want = strings.Join([]string{
@@ -138,7 +138,7 @@ func TestTarget(t *testing.T) {
 		c := getController(t, home)
 
 		w := bytes.NewBufferString("")
-		c.TargetShow("", w)
+		c.TargetShowFiles("", w)
 
 		got := w.String()
 		want := strings.Join([]string{
@@ -149,7 +149,7 @@ func TestTarget(t *testing.T) {
 		help.Equals(t, want, got)
 
 		w = bytes.NewBufferString("")
-		c.TargetShow("host", w)
+		c.TargetShowFiles("host", w)
 
 		got = w.String()
 		want = strings.Join([]string{
@@ -163,7 +163,7 @@ func TestTarget(t *testing.T) {
 		home, dotpath, remove := setup(t, "home")
 		defer remove()
 		c := getController(t, home)
-		err := c.TargetAdd("host", []string{"last_conf"})
+		err := c.TargetAddFile("host", []string{"last_conf"})
 		help.Ensure(t, err)
 		help.AssertTargetContents(t, dotpath, "host", []string{"dot_zshrc", "last_conf"})
 	})
@@ -172,7 +172,7 @@ func TestTarget(t *testing.T) {
 		home, dotpath, remove := setup(t, "host")
 		defer remove()
 		c := getController(t, home)
-		err := c.TargetAdd("", []string{"last_conf"})
+		err := c.TargetAddFile("", []string{"last_conf"})
 		help.Ensure(t, err)
 		help.AssertTargetContents(t, dotpath, "host", []string{"dot_zshrc", "last_conf"})
 	})
@@ -181,7 +181,7 @@ func TestTarget(t *testing.T) {
 		home, dotpath, remove := setup(t, "home")
 		defer remove()
 		c := getController(t, home)
-		err := c.TargetRemove("other", []string{"last_conf"})
+		err := c.TargetRemoveFile("other", []string{"last_conf"})
 		help.Ensure(t, err)
 		help.AssertTargetContents(t, dotpath, "other", []string{"some_conf"})
 	})
@@ -190,13 +190,13 @@ func TestTarget(t *testing.T) {
 		home, dotpath, remove := setup(t, "other")
 		defer remove()
 		c := getController(t, home)
-		err := c.TargetRemove("", []string{"last_conf"})
+		err := c.TargetRemoveFile("", []string{"last_conf"})
 		help.Ensure(t, err)
 		help.AssertTargetContents(t, dotpath, "other", []string{"some_conf"})
 	})
 }
 
-func TestEdit(t *testing.T) {
+func TestEditFile(t *testing.T) {
 	setup := func(t *testing.T) (string, string, func()) {
 		t.Helper()
 
@@ -224,7 +224,7 @@ func TestEdit(t *testing.T) {
 		help.AssertDirectoryContents(t, home, []string{".config", "dotfiles"})
 
 		c := getController(t, home)
-		err := c.Edit([]string{filepath.Join(home, "some_conf")}, EditOpts{NoSync: false})
+		err := c.EditFile([]string{filepath.Join(home, "some_conf")}, EditOpts{NoSync: false})
 
 		help.Ensure(t, err)
 
@@ -242,7 +242,7 @@ func TestEdit(t *testing.T) {
 		help.AssertDirectoryContents(t, home, []string{".config", "dotfiles"})
 
 		c := getController(t, home)
-		err := c.Edit([]string{filepath.Join(home, "some_conf")}, EditOpts{NoSync: true})
+		err := c.EditFile([]string{filepath.Join(home, "some_conf")}, EditOpts{NoSync: true})
 		help.Ensure(t, err)
 
 		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotpath, "templates"), []string{"some_conf"})

@@ -421,7 +421,7 @@ func TestFiles(t *testing.T) {
 		defer remove()
 
 		got := c.GetAllFiles()
-		want := FileMap{}
+		want := StringMap{}
 		help.Equals(t, want, got)
 	})
 
@@ -430,7 +430,7 @@ func TestFiles(t *testing.T) {
 		defer remove()
 
 		got := c.GetAllFiles()
-		want := FileMap{
+		want := StringMap{
 			"dot_zshrc": "~/.zshrc",
 			"some_conf": "~/some_conf",
 			"odd_conf": "/etc/odd_conf",
@@ -441,17 +441,17 @@ func TestFiles(t *testing.T) {
 	getFilesForTarget := []struct{
 		name string
 		host string
-		want FileMap
+		want StringMap
 	}{
 		{
 			name: "missing_host",
 			host: "not_a_host",
-			want: FileMap{},
+			want: StringMap{},
 		},
 		{
 			name: "valid_host",
 			host: "host1",
-			want: FileMap{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
+			want: StringMap{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
 		},
 	}
 	for _, tc := range getFilesForTarget{
@@ -470,21 +470,21 @@ func TestFiles(t *testing.T) {
 		destination string
 		shouldError bool
 		initial string
-		want FileMap
+		want StringMap
 	}{
 		{
 			name: "happy_path",
 			template: "new_conf",
 			destination: "~/new_conf",
 			initial: "{}",
-			want: FileMap{"new_conf": "~/new_conf"},
+			want: StringMap{"new_conf": "~/new_conf"},
 		},
 		{
 			name: "no_template",
 			template: "",
 			destination: "~/.new_conf",
 			initial: "{}",
-			want: FileMap{"dot_new_conf": "~/.new_conf"},
+			want: StringMap{"dot_new_conf": "~/.new_conf"},
 		},
 		{
 			name: "template_exists",
@@ -492,7 +492,7 @@ func TestFiles(t *testing.T) {
 			destination: "~/.new_conf",
 			shouldError: true,
 			initial: `{"files": {"dot_new_conf": "~/.not_this_file"}}`,
-			want: FileMap{"dot_new_conf": "~/.not_this_file"},
+			want: StringMap{"dot_new_conf": "~/.not_this_file"},
 		},
 	}
 	for _, tc := range addFile {
@@ -511,19 +511,19 @@ func TestFiles(t *testing.T) {
 		name string
 		shouldError bool
 		template string
-		want FileMap
+		want StringMap
 	}{
 		{
 			name: "happy_path",
 			shouldError: false,
 			template: "dot_zshrc",
-			want: FileMap{"dot_zshrc": "~/.zshrc"},
+			want: StringMap{"dot_zshrc": "~/.zshrc"},
 		},
 		{
 			name: "unknown_template",
 			shouldError: true,
 			template: "not_a_template",
-			want: FileMap{},
+			want: StringMap{},
 		},
 	}
 	for _, tc := range addToTarget {
@@ -545,28 +545,28 @@ func TestFiles(t *testing.T) {
 		shouldError bool
 		target string
 		template string
-		want FileMap
+		want StringMap
 	}{
 		{
 			name: "happy_path",
 			shouldError: false,
 			target: "host1",
 			template: "dot_zshrc",
-			want: FileMap{"some_conf": "~/some_conf"},
+			want: StringMap{"some_conf": "~/some_conf"},
 		},
 		{
 			name: "unknown_target",
 			shouldError: true,
 			target: "not_a_target",
 			template: "dot_zshrc",
-			want: FileMap{},
+			want: StringMap{},
 		},
 		{
 			name: "unknown_template",
 			shouldError: true,
 			target: "host1",
 			template: "not_a_template",
-			want: FileMap{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
+			want: StringMap{"dot_zshrc": "~/.zshrc", "some_conf": "~/some_conf"},
 		},
 	}
 	for _, tc := range removeFromTarget {

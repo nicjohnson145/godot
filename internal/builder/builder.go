@@ -52,7 +52,7 @@ func (b *Builder) Build(force bool) error {
 	return nil
 }
 
-func (b *Builder) buildFileObjs(m config.FileMap) []file.File {
+func (b *Builder) buildFileObjs(m config.StringMap) []file.File {
 	files := make([]file.File, 0, len(m))
 	for tmpl, dest := range m {
 		files = append(files, file.File{

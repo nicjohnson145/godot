@@ -17,10 +17,10 @@ type Controller interface {
 	Sync(SyncOpts) error
 	Import(string, string, ImportOpts) error
 	ListAllFiles(io.Writer) error
-	TargetShow(string, io.Writer) error
-	TargetAdd(string, []string) error
-	TargetRemove(string, []string) error
-	Edit([]string, EditOpts) error
+	TargetShowFiles(string, io.Writer) error
+	TargetAddFile(string, []string) error
+	TargetRemoveFile(string, []string) error
+	EditFile([]string, EditOpts) error
 }
 
 type controller struct {
