@@ -74,8 +74,12 @@ func NewController(opts ControllerOpts) *controller {
 	}
 }
 
+func (c *controller) targetIsSet(t string) bool {
+	return t == ""
+}
+
 func (c *controller) getTarget(t string) string {
-	if t == "" {
+	if t == "" || t == config.CURRENT {
 		t = c.config.Target
 	}
 	return t
@@ -120,6 +124,14 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 	}
 
 	return err
+}
+
+func (c *controller) ShowEntry(target string, w io.Writer) error {
+	if c.targetIsSet(target) {
+		return c.TargetShow(target, os.Stdout)
+	} else {
+		return c.ListAllFiles(os.Stdout)
+	}
 }
 
 func (c *controller) ListAllFiles(w io.Writer) error {
@@ -240,6 +252,7 @@ func (c *controller) getFile(args []string) (filePath string, outErr error) {
 }
 
 func (c *controller) editFile(path string, opts EditOpts) error {
+	// TODO: opts not necessary
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		return fmt.Errorf("'edit' requires $EDITOR to be set")

@@ -20,6 +20,7 @@ const (
 	APT  = "apt"
 	BREW = "brew"
 	GIT  = "git"
+	CURRENT = "<CURRENT>"
 )
 
 var validManagers = []string{APT, BREW}

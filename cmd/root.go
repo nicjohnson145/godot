@@ -5,9 +5,8 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/nicjohnson145/godot/internal/config"
 )
-
-const CURRENT = "<CURRENT>"
 
 func init() {
 	rootCmd.PersistentFlags().BoolVarP(
@@ -24,7 +23,7 @@ func init() {
 		"",
 		"Apply the command to the given target, not supplying a value (i.e --target vs --target=a), will result in the current target being used",
 	)
-	rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = CURRENT
+	rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = config.CURRENT
 }
 
 var (

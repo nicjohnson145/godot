@@ -1,7 +1,9 @@
 package cmd
 
 import (
-	// "github.com/nicjohnson145/godot/internal/controller"
+	"os"
+
+	"github.com/nicjohnson145/godot/internal/controller"
 	"github.com/spf13/cobra"
 )
 
@@ -18,5 +20,11 @@ var (
 
 	listFilesCmd = &cobra.Command{
 		Use: "files",
+		Short: "List files managed by godot",
+		Long: "List files managed by godot, if -t/--target is given, only that targets files will be listed",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
+			return c.ShowEntry(target, os.Stdout)
+		},
 	}
 )
