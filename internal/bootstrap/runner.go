@@ -1,5 +1,10 @@
 package bootstrap
 
+import (
+	"bytes"
+	"os/exec"
+)
+
 type runner struct {
 	Items []Item
 }
@@ -26,4 +31,25 @@ func (r runner) RunSingle(item Item) error {
 
 	// Otherwise, install it
 	return item.Install()
+}
+
+func runCmd(bin string, args ...string) (string, string, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(bin, args...)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), err
+}
+
+func getReturnCode(err error) (int, error) {
+	if err == nil {
+		return 0, nil
+	}
+
+	if exitError, ok := err.(*exec.ExitError); ok {
+		return exitError.ExitCode(), nil
+	} else {
+		return -1, err
+	}
 }

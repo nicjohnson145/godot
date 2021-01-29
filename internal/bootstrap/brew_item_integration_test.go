@@ -1,4 +1,4 @@
-// +build apt_integration
+// +build brew_integration
 
 package bootstrap
 
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestAptItem(t *testing.T) {
+func TestBrewItem(t *testing.T) {
 	ensure := func(t *testing.T, err error) {
 		t.Helper()
 		if err != nil {
@@ -15,33 +15,28 @@ func TestAptItem(t *testing.T) {
 		}
 	}
 
-	item := NewAptItem("ripgrep")
+	item := NewBrewItem("jq")
 
-	// Ripgrep should not be installed initially
 	installed, err := item.Check()
 	ensure(t, err)
 	if installed {
-		t.Fatalf("ripgrep should not show as installed")
+		t.Fatalf("jq should not already be installed")
 	}
 
-	// Now we install it
 	err = item.Install()
 	ensure(t, err)
 
-	// And now it should be installed
 	installed, err = item.Check()
 	ensure(t, err)
 	if !installed {
-		t.Fatalf("ripgrep should show as installed")
+		t.Fatalf("jq should have been installed")
 	}
 
-	// Double check that it's installed
-	cmd := exec.Command("rg", "--version")
+	cmd := exec.Command("jq", "--version")
 	err = cmd.Run()
 	ensure(t, err)
 
-	// Now ensure a bad install will error out
-	item = NewAptItem("not_a_binary_at_all")
+	item = NewBrewItem("not_a_binary_at_all")
 	installed, err = item.Check()
 	ensure(t, err)
 	if installed {

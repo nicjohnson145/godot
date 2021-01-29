@@ -1,4 +1,5 @@
-// +build !integration
+// +build !brew_integration
+// +build !apt_integration
 
 package bootstrap
 

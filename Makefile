@@ -2,7 +2,8 @@
 
 test:
 	go test ./...
-	docker build -t godot_integration internal/bootstrap && docker run --rm godot_integration
+	docker build -t apt_integration internal/bootstrap -f internal/bootstrap/apt_integration.Dockerfile && docker run --rm apt_integration
+	docker build -t brew_integration internal/bootstrap -f internal/bootstrap/brew_integration.Dockerfile && docker run --rm brew_integration
 
 build:
 	rm -rf build/*
