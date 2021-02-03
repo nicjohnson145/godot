@@ -42,7 +42,7 @@ func (i repoItem) Check() (bool, error) {
 }
 
 func (i repoItem) dirExists(path string) (bool, error) {
-	if _, err := os.Stat(i.Location); err == nil {
+	if _, err := os.Stat(path); err == nil {
 		return true, nil
 	} else if os.IsNotExist(err) {
 		return false, nil
