@@ -30,10 +30,10 @@ var (
 	}
 
 	useBootstrapCmd = &cobra.Command{
-		Use: "bootstrap [bootstrap]",
+		Use:   "bootstrap [bootstrap]",
 		Short: "Add an item to be bootstrapped to a target",
 		Long: "Add an item to be bootstrapped to a target. If a bootstrap name is not given, a " +
-			  "selection prompt wil open. If no target is given, the current target will be used",
+			"selection prompt wil open. If no target is given, the current target will be used",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})

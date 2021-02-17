@@ -24,7 +24,7 @@ const (
 	CURRENT = "<CURRENT>"
 )
 
-var ValidManagers = []string{/*APT,*/ BREW, GIT}
+var ValidManagers = []string{ /*APT,*/ BREW, GIT}
 
 func IsValidPackageManager(candidate string) bool {
 	for _, val := range ValidManagers {

@@ -11,7 +11,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/help"
 )
 
-func repoSetup(t *testing.T, isGit bool) (repoItem, func()){
+func repoSetup(t *testing.T, isGit bool) (repoItem, func()) {
 	t.Helper()
 	dir, remove := help.CreateTempDir(t, "git-checkout")
 	if isGit {

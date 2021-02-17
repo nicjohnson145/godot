@@ -7,13 +7,13 @@ import (
 )
 
 type repoItem struct {
-	Name string
+	Name     string
 	Location string
 }
 
 func NewRepoItem(name string, location string) repoItem {
 	return repoItem{
-		Name: name,
+		Name:     name,
 		Location: location,
 	}
 }

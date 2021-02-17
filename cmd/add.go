@@ -13,7 +13,7 @@ func init() {
 
 	addBootstrapCmd.Flags().StringVarP(&name, "name", "n", "", "The name of the package for this manager, for git this is the repo URL")
 	addBootstrapCmd.MarkFlagRequired("name")
-	addBootstrapCmd.Flags().StringVarP(&manager, "manager", "m", "", "The name of the package manager, one of " + strings.Join(config.ValidManagers, ", "))
+	addBootstrapCmd.Flags().StringVarP(&manager, "manager", "m", "", "The name of the package manager, one of "+strings.Join(config.ValidManagers, ", "))
 	addBootstrapCmd.MarkFlagRequired("manager")
 	addBootstrapCmd.Flags().StringVarP(&location, "location", "l", "", "When using the git manager, where the repo should be checked out to, defaults to home directory")
 
@@ -26,9 +26,9 @@ func init() {
 var (
 	as string
 
-	name string
+	name     string
 	location string
-	manager string
+	manager  string
 
 	addCmd = &cobra.Command{
 		Use:   "add [object]",
@@ -47,9 +47,9 @@ var (
 	}
 
 	addBootstrapCmd = &cobra.Command{
-		Use: "bootstrap bs",
+		Use:   "bootstrap bs",
 		Short: "Add a bootstrap item",
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
 			return c.AddBootstrapItem(args[0], manager, name, location)
