@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/builder"
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/repo"
@@ -8,7 +9,8 @@ import (
 )
 
 type SyncOpts struct {
-	Force bool
+	Force       bool
+	NoBootstrap bool
 }
 
 type EditOpts struct {
@@ -24,5 +26,6 @@ type ControllerOpts struct {
 	Repo          repo.Repo
 	Config        *config.Config
 	Builder       *builder.Builder
+	Runner        bootstrap.Runner
 	NoGit         bool
 }

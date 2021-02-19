@@ -605,4 +605,127 @@ func TestBootstrapping(t *testing.T) {
 		) + "\n"
 		help.Equals(t, want, b.String())
 	})
+
+	t.Run("GetRelevantBootstrapImpls_noErrors", func(t *testing.T) {
+		c, remove := setup(t, `{
+			"files": {},
+			"bootstraps": {
+				"ripgrep": {
+					"apt": {
+						"name": "ripgrep"
+					},
+					"git": {
+						"name": "https://github.com/ripgrep/ripgrep.git",
+						"location": "~/.ripgrep"
+					}
+				},
+				"pyenv": {
+					"git": {
+						"name": "https://github.com/pyenv/pyenv.git",
+						"location": "~/.pyenv"
+					},
+					"yum": {
+						"name": "broke_2"
+					}
+				},
+				"broke_1": {
+					"brew": {
+						"name": "broke_1"
+					}
+				},
+				"broke_2": {
+					"brew": {
+						"name": "broke_2"
+					},
+					"yum": {
+						"name": "broke_2"
+					}
+				}
+			},
+			"hosts": {
+				"host1": {
+					"files": [],
+					"bootstraps": ["ripgrep", "pyenv"]
+				},
+				"host2": {
+					"files": [],
+					"bootstraps": ["broke_1", "broke_2"]
+				}
+			}
+		}`)
+		defer remove()
+
+		got, err := c.GetRelevantBootstrapImpls("host1")
+		help.Ok(t, err)
+
+		want := []BootstrapImpl{
+			{Name: "apt", Item: BootstrapItem{Name: "ripgrep"}},
+			{Name: "git", Item: BootstrapItem{Name: "https://github.com/pyenv/pyenv.git", Location: "~/.pyenv"}},
+		}
+
+		help.Equals(t, want, got)
+	})
+
+	t.Run("GetRelevantBootstrapImpls_errors", func(t *testing.T) {
+		// Should show all errors
+		c, remove := setup(t, `{
+			"files": {},
+			"bootstraps": {
+				"ripgrep": {
+					"apt": {
+						"name": "ripgrep"
+					},
+					"git": {
+						"name": "https://github.com/ripgrep/ripgrep.git",
+						"location": "~/.ripgrep"
+					}
+				},
+				"pyenv": {
+					"git": {
+						"name": "https://github.com/pyenv/pyenv.git",
+						"location": "~/.pyenv"
+					},
+					"yum": {
+						"name": "broke_2"
+					}
+				},
+				"broke_1": {
+					"brew": {
+						"name": "broke_1"
+					}
+				},
+				"broke_2": {
+					"brew": {
+						"name": "broke_2"
+					},
+					"yum": {
+						"name": "broke_2"
+					}
+				}
+			},
+			"hosts": {
+				"host1": {
+					"files": [],
+					"bootstraps": ["ripgrep", "pyenv"]
+				},
+				"host2": {
+					"files": [],
+					"bootstraps": ["broke_1", "broke_2"]
+				}
+			}
+		}`)
+		defer remove()
+
+		_, err := c.GetRelevantBootstrapImpls("host2")
+		help.ShouldError(t, err)
+
+		got := err.Error()
+		want := strings.Join([]string{
+			"2 errors occurred:",
+			"\t* No suitable manager found for broke_1, broke_1's available managers are brew",
+			"\t* No suitable manager found for broke_2, broke_2's available managers are brew, yum",
+		}, "\n") + "\n\n"
+		help.Equals(t, want, got)
+	})
 }
+

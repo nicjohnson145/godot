@@ -249,7 +249,15 @@ func SetupDirectories(t *testing.T, target string) (string, string, func()) {
 	if err != nil {
 		t.Errorf("error making dir, %v", err)
 	}
-	WriteConfig(t, home, fmt.Sprintf(`{"target": "%v", "dotfiles_root": "%v"}`, target, dotPath))
+	WriteConfig(t, home, fmt.Sprintf(
+		`{
+			"target": "%v",
+			"dotfiles_root": "%v",
+			"package_managers": ["apt", "git"]
+		}`,
+		target,
+		dotPath,
+	))
 
 	return home, dotPath, remove
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/repo"
 	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/nicjohnson145/godot/internal/bootstrap"
 )
 
 type Controller interface {
@@ -28,6 +29,7 @@ type controller struct {
 	repo          repo.Repo
 	config        *config.Config
 	builder       *builder.Builder
+	runner        bootstrap.Runner
 }
 
 func NewController(opts ControllerOpts) *controller {
@@ -66,11 +68,19 @@ func NewController(opts ControllerOpts) *controller {
 		}
 	}
 
+	var rn bootstrap.Runner
+	if opts.Runner != nil {
+		rn = opts.Runner
+	} else {
+		rn = bootstrap.NewRunner()
+	}
+
 	return &controller{
 		homeDirGetter: getter,
 		config:        conf,
 		repo:          r,
 		builder:       b,
+		runner:        rn,
 	}
 }
 

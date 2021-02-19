@@ -15,6 +15,7 @@ import (
 
 	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/tidwall/pretty"
+	"github.com/hashicorp/go-multierror"
 )
 
 const (
@@ -51,6 +52,11 @@ type BootstrapItem struct {
 
 type Bootstrap map[string]BootstrapItem
 
+type BootstrapImpl struct {
+	Name string
+	Item BootstrapItem
+}
+
 func (b Bootstrap) MethodsString() string {
 	keys := make([]string, 0, len(b))
 	for key := range b {
@@ -85,19 +91,19 @@ func (c *repoConfig) makeMaps() {
 }
 
 type usrConfig struct {
-	Target         string `json:"target"`
-	DotfilesRoot   string `json:"dotfiles_root"`
-	PackageManager string `json:"package_manager"`
+	Target          string   `json:"target"`
+	DotfilesRoot    string   `json:"dotfiles_root"`
+	PackageManagers []string `json:"package_managers"`
 }
 
 type Config struct {
-	Target         string     // Name of the current target
-	DotfilesRoot   string     // Root of the dotfiles repo
-	TemplateRoot   string     // Template directory inside of dotfiles repo
-	content        repoConfig // The raw json content
-	repoConfig     string     // Path to repo config, we'll need to rewrite it often
-	Home           string     // Users home directory
-	PackageManager string     // Configured package manager for bootstrapping
+	Target          string     // Name of the current target
+	DotfilesRoot    string     // Root of the dotfiles repo
+	TemplateRoot    string     // Template directory inside of dotfiles repo
+	content         repoConfig // The raw json content
+	repoConfig      string     // Path to repo config, we'll need to rewrite it often
+	Home            string     // Users home directory
+	PackageManagers []string   // Available package managers, in order of preference
 }
 
 func NewConfig(getter util.HomeDirGetter) *Config {
@@ -130,9 +136,9 @@ func (c *Config) parseUserConfig() {
 
 	switch runtime.GOOS {
 	case "darwin":
-		c.PackageManager = BREW
+		c.PackageManagers = []string{BREW, GIT}
 	case "linux":
-		c.PackageManager = APT
+		c.PackageManagers = []string{APT, GIT}
 	}
 
 	conf := filepath.Join(c.Home, ".config", "godot", "config.json")
@@ -158,8 +164,8 @@ func (c *Config) parseUserConfig() {
 		c.TemplateRoot = filepath.Join(config.DotfilesRoot, "templates")
 	}
 
-	if config.PackageManager != "" {
-		c.PackageManager = config.PackageManager
+	if len(config.PackageManagers) != 0 {
+		c.PackageManagers = config.PackageManagers
 	}
 }
 
@@ -344,6 +350,46 @@ func (c *Config) GetBootstrapTargetsForTarget(target string) []string {
 	}
 	return c.content.Hosts[target].Bootstraps
 }
+
+func (c *Config) GetRelevantBootstrapImpls(target string) ([]BootstrapImpl, error) {
+	impls := []BootstrapImpl{}
+	var errs *multierror.Error
+
+	for _, t := range c.GetBootstrapTargetsForTarget(target) {
+		found := false
+		for _, mgr := range c.PackageManagers {
+			if item, ok := c.content.Bootstraps[t][mgr]; ok {
+				impl := BootstrapImpl{Name: mgr, Item: item}
+				impls = append(impls, impl)
+				found = true
+				break
+			}
+		}
+		if !found {
+			errs = multierror.Append(
+				errs,
+				fmt.Errorf(
+					"No suitable manager found for %v, %v's available managers are %v",
+					t,
+					t,
+					strings.Join(c.getManagersForBootstrapItem(t), ", "),
+				),
+			)
+		}
+	}
+
+	return impls, errs.ErrorOrNil()
+}
+
+func (c  *Config) getManagersForBootstrapItem(item string) []string {
+	keys := make([]string, 0, len(c.content.Bootstraps[item]))
+	for key := range c.content.Bootstraps[item] {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 
 func (c *Config) ListAllBootstraps(w io.Writer) error {
 	m := c.bootstrapToStringMap(c.GetAllBootstraps())
