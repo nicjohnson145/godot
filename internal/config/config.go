@@ -13,10 +13,10 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/nicjohnson145/godot/internal/util"
-	"github.com/tidwall/pretty"
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
+	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/tidwall/pretty"
 )
 
 const (
@@ -388,7 +388,7 @@ func (c *Config) GetRelevantBootstrapImpls(target string) ([]BootstrapImpl, erro
 	return impls, errs.ErrorOrNil()
 }
 
-func (c  *Config) getManagersForBootstrapItem(item string) []string {
+func (c *Config) getManagersForBootstrapItem(item string) []string {
 	keys := make([]string, 0, len(c.content.Bootstraps[item]))
 	for key := range c.content.Bootstraps[item] {
 		keys = append(keys, key)
@@ -396,7 +396,6 @@ func (c  *Config) getManagersForBootstrapItem(item string) []string {
 	sort.Strings(keys)
 	return keys
 }
-
 
 func (c *Config) ListAllBootstraps(w io.Writer) error {
 	m := c.bootstrapToStringMap(c.GetAllBootstraps())

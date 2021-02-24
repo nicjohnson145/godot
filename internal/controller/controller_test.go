@@ -204,7 +204,7 @@ func TestShowFilesEntry(t *testing.T) {
 		want   string
 	}{
 		{
-			name: "no_target",
+			name:   "no_target",
 			target: "",
 			want: strings.Join([]string{
 				"dot_zshrc => ~/.zshrc",
@@ -213,7 +213,7 @@ func TestShowFilesEntry(t *testing.T) {
 			}, "\n") + "\n",
 		},
 		{
-			name: "no_target",
+			name:   "no_target",
 			target: TARGET,
 			want: strings.Join([]string{
 				"dot_zshrc => ~/.zshrc",

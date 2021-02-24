@@ -545,24 +545,24 @@ func TestBootstrapping(t *testing.T) {
 		})
 	}
 
-	getBSTagetData := []struct{
-		name string
+	getBSTagetData := []struct {
+		name   string
 		target string
-		want []string
+		want   []string
 	}{
 		{
-			name: "no_target",
+			name:   "no_target",
 			target: "",
-			want: []string{"ripgrep"},
+			want:   []string{"ripgrep"},
 		},
 		{
-			name: "host2",
+			name:   "host2",
 			target: "host2",
-			want: []string{"ripgrep", "pyenv"},
+			want:   []string{"ripgrep", "pyenv"},
 		},
 	}
 	for _, tc := range getBSTagetData {
-		t.Run("GetBootstrapTargetsForTarget_" + tc.name, func(t *testing.T){
+		t.Run("GetBootstrapTargetsForTarget_"+tc.name, func(t *testing.T) {
 			c, remove := baseSetup(t)
 			defer remove()
 
@@ -728,4 +728,3 @@ func TestBootstrapping(t *testing.T) {
 		help.Equals(t, want, got)
 	})
 }
-

@@ -9,7 +9,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/config"
 )
 
-type runner struct {}
+type runner struct{}
 
 func NewRunner() Runner {
 	return runner{}

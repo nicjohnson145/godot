@@ -7,11 +7,11 @@ import (
 	"os/exec"
 
 	"github.com/ktr0731/go-fuzzyfinder"
+	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/builder"
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/repo"
 	"github.com/nicjohnson145/godot/internal/util"
-	"github.com/nicjohnson145/godot/internal/bootstrap"
 )
 
 type Controller struct {
