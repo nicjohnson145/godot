@@ -5,6 +5,9 @@ github.com/hashicorp/errwrap
 github.com/hashicorp/go-multierror
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
+# github.com/jinzhu/copier v0.2.4
+## explicit
+github.com/jinzhu/copier
 # github.com/ktr0731/go-fuzzyfinder v0.3.2
 ## explicit
 github.com/ktr0731/go-fuzzyfinder

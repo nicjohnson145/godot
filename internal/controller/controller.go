@@ -14,17 +14,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/bootstrap"
 )
 
-type Controller interface {
-	Sync(SyncOpts) error
-	Import(string, string, ImportOpts) error
-	ListAllFiles(io.Writer) error
-	TargetShowFiles(string, io.Writer) error
-	TargetAddFile(string, []string) error
-	TargetRemoveFile(string, []string) error
-	EditFile([]string, EditOpts) error
-}
-
-type controller struct {
+type Controller struct {
 	homeDirGetter util.HomeDirGetter
 	repo          repo.Repo
 	config        *config.Config
@@ -32,7 +22,7 @@ type controller struct {
 	runner        bootstrap.Runner
 }
 
-func NewController(opts ControllerOpts) *controller {
+func NewController(opts ControllerOpts) *Controller {
 	var getter util.HomeDirGetter
 	if opts.HomeDirGetter != nil {
 		getter = opts.HomeDirGetter
@@ -75,7 +65,7 @@ func NewController(opts ControllerOpts) *controller {
 		rn = bootstrap.NewRunner()
 	}
 
-	return &controller{
+	return &Controller{
 		homeDirGetter: getter,
 		config:        conf,
 		repo:          r,
@@ -84,18 +74,18 @@ func NewController(opts ControllerOpts) *controller {
 	}
 }
 
-func (c *controller) targetIsSet(t string) bool {
-	return t == ""
+func (c *Controller) targetIsSet(t string) bool {
+	return t != ""
 }
 
-func (c *controller) getTarget(t string) string {
+func (c *Controller) getTarget(t string) string {
 	if t == "" || t == config.CURRENT {
 		t = c.config.Target
 	}
 	return t
 }
 
-func (c *controller) git_pushAndPull(function func() error) error {
+func (c *Controller) git_pushAndPull(function func() error) error {
 	if err := c.repo.Pull(); err != nil {
 		return err
 	}
@@ -107,7 +97,7 @@ func (c *controller) git_pushAndPull(function func() error) error {
 	return c.repo.Push()
 }
 
-func (c *controller) git_pullOnly(function func() error) error {
+func (c *Controller) git_pullOnly(function func() error) error {
 	if err := c.repo.Pull(); err != nil {
 		return err
 	}
@@ -115,7 +105,7 @@ func (c *controller) git_pullOnly(function func() error) error {
 	return function()
 }
 
-func (c *controller) Sync(opts SyncOpts) error {
+func (c *Controller) Sync(opts SyncOpts) error {
 	f := func() error {
 		return c.builder.Build(opts.Force)
 	}
@@ -123,7 +113,7 @@ func (c *controller) Sync(opts SyncOpts) error {
 	return c.git_pullOnly(f)
 }
 
-func (c *controller) Import(file string, as string, opts ImportOpts) error {
+func (c *Controller) Import(file string, as string) error {
 	f := func() error {
 		// import the file into the repo
 		if err := c.builder.Import(file, as); err != nil {
@@ -131,16 +121,9 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 		}
 
 		// Add the file to the repos config
-		name, err := c.config.AddFile(as, file)
+		_, err := c.config.AddFile(as, file)
 		if err != nil {
 			return err
-		}
-
-		// Potentially add the file to the current target
-		if !opts.NoAdd {
-			if err := c.config.AddTargetFile(c.config.Target, name); err != nil {
-				return err
-			}
 		}
 
 		// If everything has gone right up to this point, write the config to disk
@@ -149,28 +132,28 @@ func (c *controller) Import(file string, as string, opts ImportOpts) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *controller) ShowFilesEntry(target string, w io.Writer) error {
+func (c *Controller) ShowFilesEntry(target string, w io.Writer) error {
 	f := func() error {
 		if c.targetIsSet(target) {
-			return c.TargetShowFiles(target, os.Stdout)
+			return c.TargetShowFiles(target, w)
 		} else {
-			return c.ListAllFiles(os.Stdout)
+			return c.ListAllFiles(w)
 		}
 	}
 
 	return c.git_pullOnly(f)
 }
 
-func (c *controller) ListAllFiles(w io.Writer) error {
+func (c *Controller) ListAllFiles(w io.Writer) error {
 	return c.config.ListAllFiles(w)
 }
 
-func (c *controller) TargetShowFiles(target string, w io.Writer) error {
+func (c *Controller) TargetShowFiles(target string, w io.Writer) error {
 	target = c.getTarget(target)
 	return c.config.ListTargetFiles(target, w)
 }
 
-func (c *controller) TargetAddFile(target string, args []string) error {
+func (c *Controller) TargetAddFile(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 
@@ -194,7 +177,7 @@ func (c *controller) TargetAddFile(target string, args []string) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *controller) TargetRemoveFile(target string, args []string) error {
+func (c *Controller) TargetRemoveFile(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 
@@ -218,7 +201,7 @@ func (c *controller) TargetRemoveFile(target string, args []string) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *controller) EditFile(args []string, opts EditOpts) error {
+func (c *Controller) EditFile(args []string, opts EditOpts) error {
 	f := func() error {
 		path, err := c.getFile(args)
 		if err != nil {
@@ -245,7 +228,7 @@ func (c *controller) EditFile(args []string, opts EditOpts) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *controller) ShowBootstrapsEntry(target string, w io.Writer) error {
+func (c *Controller) ShowBootstrapsEntry(target string, w io.Writer) error {
 	f := func() error {
 		if c.targetIsSet(target) {
 			return c.ListAllBootstrapsForTarget(target, os.Stdout)
@@ -257,21 +240,21 @@ func (c *controller) ShowBootstrapsEntry(target string, w io.Writer) error {
 	return c.git_pullOnly(f)
 }
 
-func (c *controller) ListAllBootstraps(w io.Writer) error {
+func (c *Controller) ListAllBootstraps(w io.Writer) error {
 	f := func() error {
 		return c.config.ListAllBootstraps(w)
 	}
 	return c.git_pullOnly(f)
 }
 
-func (c *controller) ListAllBootstrapsForTarget(target string, w io.Writer) error {
+func (c *Controller) ListAllBootstrapsForTarget(target string, w io.Writer) error {
 	f := func() error {
 		return c.config.ListBootstrapsForTarget(w, target)
 	}
 	return c.git_pullOnly(f)
 }
 
-func (c *controller) AddBootstrapItem(item, manager, pkg, location string) error {
+func (c *Controller) AddBootstrapItem(item, manager, pkg, location string) error {
 	f := func() error {
 		if !config.IsValidPackageManager(manager) {
 			return fmt.Errorf("non-supported package manager of %q", manager)
@@ -284,7 +267,7 @@ func (c *controller) AddBootstrapItem(item, manager, pkg, location string) error
 	return c.git_pushAndPull(f)
 }
 
-func (c *controller) AddTargetBootstrap(target string, args []string) error {
+func (c *Controller) AddTargetBootstrap(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 
@@ -316,7 +299,7 @@ func (c *controller) AddTargetBootstrap(target string, args []string) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *controller) RemoveTargetBootstrap(target string, args []string) error {
+func (c *Controller) RemoveTargetBootstrap(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 		options := c.config.GetBootstrapTargetsForTarget(target)
@@ -339,7 +322,7 @@ func (c *controller) RemoveTargetBootstrap(target string, args []string) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *controller) getFile(args []string) (filePath string, outErr error) {
+func (c *Controller) getFile(args []string) (filePath string, outErr error) {
 	allFiles := c.config.GetAllFiles()
 	options := make([]string, 0, len(allFiles))
 	for _, dest := range allFiles {
@@ -349,7 +332,7 @@ func (c *controller) getFile(args []string) (filePath string, outErr error) {
 	return c.fuzzyOrArgs(args, options)
 }
 
-func (c *controller) editFile(path string, opts EditOpts) error {
+func (c *Controller) editFile(path string, opts EditOpts) error {
 	// TODO: opts not necessary
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
@@ -367,7 +350,7 @@ func (c *controller) editFile(path string, opts EditOpts) error {
 	return proc.Run()
 }
 
-func (c *controller) fuzzyOrArgs(args []string, options []string) (string, error) {
+func (c *Controller) fuzzyOrArgs(args []string, options []string) (string, error) {
 	if len(args) > 0 {
 		return args[0], nil
 	}
@@ -380,6 +363,6 @@ func (c *controller) fuzzyOrArgs(args []string, options []string) (string, error
 	return options[idx], nil
 }
 
-func (c *controller) write() error {
+func (c *Controller) write() error {
 	return c.config.Write()
 }

@@ -24,6 +24,8 @@ func init() {
 }
 
 var (
+	add bool
+
 	as string
 
 	name     string
@@ -42,7 +44,7 @@ var (
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
-			return c.Import(args[0], as, controller.ImportOpts{})
+			return c.Import(args[0], as)
 		},
 	}
 

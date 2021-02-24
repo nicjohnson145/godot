@@ -16,6 +16,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/tidwall/pretty"
 	"github.com/hashicorp/go-multierror"
+	"github.com/jinzhu/copier"
 )
 
 const (
@@ -38,7 +39,7 @@ func IsValidPackageManager(candidate string) bool {
 
 type StringMap map[string]string
 
-type repoConfig struct {
+type RepoConfig struct {
 	Files      StringMap            `json:"files"`
 	Renders    map[string][]string  `json:"renders"`
 	Bootstraps map[string]Bootstrap `json:"bootstraps"`
@@ -72,7 +73,7 @@ type Host struct {
 	Bootstraps []string `json:"bootstraps"`
 }
 
-func (c *repoConfig) makeMaps() {
+func (c *RepoConfig) makeMaps() {
 	if c.Files == nil {
 		c.Files = make(StringMap)
 	}
@@ -100,7 +101,7 @@ type Config struct {
 	Target          string     // Name of the current target
 	DotfilesRoot    string     // Root of the dotfiles repo
 	TemplateRoot    string     // Template directory inside of dotfiles repo
-	content         repoConfig // The raw json content
+	content         RepoConfig // The raw json content
 	repoConfig      string     // Path to repo config, we'll need to rewrite it often
 	Home            string     // Users home directory
 	PackageManagers []string   // Available package managers, in order of preference
@@ -175,19 +176,25 @@ func (c *Config) readRepoConfig() {
 	bytes, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			c.content = repoConfig{}
+			c.content = RepoConfig{}
 			return
 		} else {
 			panic(fmt.Errorf("error reading repo conf, %v", err))
 		}
 	}
 
-	var content repoConfig
+	var content RepoConfig
 	if err := json.Unmarshal(bytes, &content); err != nil {
 		panic(err)
 	}
 
 	c.content = content
+}
+
+func (c *Config) GetRawContent() RepoConfig {
+	newConf := RepoConfig{}
+	copier.CopyWithOption(&newConf, &c.content, copier.Option{DeepCopy: true})
+	return newConf
 }
 
 func (c *Config) Write() error {

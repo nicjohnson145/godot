@@ -2,250 +2,294 @@ package controller
 
 import (
 	"bytes"
-	"os"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/help"
 	"github.com/nicjohnson145/godot/internal/repo"
 )
 
-func getController(t *testing.T, home string) Controller {
+const TARGET = "host1"
+
+type testData struct {
+	C       *Controller
+	Home    string
+	Dotpath string
+	Remove  func()
+}
+
+func writeFile(t *testing.T, dotpath string, tmpl string, contents string) {
 	t.Helper()
-	return NewController(ControllerOpts{
+
+	err := ioutil.WriteFile(
+		filepath.Join(dotpath, "templates", tmpl),
+		[]byte(contents),
+		0644,
+	)
+	help.Ok(t, err)
+}
+
+func writeFiles(t *testing.T, dotpath string, tmplData map[string]string) {
+	t.Helper()
+
+	for k, v := range tmplData {
+		writeFile(t, dotpath, k, v)
+	}
+}
+
+func setup(t *testing.T, conf string, tmplData map[string]string) testData {
+	t.Helper()
+
+	home, dotpath, remove := help.SetupDirectories(t, TARGET)
+	help.WriteRepoConf(t, dotpath, conf)
+	writeFiles(t, dotpath, tmplData)
+	c := NewController(ControllerOpts{
 		HomeDirGetter: &help.TempHomeDir{HomeDir: home},
 		Repo:          repo.NoopRepo{},
 	})
+
+	return testData{
+		C:       c,
+		Home:    home,
+		Dotpath: dotpath,
+		Remove:  remove,
+	}
 }
 
-func TestSync(t *testing.T) {}
+func baseSetup(t *testing.T) testData {
+	t.Helper()
+	return setup(
+		t,
+		help.SAMPLE_CONFIG,
+		map[string]string{
+			"dot_zshrc": "dot_zshrc",
+			"some_conf": "some_conf",
+			"odd_conf":  "odd_conf",
+		},
+	)
+}
+
+func TestSync(t *testing.T) {
+
+	assertZshRc := func(t *testing.T, obj testData) {
+		help.AssertFileContents(t, filepath.Join(obj.Home, ".zshrc"), "dot_zshrc")
+	}
+
+	assertSomeConf := func(t *testing.T, obj testData) {
+		help.AssertFileContents(t, filepath.Join(obj.Home, "some_conf"), "some_conf")
+	}
+
+	t.Run("happy_path", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
+
+		help.AssertDirectoryContents(t, obj.Home, []string{".config", "dotfiles"})
+
+		err := obj.C.Sync(SyncOpts{Force: false})
+		help.Ok(t, err)
+
+		help.AssertDirectoryContents(
+			t,
+			obj.Home,
+			[]string{
+				".config",
+				"dotfiles",
+				"some_conf",
+				".zshrc",
+			},
+		)
+
+		assertZshRc(t, obj)
+		assertSomeConf(t, obj)
+	})
+
+	t.Run("file_exists_not_symlink", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
+
+		help.Touch(t, filepath.Join(obj.Home, ".zshrc"))
+
+		// Should error out
+		err := obj.C.Sync(SyncOpts{Force: false})
+		help.ShouldError(t, err)
+
+		// TODO
+		// But some_conf should still be created
+		// assertSomeConf(t, obj)
+	})
+
+	t.Run("file_exists_not_symlink_force", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
+
+		help.Touch(t, filepath.Join(obj.Home, ".zshrc"))
+
+		err := obj.C.Sync(SyncOpts{Force: true})
+		help.Ok(t, err)
+
+		assertZshRc(t, obj)
+		assertSomeConf(t, obj)
+	})
+}
 
 func TestImport(t *testing.T) {
-	setup := func(t *testing.T) (string, string, string, func()) {
-		t.Helper()
+	t.Run("happy_path", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
 
-		home, dotPath, remove := help.SetupFullConfig(t, "home", nil)
-
-		confPath := filepath.Join(home, ".some_conf")
-		help.WriteData(t, confPath, "contents")
-
-		return home, confPath, dotPath, remove
-	}
-
-	t.Run("import and add", func(t *testing.T) {
-		home, confPath, dotPath, remove := setup(t)
-		defer remove()
-
-		controller := getController(t, home)
-		err := controller.Import(confPath, "", ImportOpts{NoAdd: false})
-		help.Ensure(t, err)
-
-		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotPath, "templates"), []string{"dot_some_conf"})
-		help.AssertTargetContents(t, dotPath, "home", []string{"dot_some_conf"})
-		help.AssertPresentInAllFiles(t, dotPath, map[string]string{"dot_some_conf": "~/.some_conf"})
+		confPath := filepath.Join(obj.Home, ".new_conf")
+		help.WriteData(t, confPath, "my new conf")
+		err := obj.C.Import(confPath, "")
+		help.Ok(t, err)
+		help.Equals(
+			t,
+			config.StringMap{
+				"dot_zshrc":    "~/.zshrc",
+				"some_conf":    "~/some_conf",
+				"odd_conf":     "/etc/odd_conf",
+				"dot_new_conf": "~/.new_conf",
+			},
+			obj.C.config.GetRawContent().Files,
+		)
 	})
 
-	t.Run("import as", func(t *testing.T) {
-		home, confPath, dotPath, remove := setup(t)
-		defer remove()
+	t.Run("name_collision_errors", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
 
-		controller := getController(t, home)
-		err := controller.Import(confPath, "other_name", ImportOpts{NoAdd: true})
-		help.Ensure(t, err)
-
-		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotPath, "templates"), []string{"other_name"})
-		help.AssertTargetContents(t, dotPath, "home", []string{})
-		help.AssertPresentInAllFiles(t, dotPath, map[string]string{"other_name": "~/.some_conf"})
-	})
-}
-
-func TestTarget(t *testing.T) {
-	setup := func(t *testing.T, target string) (string, string, func()) {
-		t.Helper()
-
-		home, dotpath, remove := help.SetupDirectories(t, target)
-		help.WriteRepoConf(t, dotpath, `{
-			"files": {
+		confPath := filepath.Join(obj.Home, "subfolder", "some_conf")
+		help.WriteData(t, confPath, "my new conf")
+		err := obj.C.Import(confPath, "")
+		help.ShouldError(t, err)
+		help.Equals(
+			t,
+			config.StringMap{
 				"dot_zshrc": "~/.zshrc",
 				"some_conf": "~/some_conf",
-				"last_conf": "~/last_conf"
+				"odd_conf":  "/etc/odd_conf",
 			},
-			"hosts": {
-				"host": {
-					"files": ["dot_zshrc"]
-				},
-				"other": {
-					"files": ["some_conf", "last_conf"]
-				}
-			}
-		}`)
-
-		return home, dotpath, remove
-	}
-
-	t.Run("list_all", func(t *testing.T) {
-		home, _, remove := setup(t, "home")
-		defer remove()
-
-		c := getController(t, home)
-		w := bytes.NewBufferString("")
-
-		help.Ok(t, c.ListAllFiles(w))
-
-		got := w.String()
-		want := strings.Join([]string{
-			"dot_zshrc => ~/.zshrc",
-			"last_conf => ~/last_conf",
-			"some_conf => ~/some_conf",
-		}, "\n") + "\n"
-
-		help.Equals(t, want, got)
+			obj.C.config.GetRawContent().Files,
+		)
 	})
 
-	t.Run("show target", func(t *testing.T) {
-		home, _, remove := setup(t, "home")
-		defer remove()
+	t.Run("name_collision_with_as_allowed", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
 
-		c := getController(t, home)
-
-		w := bytes.NewBufferString("")
-		c.TargetShowFiles("other", w)
-
-		got := w.String()
-		want := strings.Join([]string{
-			"last_conf => ~/last_conf",
-			"some_conf => ~/some_conf",
-		}, "\n") + "\n"
-
-		help.Equals(t, want, got)
-
-		w = bytes.NewBufferString("")
-		c.TargetShowFiles("host", w)
-
-		got = w.String()
-		want = strings.Join([]string{
-			"dot_zshrc => ~/.zshrc",
-		}, "\n") + "\n"
-
-		help.Equals(t, want, got)
-	})
-
-	t.Run("show target no target", func(t *testing.T) {
-		home, _, remove := setup(t, "other")
-		defer remove()
-
-		c := getController(t, home)
-
-		w := bytes.NewBufferString("")
-		c.TargetShowFiles("", w)
-
-		got := w.String()
-		want := strings.Join([]string{
-			"last_conf => ~/last_conf",
-			"some_conf => ~/some_conf",
-		}, "\n") + "\n"
-
-		help.Equals(t, want, got)
-
-		w = bytes.NewBufferString("")
-		c.TargetShowFiles("host", w)
-
-		got = w.String()
-		want = strings.Join([]string{
-			"dot_zshrc => ~/.zshrc",
-		}, "\n") + "\n"
-
-		help.Equals(t, want, got)
-	})
-
-	t.Run("add target", func(t *testing.T) {
-		home, dotpath, remove := setup(t, "home")
-		defer remove()
-		c := getController(t, home)
-		err := c.TargetAddFile("host", []string{"last_conf"})
-		help.Ensure(t, err)
-		help.AssertTargetContents(t, dotpath, "host", []string{"dot_zshrc", "last_conf"})
-	})
-
-	t.Run("add target no target", func(t *testing.T) {
-		home, dotpath, remove := setup(t, "host")
-		defer remove()
-		c := getController(t, home)
-		err := c.TargetAddFile("", []string{"last_conf"})
-		help.Ensure(t, err)
-		help.AssertTargetContents(t, dotpath, "host", []string{"dot_zshrc", "last_conf"})
-	})
-
-	t.Run("remove target", func(t *testing.T) {
-		home, dotpath, remove := setup(t, "home")
-		defer remove()
-		c := getController(t, home)
-		err := c.TargetRemoveFile("other", []string{"last_conf"})
-		help.Ensure(t, err)
-		help.AssertTargetContents(t, dotpath, "other", []string{"some_conf"})
-	})
-
-	t.Run("remove target no target", func(t *testing.T) {
-		home, dotpath, remove := setup(t, "other")
-		defer remove()
-		c := getController(t, home)
-		err := c.TargetRemoveFile("", []string{"last_conf"})
-		help.Ensure(t, err)
-		help.AssertTargetContents(t, dotpath, "other", []string{"some_conf"})
+		confPath := filepath.Join(obj.Home, "subfolder", "some_conf")
+		help.WriteData(t, confPath, "my new conf")
+		err := obj.C.Import(confPath, "sub_some_conf")
+		help.Ok(t, err)
+		help.Equals(
+			t,
+			config.StringMap{
+				"dot_zshrc":     "~/.zshrc",
+				"some_conf":     "~/some_conf",
+				"sub_some_conf": "~/subfolder/some_conf",
+				"odd_conf":      "/etc/odd_conf",
+			},
+			obj.C.config.GetRawContent().Files,
+		)
 	})
 }
 
-func TestEditFile(t *testing.T) {
-	setup := func(t *testing.T) (string, string, func()) {
-		t.Helper()
+func TestShowFilesEntry(t *testing.T) {
 
-		home, dotpath, remove := help.SetupDirectories(t, "host")
-		help.WriteRepoConf(t, dotpath, `{
-			"files": {
-				"some_conf": "~/some_conf"
-			},
-			"hosts": {
-				"host": {
-					"files": ["some_conf"]
-				}
-			}
-		}`)
-		return home, dotpath, remove
+	showFiles := []struct {
+		name   string
+		target string
+		want   string
+	}{
+		{
+			name: "no_target",
+			target: "",
+			want: strings.Join([]string{
+				"dot_zshrc => ~/.zshrc",
+				" odd_conf => /etc/odd_conf",
+				"some_conf => ~/some_conf",
+			}, "\n") + "\n",
+		},
+		{
+			name: "no_target",
+			target: TARGET,
+			want: strings.Join([]string{
+				"dot_zshrc => ~/.zshrc",
+				"some_conf => ~/some_conf",
+			}, "\n") + "\n",
+		},
 	}
+	for _, tc := range showFiles {
+		t.Run(tc.name, func(t *testing.T) {
+			obj := baseSetup(t)
+			defer obj.Remove()
 
-	t.Run("basic_edit", func(t *testing.T) {
-		home, dotpath, remove := setup(t)
-		defer remove()
+			buf := bytes.NewBufferString("")
+			err := obj.C.ShowFilesEntry(tc.target, buf)
+			help.Ok(t, err)
+			help.Equals(t, tc.want, buf.String())
+		})
+	}
+}
 
-		// "Mocking" editor so ensure the file isn't already setup
-		os.Setenv("EDITOR", "touch")
-		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotpath, "templates"), []string{})
-		help.AssertDirectoryContents(t, home, []string{".config", "dotfiles"})
+func TestTargetAddFile(t *testing.T) {
+	t.Run("no_target", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
 
-		c := getController(t, home)
-		err := c.EditFile([]string{filepath.Join(home, "some_conf")}, EditOpts{NoSync: false})
+		err := obj.C.TargetAddFile("", []string{"odd_conf"})
+		help.Ok(t, err)
 
-		help.Ensure(t, err)
-
-		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotpath, "templates"), []string{"some_conf"})
-		help.AssertDirectoryContents(t, home, []string{".config", "dotfiles", "some_conf"})
+		help.Equals(
+			t,
+			[]string{"dot_zshrc", "some_conf", "odd_conf"},
+			obj.C.config.GetRawContent().Hosts[TARGET].Files,
+		)
 	})
 
-	t.Run("edit_no_sync", func(t *testing.T) {
-		home, dotpath, remove := setup(t)
-		defer remove()
+	t.Run("with_target", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
 
-		// "Mocking" editor so ensure the file isn't already setup
-		os.Setenv("EDITOR", "touch")
-		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotpath, "templates"), []string{})
-		help.AssertDirectoryContents(t, home, []string{".config", "dotfiles"})
+		err := obj.C.TargetAddFile("host2", []string{"odd_conf"})
+		help.Ok(t, err)
 
-		c := getController(t, home)
-		err := c.EditFile([]string{filepath.Join(home, "some_conf")}, EditOpts{NoSync: true})
-		help.Ensure(t, err)
+		help.Equals(
+			t,
+			[]string{"some_conf", "odd_conf"},
+			obj.C.config.GetRawContent().Hosts["host2"].Files,
+		)
+	})
+}
 
-		help.AssertDirectoryContentsRecursive(t, filepath.Join(dotpath, "templates"), []string{"some_conf"})
-		help.AssertDirectoryContents(t, home, []string{".config", "dotfiles"})
+func TestTargetRemoveFile(t *testing.T) {
+	t.Run("no_target", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
+
+		err := obj.C.TargetRemoveFile("", []string{"dot_zshrc"})
+		help.Ok(t, err)
+
+		help.Equals(
+			t,
+			[]string{"some_conf"},
+			obj.C.config.GetRawContent().Hosts[TARGET].Files,
+		)
+	})
+
+	t.Run("with_target", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
+
+		err := obj.C.TargetRemoveFile("host2", []string{"some_conf"})
+		help.Ok(t, err)
+
+		help.Equals(
+			t,
+			[]string{},
+			obj.C.config.GetRawContent().Hosts["host2"].Files,
+		)
 	})
 }

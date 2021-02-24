@@ -17,10 +17,6 @@ type EditOpts struct {
 	NoSync bool
 }
 
-type ImportOpts struct {
-	NoAdd bool
-}
-
 type ControllerOpts struct {
 	HomeDirGetter util.HomeDirGetter
 	Repo          repo.Repo

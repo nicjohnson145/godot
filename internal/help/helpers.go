@@ -118,6 +118,9 @@ func AssertDirectoryContents(t *testing.T, dir string, want []string) {
 		return
 	}
 
+	sort.Strings(got)
+	sort.Strings(want)
+
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("directory listings not equal got %v want %v", got, want)
 	}
@@ -171,10 +174,16 @@ func ReadFile(t *testing.T, path string) string {
 func WriteData(t *testing.T, path string, data string) {
 	t.Helper()
 
-	err := ioutil.WriteFile(path, []byte(data), 0744)
-	if err != nil {
-		t.Fatalf("could not write file %v", err)
-	}
+	dirs := filepath.Dir(path)
+	err := os.MkdirAll(dirs, 0744)
+	Ok(t, err)
+	err = ioutil.WriteFile(path, []byte(data), 0744)
+	Ok(t, err)
+}
+
+func Touch(t *testing.T, path string) {
+	t.Helper()
+	WriteData(t, path, "")
 }
 
 func AssertSymlinkTo(t *testing.T, link string, source string) {
