@@ -3,7 +3,7 @@ ARG TYPE="apt_integration"
 WORKDIR /app
 COPY . .
 RUN go build
-RUN go test -c -i -o test_binary -tags="$TYPE"
+RUN go test -c -i -o test_binary -tags="apt_integration" ./internal/bootstrap
 
 FROM debian:buster-slim
 RUN apt update
