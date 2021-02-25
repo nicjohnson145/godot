@@ -28,8 +28,8 @@ Example:
 
 ```
 {
-	"target": "desktop",
-	"dotfiles_root": "/home/njohnson/my_dotfiles",
+    "target": "desktop",
+    "dotfiles_root": "/home/njohnson/my_dotfiles",
     "package_maanagers": ["apt", "git"]
 }
 ```
