@@ -6,31 +6,24 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/ktr0731/go-fuzzyfinder"
+	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/builder"
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/repo"
 	"github.com/nicjohnson145/godot/internal/util"
 )
 
-type Controller interface {
-	Sync(SyncOpts) error
-	Import(string, string, ImportOpts) error
-	ListAll(io.Writer)
-	TargetShow(string, io.Writer)
-	TargetAdd(string, []string, AddOpts) error
-	TargetRemove(string, []string, RemoveOpts) error
-	Edit([]string, EditOpts) error
-}
-
-type controller struct {
+type Controller struct {
 	homeDirGetter util.HomeDirGetter
 	repo          repo.Repo
 	config        *config.Config
 	builder       *builder.Builder
+	runner        bootstrap.Runner
 }
 
-func NewController(opts ControllerOpts) *controller {
+func NewController(opts ControllerOpts) *Controller {
 	var getter util.HomeDirGetter
 	if opts.HomeDirGetter != nil {
 		getter = opts.HomeDirGetter
@@ -49,7 +42,11 @@ func NewController(opts ControllerOpts) *controller {
 	if opts.Repo != nil {
 		r = opts.Repo
 	} else {
-		r = repo.NewShellGitRepo(conf.DotfilesRoot)
+		if opts.NoGit {
+			r = repo.NoopRepo{}
+		} else {
+			r = repo.NewShellGitRepo(conf.DotfilesRoot)
+		}
 	}
 
 	var b *builder.Builder
@@ -62,215 +59,310 @@ func NewController(opts ControllerOpts) *controller {
 		}
 	}
 
-	return &controller{
+	var rn bootstrap.Runner
+	if opts.Runner != nil {
+		rn = opts.Runner
+	} else {
+		rn = bootstrap.NewRunner()
+	}
+
+	return &Controller{
 		homeDirGetter: getter,
 		config:        conf,
 		repo:          r,
 		builder:       b,
+		runner:        rn,
 	}
 }
 
-func (c *controller) Sync(opts SyncOpts) error {
-	if !opts.NoGit {
-		err := c.repo.Pull()
-		if err != nil {
-			return err
-		}
-	}
-
-	return c.builder.Build(opts.Force)
+func (c *Controller) targetIsSet(t string) bool {
+	return t != ""
 }
 
-func (c *controller) Import(file string, as string, opts ImportOpts) error {
-	if !opts.NoGit {
-		err := c.repo.Pull()
-		if err != nil {
-			return err
-		}
+func (c *Controller) getTarget(t string) string {
+	if t == "" || t == config.CURRENT {
+		t = c.config.Target
 	}
-
-	// import the file into the repo
-	err := c.builder.Import(file, as)
-	if err != nil {
-		return err
-	}
-
-	// Add the file to the repos config
-	var name string
-	if as != "" {
-		name, err = c.config.AddFile(as, file)
-	} else {
-		name, err = c.config.ManageFile(file)
-	}
-	if err != nil {
-		return err
-	}
-
-	// Potentially add the file to the current target
-	if !opts.NoAdd {
-		err = c.config.AddToTarget(c.config.Target, name)
-	}
-
-	// If everything has gone right up to this point, write the config to disk
-	if err == nil {
-		err = c.config.Write()
-	}
-
-	if !opts.NoGit {
-		err = c.repo.Push()
-		if err != nil {
-			return err
-		}
-	}
-
-	return err
+	return t
 }
 
-func (c *controller) ListAll(w io.Writer) {
-	c.config.ListAllFiles(w)
+func (c *Controller) git_pushAndPull(function func() error) error {
+	if err := c.repo.Pull(); err != nil {
+		return err
+	}
+
+	if err := function(); err != nil {
+		return err
+	}
+
+	return c.repo.Push()
 }
 
-func (c *controller) TargetShow(target string, w io.Writer) {
-	if target == "" {
-		target = c.config.Target
+func (c *Controller) git_pullOnly(function func() error) error {
+	if err := c.repo.Pull(); err != nil {
+		return err
 	}
-	c.config.ListTargetFiles(target, w)
+
+	return function()
 }
 
-func (c *controller) TargetAdd(target string, args []string, opts AddOpts) error {
-	if target == "" {
-		target = c.config.Target
-	}
+func (c *Controller) Sync(opts SyncOpts) error {
+	f := func() error {
+		var errs *multierror.Error
 
-	if !opts.NoGit {
-		err := c.repo.Pull()
+		if err := c.builder.Build(opts.Force); err != nil {
+			errs = multierror.Append(errs, err)
+		}
+
+		impls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
 		if err != nil {
-			return err
+			if merr, ok := err.(*multierror.Error); ok {
+				for _, e := range merr.Errors {
+					errs = multierror.Append(errs, e)
+				}
+			} else {
+				errs = multierror.Append(errs, err)
+			}
+			return errs.ErrorOrNil()
 		}
-	}
 
-	options := c.config.GetAllTemplateNames()
-	tmpl, err := c.fuzzyOrArgs(args, options)
-	if err != nil {
-		if err == fuzzyfinder.ErrAbort {
-			fmt.Println("Aborting...")
-			return nil
+		if err := c.runner.RunAll(impls); err != nil {
+			if merr, ok := err.(*multierror.Error); ok {
+				for _, e := range merr.Errors {
+					errs = multierror.Append(errs, e)
+				}
+			} else {
+				errs = multierror.Append(errs, err)
+			}
 		}
-		return err
+
+		return errs.ErrorOrNil()
 	}
 
-	err = c.config.AddToTarget(target, tmpl)
-	if err != nil {
-		return err
-	}
-
-	err = c.write()
-	if err != nil {
-		return err
-	}
-
-	if !opts.NoGit {
-		err := c.repo.Push()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return c.git_pullOnly(f)
 }
 
-func (c *controller) TargetRemove(target string, args []string, opts RemoveOpts) error {
-	if target == "" {
-		target = c.config.Target
-	}
+func (c *Controller) Import(file string, as string) error {
+	f := func() error {
+		// import the file into the repo
+		if err := c.builder.Import(file, as); err != nil {
+			return err
+		}
 
-	if !opts.NoGit {
-		err := c.repo.Pull()
+		// Add the file to the repos config
+		_, err := c.config.AddFile(as, file)
 		if err != nil {
 			return err
 		}
-	}
 
-	options := c.config.GetTemplatesNamesForTarget(target)
-	tmpl, err := c.fuzzyOrArgs(args, options)
-	if err != nil {
-		if err == fuzzyfinder.ErrAbort {
-			fmt.Println("Aborting...")
-			return nil
-		}
-		return err
+		// If everything has gone right up to this point, write the config to disk
+		return c.config.Write()
 	}
-
-	err = c.config.RemoveFromTarget(target, tmpl)
-	if err != nil {
-		return err
-	}
-
-	err = c.write()
-	if err != nil {
-		return err
-	}
-
-	if !opts.NoGit {
-		err := c.repo.Push()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return c.git_pushAndPull(f)
 }
 
-func (c *controller) Edit(args []string, opts EditOpts) error {
-	if !opts.NoGit {
-		err := c.repo.Pull()
-		if err != nil {
-			return err
+func (c *Controller) ShowFilesEntry(target string, w io.Writer) error {
+	f := func() error {
+		if c.targetIsSet(target) {
+			return c.TargetShowFiles(target, w)
+		} else {
+			return c.ListAllFiles(w)
 		}
 	}
 
-	path, err := c.getFile(args)
-	if err != nil {
-		if err == fuzzyfinder.ErrAbort {
-			fmt.Println("Aborting...")
-			return nil
-		}
-		return err
-	}
-
-	err = c.editFile(path, opts)
-	if err != nil {
-		return err
-	}
-
-	if !opts.NoSync {
-		err = c.Sync(SyncOpts{NoGit: true})
-		if err != nil {
-			return err
-		}
-	}
-
-	if !opts.NoGit {
-		err = c.repo.Push()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return c.git_pullOnly(f)
 }
 
-func (c *controller) getFile(args []string) (filePath string, outErr error) {
-	targetFiles := c.config.GetTargetFiles()
-	options := make([]string, 0, len(targetFiles))
-	for _, fl := range targetFiles {
-		options = append(options, fl.DestinationPath)
+func (c *Controller) ListAllFiles(w io.Writer) error {
+	return c.config.ListAllFiles(w)
+}
+
+func (c *Controller) TargetShowFiles(target string, w io.Writer) error {
+	target = c.getTarget(target)
+	return c.config.ListTargetFiles(target, w)
+}
+
+func (c *Controller) TargetAddFile(target string, args []string) error {
+	f := func() error {
+		target = c.getTarget(target)
+
+		options := c.config.GetAllTemplateNames()
+		tmpl, err := c.fuzzyOrArgs(args, options)
+		if err != nil {
+			if err == fuzzyfinder.ErrAbort {
+				fmt.Println("Aborting...")
+				return nil
+			}
+			return err
+		}
+
+		if err := c.config.AddTargetFile(target, tmpl); err != nil {
+			return err
+		}
+
+		return c.write()
+	}
+
+	return c.git_pushAndPull(f)
+}
+
+func (c *Controller) TargetRemoveFile(target string, args []string) error {
+	f := func() error {
+		target = c.getTarget(target)
+
+		options := c.config.GetAllTemplateNames()
+		tmpl, err := c.fuzzyOrArgs(args, options)
+		if err != nil {
+			if err == fuzzyfinder.ErrAbort {
+				fmt.Println("Aborting...")
+				return nil
+			}
+			return err
+		}
+
+		if err := c.config.RemoveTargetFile(target, tmpl); err != nil {
+			return err
+		}
+
+		return c.write()
+	}
+
+	return c.git_pushAndPull(f)
+}
+
+func (c *Controller) EditFile(args []string, opts EditOpts) error {
+	f := func() error {
+		path, err := c.getFile(args)
+		if err != nil {
+			if err == fuzzyfinder.ErrAbort {
+				fmt.Println("Aborting...")
+				return nil
+			}
+			return err
+		}
+
+		if err := c.editFile(util.ReplacePrefix(path, "~/", c.config.Home), opts); err != nil {
+			return err
+		}
+
+		if !opts.NoSync {
+			if err := c.Sync(SyncOpts{}); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	return c.git_pushAndPull(f)
+}
+
+func (c *Controller) ShowBootstrapsEntry(target string, w io.Writer) error {
+	f := func() error {
+		if c.targetIsSet(target) {
+			return c.ListAllBootstrapsForTarget(target, w)
+		} else {
+			return c.ListAllBootstraps(w)
+		}
+	}
+
+	return c.git_pullOnly(f)
+}
+
+func (c *Controller) ListAllBootstraps(w io.Writer) error {
+	f := func() error {
+		return c.config.ListAllBootstraps(w)
+	}
+	return c.git_pullOnly(f)
+}
+
+func (c *Controller) ListAllBootstrapsForTarget(target string, w io.Writer) error {
+	f := func() error {
+		return c.config.ListBootstrapsForTarget(w, c.getTarget(target))
+	}
+	return c.git_pullOnly(f)
+}
+
+func (c *Controller) AddBootstrapItem(item, manager, pkg, location string) error {
+	f := func() error {
+		if !config.IsValidPackageManager(manager) {
+			return fmt.Errorf("non-supported package manager of %q", manager)
+		}
+
+		c.config.AddBootstrapItem(item, manager, pkg, location)
+		return c.write()
+	}
+
+	return c.git_pushAndPull(f)
+}
+
+func (c *Controller) AddTargetBootstrap(target string, args []string) error {
+	f := func() error {
+		target = c.getTarget(target)
+
+		all := c.config.GetAllBootstraps()
+		if len(all) == 0 {
+			return fmt.Errorf("No bootstraps defined")
+		}
+
+		options := make([]string, 0, len(all))
+		for key := range all {
+			options = append(options, key)
+		}
+		bootstrap, err := c.fuzzyOrArgs(args, options)
+		if err != nil {
+			if err == fuzzyfinder.ErrAbort {
+				fmt.Println("Aborting...")
+				return nil
+			}
+			return err
+		}
+
+		if err := c.config.AddTargetBootstrap(target, bootstrap); err != nil {
+			return err
+		}
+
+		return c.write()
+	}
+
+	return c.git_pushAndPull(f)
+}
+
+func (c *Controller) RemoveTargetBootstrap(target string, args []string) error {
+	f := func() error {
+		target = c.getTarget(target)
+		options := c.config.GetBootstrapTargetsForTarget(target)
+		bootstrap, err := c.fuzzyOrArgs(args, options)
+		if err != nil {
+			if err == fuzzyfinder.ErrAbort {
+				fmt.Println("Aborting...")
+				return nil
+			}
+			return err
+		}
+
+		if err := c.config.RemoveTargetBootstrap(target, bootstrap); err != nil {
+			return err
+		}
+
+		return c.write()
+	}
+
+	return c.git_pushAndPull(f)
+}
+
+func (c *Controller) getFile(args []string) (filePath string, outErr error) {
+	allFiles := c.config.GetAllFiles()
+	options := make([]string, 0, len(allFiles))
+	for _, dest := range allFiles {
+		options = append(options, dest)
 	}
 
 	return c.fuzzyOrArgs(args, options)
 }
 
-func (c *controller) editFile(path string, opts EditOpts) error {
+func (c *Controller) editFile(path string, opts EditOpts) error {
+	// TODO: opts not necessary
 	editor := os.Getenv("EDITOR")
 	if editor == "" {
 		return fmt.Errorf("'edit' requires $EDITOR to be set")
@@ -287,7 +379,7 @@ func (c *controller) editFile(path string, opts EditOpts) error {
 	return proc.Run()
 }
 
-func (c *controller) fuzzyOrArgs(args []string, options []string) (string, error) {
+func (c *Controller) fuzzyOrArgs(args []string, options []string) (string, error) {
 	if len(args) > 0 {
 		return args[0], nil
 	}
@@ -300,6 +392,6 @@ func (c *controller) fuzzyOrArgs(args []string, options []string) (string, error
 	return options[idx], nil
 }
 
-func (c *controller) write() error {
+func (c *Controller) write() error {
 	return c.config.Write()
 }

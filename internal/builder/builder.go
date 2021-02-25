@@ -23,7 +23,7 @@ func (b *Builder) Build(force bool) error {
 	vars := b.makeTemplateVars()
 
 	// Before clearing the build directory, make sure nothing is going to error out, i.e fail safe
-	for _, fl := range b.Config.GetTargetFiles() {
+	for _, fl := range b.buildFileObjs(b.Config.GetFilesForTarget(b.Config.Target)) {
 		_, err := fl.Execute(vars)
 		if err != nil {
 			return err
@@ -37,7 +37,7 @@ func (b *Builder) Build(force bool) error {
 	}
 
 	// Actually render/symlink the files
-	for _, fl := range b.Config.GetTargetFiles() {
+	for _, fl := range b.buildFileObjs(b.Config.GetFilesForTarget(b.Config.Target)) {
 		err = fl.Render(dir, vars, force)
 		if err != nil {
 			return fmt.Errorf("error rendering: %w", err)
@@ -50,6 +50,17 @@ func (b *Builder) Build(force bool) error {
 	}
 
 	return nil
+}
+
+func (b *Builder) buildFileObjs(m config.StringMap) []file.File {
+	files := make([]file.File, 0, len(m))
+	for tmpl, dest := range m {
+		files = append(files, file.File{
+			TemplatePath:    filepath.Join(b.Config.TemplateRoot, tmpl),
+			DestinationPath: util.ReplacePrefix(dest, "~/", b.Config.Home),
+		})
+	}
+	return files
 }
 
 func (b *Builder) makeTemplateVars() file.TemplateVars {
@@ -90,7 +101,7 @@ func (b *Builder) Import(path string, as string) error {
 		as = util.ToTemplateName(path)
 	}
 
-	if b.Config.IsValidFile(as) {
+	if b.Config.IsKnownFile(as) {
 		return errors.New("file %q already managed, use --as to give it a different name")
 	}
 

@@ -6,11 +6,85 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"sort"
 	"testing"
 
 	"github.com/tidwall/gjson"
 )
+
+const SAMPLE_CONFIG = `{
+	"files": {
+		"dot_zshrc": "~/.zshrc",
+		"some_conf": "~/some_conf",
+		"odd_conf": "/etc/odd_conf"
+	},
+	"bootstraps": {
+		"ripgrep": {
+			"brew": {
+				"name": "rip-grep"
+			},
+			"apt": {
+				"name": "ripgrep"
+			}
+		},
+		"pyenv": {
+			"brew": {
+				"name": "pyenv"
+			},
+			"git": {
+				"name": "https://github.com/pyenv/pyenv.git",
+				"location": "~/.pyenv"
+			}
+		}
+	},
+	"hosts": {
+		"host1": {
+			"files": ["dot_zshrc", "some_conf"],
+			"bootstraps": ["ripgrep"]
+		},
+		"host2": {
+			"files": ["some_conf"],
+			"bootstraps": ["ripgrep", "pyenv"]
+		},
+		"host3": {
+			"files": ["dot_zshrc"]
+		},
+		"host4": {
+			"bootstraps": ["pyenv"]
+		}
+	}
+}`
+
+// {{ Taken from https://github.com/benbjohnson/testing
+// assert fails the test if the condition is false.
+func Assert(tb testing.TB, condition bool, msg string, v ...interface{}) {
+	if !condition {
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Printf("\033[31m%s:%d: "+msg+"\033[39m\n\n", append([]interface{}{filepath.Base(file), line}, v...)...)
+		tb.FailNow()
+	}
+}
+
+// ok fails the test if an err is not nil.
+func Ok(tb *testing.T, err error) {
+	if err != nil {
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Printf("\033[31m%s:%d: unexpected error: %s\033[39m\n\n", filepath.Base(file), line, err.Error())
+		tb.FailNow()
+	}
+}
+
+// equals fails the test if exp is not equal to act.
+func Equals(tb testing.TB, exp, act interface{}) {
+	if !reflect.DeepEqual(exp, act) {
+		_, file, line, _ := runtime.Caller(1)
+		fmt.Printf("\033[31m%s:%d:\n\n\texp: %#v\n\n\tgot: %#v\033[39m\n\n", filepath.Base(file), line, exp, act)
+		tb.FailNow()
+	}
+}
+
+// }}
 
 func CreateTempDir(t *testing.T, pattern string) (string, func()) {
 	t.Helper()
@@ -46,6 +120,9 @@ func AssertDirectoryContents(t *testing.T, dir string, want []string) {
 	if len(got) == 0 && len(want) == 0 {
 		return
 	}
+
+	sort.Strings(got)
+	sort.Strings(want)
 
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("directory listings not equal got %v want %v", got, want)
@@ -100,10 +177,16 @@ func ReadFile(t *testing.T, path string) string {
 func WriteData(t *testing.T, path string, data string) {
 	t.Helper()
 
-	err := ioutil.WriteFile(path, []byte(data), 0744)
-	if err != nil {
-		t.Fatalf("could not write file %v", err)
-	}
+	dirs := filepath.Dir(path)
+	err := os.MkdirAll(dirs, 0744)
+	Ok(t, err)
+	err = ioutil.WriteFile(path, []byte(data), 0744)
+	Ok(t, err)
+}
+
+func Touch(t *testing.T, path string) {
+	t.Helper()
+	WriteData(t, path, "")
 }
 
 func AssertSymlinkTo(t *testing.T, link string, source string) {
@@ -154,14 +237,7 @@ func WriteRepoConf(t *testing.T, dotDir string, contents string) {
 func SetupFullConfig(t *testing.T, target string, data *string) (string, string, func()) {
 	t.Helper()
 	home, dotPath, remove := SetupDirectories(t, target)
-	WriteRepoConf(t, dotPath, `{
-		"all_files": {
-			"dot_zshrc": "~/.zshrc"
-		},
-		"renders": {
-			"host": ["dot_zshrc"]
-		}
-	}`)
+	WriteRepoConf(t, dotPath, SAMPLE_CONFIG)
 
 	if data != nil {
 		WriteData(t, filepath.Join(dotPath, "templates", "dot_zshrc"), *data)
@@ -185,7 +261,15 @@ func SetupDirectories(t *testing.T, target string) (string, string, func()) {
 	if err != nil {
 		t.Errorf("error making dir, %v", err)
 	}
-	WriteConfig(t, home, fmt.Sprintf(`{"target": "%v", "dotfiles_root": "%v"}`, target, dotPath))
+	WriteConfig(t, home, fmt.Sprintf(
+		`{
+			"target": "%v",
+			"dotfiles_root": "%v",
+			"package_managers": ["apt", "git"]
+		}`,
+		target,
+		dotPath,
+	))
 
 	return home, dotPath, remove
 }
@@ -194,7 +278,7 @@ func AssertTargetContents(t *testing.T, dotPath string, target string, want []st
 	t.Helper()
 
 	contents := ReadFile(t, filepath.Join(dotPath, "config.json"))
-	value := gjson.Get(contents, fmt.Sprintf("renders.%v", target))
+	value := gjson.Get(contents, fmt.Sprintf("hosts.%v.files", target))
 	var actual []string
 	value.ForEach(func(key, value gjson.Result) bool {
 		actual = append(actual, value.String())
@@ -214,7 +298,7 @@ func GetAllFiles(t *testing.T, dotPath string) map[string]string {
 	t.Helper()
 
 	contents := ReadFile(t, filepath.Join(dotPath, "config.json"))
-	value := gjson.Get(contents, "all_files")
+	value := gjson.Get(contents, "files")
 
 	actual := make(map[string]string)
 	value.ForEach(func(key, value gjson.Result) bool {
@@ -231,6 +315,18 @@ func AssertAllFiles(t *testing.T, dotPath string, want map[string]string) {
 	got := GetAllFiles(t, dotPath)
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("all files not equal, got %q want %q", got, want)
+	}
+}
+
+func AssertPresentInAllFiles(t *testing.T, dotpath string, want map[string]string) {
+	t.Helper()
+
+	allFiles := GetAllFiles(t, dotpath)
+	for key, value := range want {
+		actualVal, ok := allFiles[key]
+		if !ok || value != actualVal {
+			t.Fatalf("k/v pair %q %q not present in all files, %v", key, value, allFiles)
+		}
 	}
 }
 

@@ -1,23 +1,20 @@
-# github.com/gdamore/tcell/v2 v2.1.0
+# github.com/hashicorp/errwrap v1.0.0
+github.com/hashicorp/errwrap
+# github.com/hashicorp/go-multierror v1.1.0
 ## explicit
+github.com/hashicorp/go-multierror
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/kisielk/godepgraph v0.0.0-20190626013829-57a7e4a651a9
+# github.com/jinzhu/copier v0.2.4
 ## explicit
-# github.com/ktr0731/bump v0.1.0
-## explicit
+github.com/jinzhu/copier
 # github.com/ktr0731/go-fuzzyfinder v0.3.2
 ## explicit
 github.com/ktr0731/go-fuzzyfinder
 github.com/ktr0731/go-fuzzyfinder/matching
 github.com/ktr0731/go-fuzzyfinder/scoring
-# github.com/matryer/moq v0.1.4
-## explicit
 # github.com/mattn/go-runewidth v0.0.10
-## explicit
 github.com/mattn/go-runewidth
-# github.com/micmonay/keybd_event v1.1.0
-## explicit
 # github.com/nsf/termbox-go v0.0.0-20210114135735-d04385b850e8
 ## explicit
 github.com/nsf/termbox-go
@@ -39,7 +36,3 @@ github.com/tidwall/match
 # github.com/tidwall/pretty v1.0.2
 ## explicit
 github.com/tidwall/pretty
-# golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4
-## explicit
-# golang.org/x/text v0.3.5
-## explicit

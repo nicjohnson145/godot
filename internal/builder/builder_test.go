@@ -11,67 +11,64 @@ import (
 func TestBuilder(t *testing.T) {
 	t.Run("simple no-template integration", func(t *testing.T) {
 		expected := "zsh contents"
-		home, _, remove := help.SetupFullConfig(t, "host", &expected)
+		home, _, remove := help.SetupFullConfig(t, "host3", &expected)
 		defer remove()
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(false)
-		if err != nil {
-			t.Fatalf("error encountered, %v", err)
-		}
-
+		help.Ok(t, err)
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
 	})
 
 	t.Run("templated integration", func(t *testing.T) {
-		template := `{{ if oneOf . "host" "other" }}{{ .Target }}{{ end }} zsh contents`
-		home, _, remove := help.SetupFullConfig(t, "host", &template)
+		template := `{{ if oneOf . "host3" "other" }}{{ .Target }}{{ end }} zsh contents`
+		home, _, remove := help.SetupFullConfig(t, "host3", &template)
 		defer remove()
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(false)
-		help.Ensure(t, err)
+		help.Ok(t, err)
 
-		expected := "host zsh contents"
+		expected := "host3 zsh contents"
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
 	})
 
 	t.Run("build directory cleaned on each sync", func(t *testing.T) {
 		expected := "contents"
-		home, dotPath, remove := help.SetupFullConfig(t, "host", &expected)
+		home, dotPath, remove := help.SetupFullConfig(t, "host3", &expected)
 		defer remove()
 
 		build := filepath.Join(dotPath, "build")
 		err := os.Mkdir(build, 0744)
-		help.Ensure(t, err)
+		help.Ok(t, err)
 		help.WriteData(t, filepath.Join(build, "some_file"), "some_data")
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err = b.Build(false)
-		help.Ensure(t, err)
+		help.Ok(t, err)
 		help.AssertDirectoryContentsRecursive(t, build, []string{"dot_zshrc"})
 	})
 
 	t.Run("file exists as symlink", func(t *testing.T) {
-		expected := "host zsh contents"
-		home, dotPath, remove := help.SetupFullConfig(t, "host", &expected)
+		expected := "host3 zsh contents"
+		home, dotPath, remove := help.SetupFullConfig(t, "host3", &expected)
 		defer remove()
 
 		err := os.Mkdir(filepath.Join(dotPath, "build"), 0744)
-		help.Ensure(t, err)
+		help.Ok(t, err)
 		buildFile := filepath.Join(dotPath, "build/dot_zshrc")
 		help.WriteData(t, buildFile, "orig")
 		os.Symlink(filepath.Join(home, ".zshrc"), filepath.Join(dotPath, "build/dot_zshrc"))
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err = b.Build(false)
-		help.Ensure(t, err)
+		help.Ok(t, err)
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
 	})
 
 	t.Run("file exists as file no force", func(t *testing.T) {
 		expected := "zsh contents"
-		home, _, remove := help.SetupFullConfig(t, "host", &expected)
+		home, _, remove := help.SetupFullConfig(t, "host3", &expected)
 		defer remove()
 
 		destPath := filepath.Join(home, ".zshrc")
@@ -85,7 +82,7 @@ func TestBuilder(t *testing.T) {
 
 	t.Run("file exists as file with force", func(t *testing.T) {
 		expected := "zsh contents"
-		home, _, remove := help.SetupFullConfig(t, "host", &expected)
+		home, _, remove := help.SetupFullConfig(t, "host3", &expected)
 		defer remove()
 
 		destPath := filepath.Join(home, ".zshrc")
@@ -93,12 +90,12 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(true)
-		help.Ensure(t, err)
+		help.Ok(t, err)
 		help.AssertFileContents(t, destPath, "zsh contents")
 	})
 
 	t.Run("import file", func(t *testing.T) {
-		home, dotPath, remove := help.SetupFullConfig(t, "host", nil)
+		home, dotPath, remove := help.SetupFullConfig(t, "host3", nil)
 		defer remove()
 
 		expected := "contents"
@@ -113,7 +110,7 @@ func TestBuilder(t *testing.T) {
 	})
 
 	t.Run("import missing file", func(t *testing.T) {
-		home, dotPath, remove := help.SetupFullConfig(t, "host", nil)
+		home, dotPath, remove := help.SetupFullConfig(t, "host3", nil)
 		defer remove()
 
 		path := filepath.Join(home, ".some_conf")
@@ -126,7 +123,7 @@ func TestBuilder(t *testing.T) {
 	})
 
 	t.Run("import file as", func(t *testing.T) {
-		home, dotPath, remove := help.SetupFullConfig(t, "host", nil)
+		home, dotPath, remove := help.SetupFullConfig(t, "host3", nil)
 		defer remove()
 
 		path := filepath.Join(home, ".some_conf")
@@ -138,22 +135,24 @@ func TestBuilder(t *testing.T) {
 	})
 
 	t.Run("template error doesnt delete build dir", func(t *testing.T) {
-		home, dotPath, remove := help.SetupDirectories(t, "host")
+		home, dotPath, remove := help.SetupDirectories(t, "host3")
 		defer remove()
 
 		help.WriteRepoConf(t, dotPath, `{
-			"all_files": {
+			"files": {
 				"some_file": "~/some_file"
 			},
-			"renders": {
-				"host": ["some_file"]
+			"hosts": {
+				"host3": {
+					"files": ["some_file"]
+				}
 			}
 		}`)
 
 		// Touch some file in the build dir
 		buildDir := filepath.Join(dotPath, "build")
 		err := os.Mkdir(buildDir, 0744)
-		help.Ensure(t, err)
+		help.Ok(t, err)
 		help.WriteData(t, filepath.Join(buildDir, "orphan_file"), "")
 
 		// Write an invalid template
