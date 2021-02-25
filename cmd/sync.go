@@ -18,7 +18,7 @@ var (
 	syncCmd = &cobra.Command{
 		Use:   "sync",
 		Short: "Build and symlink dotfiles",
-		Long:  "Compile templates and symlink them to their final destinations",
+		Long:  "Compile templates, symlink them to their final destinations, install configured bootstraps",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(controller.ControllerOpts{NoGit: noGit})
 			return c.Sync(controller.SyncOpts{Force: force, NoBootstrap: noBootstrap})
