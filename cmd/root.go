@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/nicjohnson145/godot/internal/config"
@@ -34,12 +33,15 @@ var (
 		Use:   "godot",
 		Short: "A dotfiles manager",
 		Long:  "A staticly linked dotfiles manager written in Go",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			cmd.SilenceUsage = true
+		},
 	}
 )
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		// fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }

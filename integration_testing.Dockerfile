@@ -18,6 +18,7 @@ RUN mkdir -p .config/godot
 COPY integration_config.json /home/newuser/dotfiles/config.json
 RUN echo -ne "contents\nof\nsome_conf" > /home/newuser/dotfiles/templates/some_conf
 RUN echo -ne "contents\nof\ndot_zshrc" > /home/newuser/dotfiles/templates/dot_zshrc
+RUN echo -ne "contents\nof\ndot_zshrc" > /home/newuser/dotfiles/templates/odd_conf
 RUN echo '{"target": "test_host", "package_managers": ["apt", "git"]}' > /home/newuser/.config/godot/config.json
 COPY --from=intermediate /app/godot .
 CMD /bin/bash
