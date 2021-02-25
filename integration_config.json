@@ -1,0 +1,25 @@
+{
+	"files": {
+		"dot_zshrc": "~/.zshrc",
+		"some_conf": "~/some_conf"
+	},
+	"bootstraps": {
+		"ripgrep": {
+			"apt": {
+				"name": "ripgrep"
+			}
+		},
+		"pyenv": {
+			"git": {
+				"name": "https://github.com/pyenv/pyenv.git",
+				"location": "~/.pyenv"
+			}
+		}
+	},
+	"hosts": {
+		"test_host": {
+			"files": ["dot_zshrc", "some_conf"],
+			"bootstraps": ["ripgrep", "pyenv"]
+		}
+	}
+}

@@ -366,7 +366,7 @@ func (c *Config) GetRelevantBootstrapImpls(target string) ([]BootstrapImpl, erro
 		found := false
 		for _, mgr := range c.PackageManagers {
 			if item, ok := c.content.Bootstraps[t][mgr]; ok {
-				impl := BootstrapImpl{Name: mgr, Item: item}
+				impl := BootstrapImpl{Name: mgr, Item: c.translateItemLocation(item)}
 				impls = append(impls, impl)
 				found = true
 				break
@@ -386,6 +386,17 @@ func (c *Config) GetRelevantBootstrapImpls(target string) ([]BootstrapImpl, erro
 	}
 
 	return impls, errs.ErrorOrNil()
+}
+
+func (c *Config) translateItemLocation(i BootstrapItem) BootstrapItem {
+	location := i.Location
+	if location != "" {
+		location = util.ReplacePrefix(location, "~", c.Home)
+	}
+	return BootstrapItem{
+		Name: i.Name,
+		Location: location,
+	}
 }
 
 func (c *Config) getManagersForBootstrapItem(item string) []string {

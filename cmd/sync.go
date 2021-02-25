@@ -8,7 +8,7 @@ import (
 func init() {
 	rootCmd.AddCommand(syncCmd)
 	syncCmd.Flags().BoolVarP(&force, "force", "f", false, "If a target file already exists, delete it then symlink it")
-	syncCmd.Flags().BoolVarP(&noBootstrap, "no-bootstrap", "-b", false, "Don't attempt to bootstrap this host, only symlink")
+	syncCmd.Flags().BoolVarP(&noBootstrap, "no-bootstrap", "b", false, "Don't attempt to bootstrap this host, only symlink")
 }
 
 var (
