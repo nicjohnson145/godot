@@ -12,7 +12,7 @@ func init() {
 }
 
 var (
-	force bool
+	force       bool
 	noBootstrap bool
 
 	syncCmd = &cobra.Command{

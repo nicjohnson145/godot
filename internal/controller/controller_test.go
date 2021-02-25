@@ -245,7 +245,7 @@ func TestShowFilesEntry(t *testing.T) {
 			want: strings.Join([]string{
 				"dot_zshrc => ~/.zshrc",
 			}, "\n") + "\n",
-		}, 
+		},
 		{
 			name:   "current_target",
 			target: config.CURRENT,
@@ -253,7 +253,7 @@ func TestShowFilesEntry(t *testing.T) {
 				"dot_zshrc => ~/.zshrc",
 				"some_conf => ~/some_conf",
 			}, "\n") + "\n",
-		}, 
+		},
 	}
 	for _, tc := range showFiles {
 		t.Run(tc.name, func(t *testing.T) {
@@ -329,13 +329,13 @@ func TestTargetRemoveFile(t *testing.T) {
 }
 
 func TestShowBootstrapEntry(t *testing.T) {
-	showBootstraps := []struct{
-		name string
+	showBootstraps := []struct {
+		name   string
 		target string
-		want string
+		want   string
 	}{
 		{
-			name: "no target",
+			name:   "no target",
 			target: "",
 			want: strings.Join([]string{
 				"  pyenv => brew, git",
@@ -343,14 +343,14 @@ func TestShowBootstrapEntry(t *testing.T) {
 			}, "\n") + "\n",
 		},
 		{
-			name: "current target",
+			name:   "current target",
 			target: config.CURRENT,
 			want: strings.Join([]string{
 				"ripgrep => apt, brew",
 			}, "\n") + "\n",
 		},
 		{
-			name: "named target",
+			name:   "named target",
 			target: "host4",
 			want: strings.Join([]string{
 				"pyenv => brew, git",
@@ -358,7 +358,7 @@ func TestShowBootstrapEntry(t *testing.T) {
 		},
 	}
 	for _, tc := range showBootstraps {
-		t.Run(tc.name, func(t *testing.T){
+		t.Run(tc.name, func(t *testing.T) {
 			obj := baseSetup(t)
 			defer obj.Remove()
 
@@ -496,4 +496,3 @@ func TestRemoveBootstrapTarget(t *testing.T) {
 		help.Equals(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
 	})
 }
-

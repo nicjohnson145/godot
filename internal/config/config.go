@@ -394,7 +394,7 @@ func (c *Config) translateItemLocation(i BootstrapItem) BootstrapItem {
 		location = util.ReplacePrefix(location, "~", c.Home)
 	}
 	return BootstrapItem{
-		Name: i.Name,
+		Name:     i.Name,
 		Location: location,
 	}
 }
