@@ -2,11 +2,13 @@ package controller
 
 import (
 	"bytes"
+	"errors"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/help"
 	"github.com/nicjohnson145/godot/internal/repo"
@@ -49,6 +51,7 @@ func setup(t *testing.T, conf string, tmplData map[string]string) testData {
 	c := NewController(ControllerOpts{
 		HomeDirGetter: &help.TempHomeDir{HomeDir: home},
 		Repo:          repo.NoopRepo{},
+		Runner:        &bootstrap.NoopRunner{},
 	})
 
 	return testData{
@@ -104,6 +107,16 @@ func TestSync(t *testing.T) {
 
 		assertZshRc(t, obj)
 		assertSomeConf(t, obj)
+
+		// Make sure our runner was called with the relavant configs
+		want := [][]config.BootstrapImpl{
+			{
+				{Name: "apt", Item: config.BootstrapItem{Name: "ripgrep"}},
+			},
+		}
+		r := obj.C.runner.(*bootstrap.NoopRunner)
+		help.Equals(t, want, r.RunAllArgs)
+
 	})
 
 	t.Run("file_exists_not_symlink", func(t *testing.T) {
@@ -130,6 +143,20 @@ func TestSync(t *testing.T) {
 		err := obj.C.Sync(SyncOpts{Force: true})
 		help.Ok(t, err)
 
+		assertZshRc(t, obj)
+		assertSomeConf(t, obj)
+	})
+
+	t.Run("error_bootstrapping", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
+
+		obj.C.runner.(*bootstrap.NoopRunner).RunAllErr = errors.New("bad")
+
+		err := obj.C.Sync(SyncOpts{})
+		help.ShouldError(t, err)
+
+		// Symlinks should still be there
 		assertZshRc(t, obj)
 		assertSomeConf(t, obj)
 	})

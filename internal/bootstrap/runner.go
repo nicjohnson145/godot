@@ -42,7 +42,7 @@ func (r runner) RunAll(impls []config.BootstrapImpl) error {
 	items := r.ToItems(impls)
 	var errs *multierror.Error
 	for _, item := range items {
-		if err := r.runSingle(item); err != nil {
+		if err := r.runSingleItem(item); err != nil {
 			errs = multierror.Append(errs, err)
 		}
 	}
@@ -51,10 +51,10 @@ func (r runner) RunAll(impls []config.BootstrapImpl) error {
 
 func (r runner) RunSingle(impl config.BootstrapImpl) error {
 	item := r.ToItem(impl)
-	return r.runSingle(item)
+	return r.runSingleItem(item)
 }
 
-func (r runner) runSingle(item Item) error {
+func (r runner) runSingleItem(item Item) error {
 	// Check if the item is already installed, and bail early
 	installed, err := item.Check()
 	if err != nil {

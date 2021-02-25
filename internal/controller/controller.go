@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/ktr0731/go-fuzzyfinder"
 	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/builder"
@@ -107,7 +108,35 @@ func (c *Controller) git_pullOnly(function func() error) error {
 
 func (c *Controller) Sync(opts SyncOpts) error {
 	f := func() error {
-		return c.builder.Build(opts.Force)
+		var errs *multierror.Error
+
+		if err := c.builder.Build(opts.Force); err != nil {
+			errs = multierror.Append(errs, err)
+		}
+
+		impls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
+		if err != nil {
+			if merr, ok := err.(*multierror.Error); ok {
+				for _, e := range merr.Errors {
+					errs = multierror.Append(errs, e)
+				}
+			} else {
+				errs = multierror.Append(errs, err)
+			}
+			return errs.ErrorOrNil()
+		}
+
+		if err := c.runner.RunAll(impls); err != nil {
+			if merr, ok := err.(*multierror.Error); ok {
+				for _, e := range merr.Errors {
+					errs = multierror.Append(errs, e)
+				}
+			} else {
+				errs = multierror.Append(errs, err)
+			}
+		}
+
+		return errs.ErrorOrNil()
 	}
 
 	return c.git_pullOnly(f)

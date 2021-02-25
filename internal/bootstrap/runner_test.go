@@ -40,7 +40,7 @@ func TestRunSingle(t *testing.T) {
 	t.Run("already_installed", func(t *testing.T) {
 		m := &mockItem{CheckReturn: true, CheckError: nil, InstallError: nil}
 		r := runner{}
-		err := r.runSingle(m)
+		err := r.runSingleItem(m)
 		help.Ensure(t, err)
 
 		assertCallCount(t, "check", m.CheckCalls, 1)
@@ -50,7 +50,7 @@ func TestRunSingle(t *testing.T) {
 	t.Run("not_installed", func(t *testing.T) {
 		m := &mockItem{CheckReturn: false, CheckError: nil, InstallError: nil}
 		r := runner{}
-		err := r.runSingle(m)
+		err := r.runSingleItem(m)
 		help.Ensure(t, err)
 
 		assertCallCount(t, "check", m.CheckCalls, 1)
@@ -60,7 +60,7 @@ func TestRunSingle(t *testing.T) {
 	t.Run("check_error", func(t *testing.T) {
 		m := &mockItem{CheckReturn: false, CheckError: fmt.Errorf("boo"), InstallError: nil}
 		r := runner{}
-		err := r.runSingle(m)
+		err := r.runSingleItem(m)
 		help.ShouldError(t, err)
 
 		assertCallCount(t, "check", m.CheckCalls, 1)
