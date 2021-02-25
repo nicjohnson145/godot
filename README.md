@@ -22,14 +22,15 @@ Value | Meaning | Optional
 ------|---------|---------
 target | This is the "name" of this computer, used to track what files it will recieve | True, defaults to current hostname
 dotfiles_root | The root of the repository godot should use to look for templates and manage its settings | True, defaults to `~/dotfiles`
-package_manager | What installation methods should attempt to be used when bootstrapping, valid values are `apt`, `brew`, `git` | True, will try to infer package manager from `GOOS`
+package_managers | What installation methods should attempt to be used when bootstrapping, valid values are `apt`, `brew`, `git` | True, will try to infer package manager from `GOOS`
 
 Example:
 
 ```
 {
 	"target": "desktop",
-	"dotfiles_root": "/home/njohnson/my_dotfiles"
+	"dotfiles_root": "/home/njohnson/my_dotfiles",
+    "package_maanagers": ["apt", "git"]
 }
 ```
 
