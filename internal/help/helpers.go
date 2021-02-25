@@ -49,6 +49,9 @@ const SAMPLE_CONFIG = `{
 		},
 		"host3": {
 			"files": ["dot_zshrc"]
+		},
+		"host4": {
+			"bootstraps": ["pyenv"]
 		}
 	}
 }`
