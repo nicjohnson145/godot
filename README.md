@@ -22,7 +22,7 @@ Value | Meaning | Optional
 ------|---------|---------
 target | This is the "name" of this computer, used to track what files it will recieve | True, defaults to current hostname
 dotfiles_root | The root of the repository godot should use to look for templates and manage its settings | True, defaults to `~/dotfiles`
-package_manager | What installation method should attempt to be used when bootstrapping | True, will try to infer package manager from `GOOS`
+package_manager | What installation methods should attempt to be used when bootstrapping, valid values are `apt`, `brew`, `git` | True, will try to infer package manager from `GOOS`
 
 Example:
 
@@ -51,6 +51,11 @@ On a system where Homebrew is available, godot will use that to install `pyenv`.
 available, godot will fall back to doing a `git clone`. Suppose `ripgrep` is only configured to be
 installed via apt-get. On a system where apt-get is not available, godot will error, indicating that
 it was unable to install `ripgrep`, as the only configured option was unavailable.
+
+#### A note about apt
+
+Since `apt get install <blarg>` requires elevated permissions, godot requires that the user can run
+at minimum `sudo apt install` without a password prompt
 
 ## Templating
 
