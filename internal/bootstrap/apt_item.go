@@ -1,5 +1,7 @@
 package bootstrap
 
+import "fmt"
+
 type aptItem struct {
 	Name string
 }
@@ -20,6 +22,6 @@ func (i aptItem) Check() (bool, error) {
 }
 
 func (i aptItem) Install() error {
-	_, _, err := runCmd("apt", "install", "-y", i.Name)
+	_, _, err := runCmd("/bin/sh", "-c", fmt.Sprintf("sudo apt install -y %v", i.Name))
 	return err
 }
