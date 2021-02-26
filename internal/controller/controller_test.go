@@ -129,9 +129,8 @@ func TestSync(t *testing.T) {
 		err := obj.C.Sync(SyncOpts{Force: false})
 		help.ShouldError(t, err)
 
-		// TODO
 		// But some_conf should still be created
-		// assertSomeConf(t, obj)
+		assertSomeConf(t, obj)
 	})
 
 	t.Run("file_exists_not_symlink_force", func(t *testing.T) {

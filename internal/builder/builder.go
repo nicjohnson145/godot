@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
@@ -36,20 +37,21 @@ func (b *Builder) Build(force bool) error {
 		return err
 	}
 
+	var errs *multierror.Error
 	// Actually render/symlink the files
 	for _, fl := range b.buildFileObjs(b.Config.GetFilesForTarget(b.Config.Target)) {
 		err = fl.Render(dir, vars, force)
 		if err != nil {
-			return fmt.Errorf("error rendering: %w", err)
+			errs = multierror.Append(errs, fmt.Errorf("rendering: %w", err))
 		}
 
 		err = fl.Symlink(dir)
 		if err != nil {
-			return fmt.Errorf("error symlinking %q: %w", fl.DestinationPath, err)
+			errs = multierror.Append(errs, fmt.Errorf("symlinking: %w", err))
 		}
 	}
 
-	return nil
+	return errs.ErrorOrNil()
 }
 
 func (b *Builder) buildFileObjs(m config.StringMap) []file.File {

@@ -660,7 +660,7 @@ func TestBootstrapping(t *testing.T) {
 
 		want := []BootstrapImpl{
 			{Name: "apt", Item: BootstrapItem{Name: "ripgrep"}},
-			{Name: "git", Item: BootstrapItem{Name: "https://github.com/pyenv/pyenv.git", Location: "~/.pyenv"}},
+			{Name: "git", Item: BootstrapItem{Name: "https://github.com/pyenv/pyenv.git", Location: filepath.Join(c.Home, ".pyenv")}},
 		}
 
 		help.Equals(t, want, got)
