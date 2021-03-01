@@ -41,7 +41,6 @@ type StringMap map[string]string
 
 type RepoConfig struct {
 	Files      StringMap            `json:"files"`
-	Renders    map[string][]string  `json:"renders"`
 	Bootstraps map[string]Bootstrap `json:"bootstraps"`
 	Hosts      map[string]Host      `json:"hosts"`
 }
@@ -76,10 +75,6 @@ type Host struct {
 func (c *RepoConfig) makeMaps() {
 	if c.Files == nil {
 		c.Files = make(StringMap)
-	}
-
-	if c.Renders == nil {
-		c.Renders = make(map[string][]string)
 	}
 
 	if c.Bootstraps == nil {
