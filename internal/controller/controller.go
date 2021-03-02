@@ -121,25 +121,27 @@ func (c *Controller) sync(opts SyncOpts) error {
 		errs = multierror.Append(errs, err)
 	}
 
-	impls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
-	if err != nil {
-		if merr, ok := err.(*multierror.Error); ok {
-			for _, e := range merr.Errors {
-				errs = multierror.Append(errs, e)
+	if !opts.NoBootstrap {
+		impls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
+		if err != nil {
+			if merr, ok := err.(*multierror.Error); ok {
+				for _, e := range merr.Errors {
+					errs = multierror.Append(errs, e)
+				}
+			} else {
+				errs = multierror.Append(errs, err)
 			}
-		} else {
-			errs = multierror.Append(errs, err)
+			return errs.ErrorOrNil()
 		}
-		return errs.ErrorOrNil()
-	}
 
-	if err := c.runner.RunAll(impls); err != nil {
-		if merr, ok := err.(*multierror.Error); ok {
-			for _, e := range merr.Errors {
-				errs = multierror.Append(errs, e)
+		if err := c.runner.RunAll(impls); err != nil {
+			if merr, ok := err.(*multierror.Error); ok {
+				for _, e := range merr.Errors {
+					errs = multierror.Append(errs, e)
+				}
+			} else {
+				errs = multierror.Append(errs, err)
 			}
-		} else {
-			errs = multierror.Append(errs, err)
 		}
 	}
 
