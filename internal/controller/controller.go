@@ -108,38 +108,42 @@ func (c *Controller) git_pullOnly(function func() error) error {
 
 func (c *Controller) Sync(opts SyncOpts) error {
 	f := func() error {
-		var errs *multierror.Error
-
-		if err := c.builder.Build(opts.Force); err != nil {
-			errs = multierror.Append(errs, err)
-		}
-
-		impls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
-		if err != nil {
-			if merr, ok := err.(*multierror.Error); ok {
-				for _, e := range merr.Errors {
-					errs = multierror.Append(errs, e)
-				}
-			} else {
-				errs = multierror.Append(errs, err)
-			}
-			return errs.ErrorOrNil()
-		}
-
-		if err := c.runner.RunAll(impls); err != nil {
-			if merr, ok := err.(*multierror.Error); ok {
-				for _, e := range merr.Errors {
-					errs = multierror.Append(errs, e)
-				}
-			} else {
-				errs = multierror.Append(errs, err)
-			}
-		}
-
-		return errs.ErrorOrNil()
+		return c.sync(opts)
 	}
 
 	return c.git_pullOnly(f)
+}
+
+func (c *Controller) sync(opts SyncOpts) error {
+	var errs *multierror.Error
+
+	if err := c.builder.Build(opts.Force); err != nil {
+		errs = multierror.Append(errs, err)
+	}
+
+	impls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
+	if err != nil {
+		if merr, ok := err.(*multierror.Error); ok {
+			for _, e := range merr.Errors {
+				errs = multierror.Append(errs, e)
+			}
+		} else {
+			errs = multierror.Append(errs, err)
+		}
+		return errs.ErrorOrNil()
+	}
+
+	if err := c.runner.RunAll(impls); err != nil {
+		if merr, ok := err.(*multierror.Error); ok {
+			for _, e := range merr.Errors {
+				errs = multierror.Append(errs, e)
+			}
+		} else {
+			errs = multierror.Append(errs, err)
+		}
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (c *Controller) Import(file string, as string) error {
@@ -246,7 +250,7 @@ func (c *Controller) EditFile(args []string, opts EditOpts) error {
 		}
 
 		if !opts.NoSync {
-			if err := c.Sync(SyncOpts{}); err != nil {
+			if err := c.sync(SyncOpts{NoBootstrap: true}); err != nil {
 				return err
 			}
 		}
