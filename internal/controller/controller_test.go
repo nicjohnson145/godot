@@ -539,4 +539,45 @@ func TestAllTarget(t *testing.T) {
 		sort.Strings(afterRemoveHosts)
 		require.Equal(t, afterRemoveHosts, beforeHosts)
 	})
+
+	t.Run("bootstraps", func(t *testing.T) {
+		const name string = "new_bs"
+
+		obj := baseSetup(t)
+		defer obj.Remove()
+
+		beforeHosts := []string{}
+		for h, host := range obj.C.config.GetRawContent().Hosts {
+			t.Logf("Checking host pre add %v", h)
+			beforeHosts = append(beforeHosts, h)
+			help.AssertStringNotInSlice(t, "new_file", host.Bootstraps)
+		}
+		sort.Strings(beforeHosts)
+
+		err := obj.C.AddBootstrapItem(name, "apt", name, "")
+
+		err = obj.C.AddTargetBootstrap("ALL", []string{name})
+		require.NoError(t, err)
+
+		afterAddHosts := []string{}
+		for h, host := range obj.C.config.GetRawContent().Hosts {
+			t.Logf("Checking host post add %v", h)
+			afterAddHosts = append(afterAddHosts, h)
+			help.AssertStringInSlice(t, name, host.Bootstraps)
+		}
+		sort.Strings(afterAddHosts)
+		require.Equal(t, afterAddHosts, beforeHosts)
+
+		err = obj.C.RemoveTargetBootstrap("ALL", []string{name})
+		require.NoError(t, err)
+
+		afterRemoveHosts := []string{}
+		for h, host := range obj.C.config.GetRawContent().Hosts {
+			t.Logf("Checking host post remove %v", h)
+			afterRemoveHosts = append(afterRemoveHosts, h)
+			help.AssertStringNotInSlice(t, name, host.Bootstraps)
+		}
+		sort.Strings(afterRemoveHosts)
+		require.Equal(t, afterRemoveHosts, beforeHosts)
+	})
 }
