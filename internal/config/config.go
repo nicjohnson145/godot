@@ -28,6 +28,8 @@ const (
 
 var ValidManagers = []string{APT, BREW, GIT}
 
+var NotFoundError = errors.New("not found")
+
 func IsValidPackageManager(candidate string) bool {
 	for _, val := range ValidManagers {
 		if candidate == val {
@@ -469,6 +471,14 @@ func (c *Config) RemoveTargetBootstrap(target string, name string) error {
 	return nil
 }
 
+func (c *Config) GetAllTargets() []string {
+	targets := []string{}
+	for target := range c.content.Hosts {
+		targets = append(targets, target)
+	}
+	return targets
+}
+
 func (c *Config) removeItem(slice []string, item string) ([]string, error) {
 	newSlice := make([]string, 0, len(slice))
 	found := false
@@ -482,7 +492,7 @@ func (c *Config) removeItem(slice []string, item string) ([]string, error) {
 
 	var err error
 	if !found {
-		err = fmt.Errorf("item %q not found", item)
+		err = fmt.Errorf("%q: %w", item, NotFoundError)
 	}
 	return newSlice, err
 }

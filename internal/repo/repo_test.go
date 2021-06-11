@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	"github.com/nicjohnson145/godot/internal/help"
+	"github.com/stretchr/testify/require"
 )
 
 func initRepo(t *testing.T) (shellGitRepo, func()) {
 	dir, remove := help.CreateTempDir(t, "repo")
 	cmd := exec.Command("git", "init", dir)
 	err := cmd.Run()
-	help.Ensure(t, err)
+	require.NoError(t, err)
 
 	return NewShellGitRepo(dir), remove
 }
@@ -24,7 +25,7 @@ func TestIsWorkdirClean(t *testing.T) {
 		defer remove()
 
 		got, err := r.isWorkdirClean()
-		help.Ensure(t, err)
+		require.NoError(t, err)
 		want := true
 
 		if got != want {
@@ -38,7 +39,7 @@ func TestIsWorkdirClean(t *testing.T) {
 		help.WriteData(t, filepath.Join(r.Path, "some_file"), "")
 
 		got, err := r.isWorkdirClean()
-		help.Ensure(t, err)
+		require.NoError(t, err)
 		want := false
 
 		if got != want {
@@ -54,7 +55,7 @@ func TestDirtyFiles(t *testing.T) {
 		help.WriteData(t, filepath.Join(r.Path, "some_file"), "")
 
 		got, err := r.dirtyFiles()
-		help.Ensure(t, err)
+		require.NoError(t, err)
 		want := []string{"some_file"}
 
 		if !reflect.DeepEqual(got, want) {

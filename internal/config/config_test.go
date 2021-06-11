@@ -10,6 +10,7 @@ import (
 	"reflect"
 
 	"github.com/nicjohnson145/godot/internal/help"
+	"github.com/stretchr/testify/require"
 )
 
 const TARGET = "host1"
@@ -25,12 +26,12 @@ func baseSetup(t *testing.T) (*Config, func()) {
 	return setup(t, help.SAMPLE_CONFIG)
 }
 
-func getErrFunc(t *testing.T, shouldError bool) func(*testing.T, error) {
+func getErrFunc(t *testing.T, shouldError bool) func(require.TestingT, error, ...interface{}) {
 	t.Helper()
 	if shouldError {
-		return help.ShouldError
+		return require.Error
 	} else {
-		return help.Ok
+		return require.NoError
 	}
 }
 
@@ -41,7 +42,7 @@ func TestFiles(t *testing.T) {
 
 		got := c.GetAllFiles()
 		want := StringMap{}
-		help.Equals(t, want, got)
+		require.Equal(t, want, got)
 	})
 
 	t.Run("GetAllFiles", func(t *testing.T) {
@@ -54,7 +55,7 @@ func TestFiles(t *testing.T) {
 			"some_conf": "~/some_conf",
 			"odd_conf":  "/etc/odd_conf",
 		}
-		help.Equals(t, want, got)
+		require.Equal(t, want, got)
 	})
 
 	getFilesForTarget := []struct {
@@ -79,7 +80,7 @@ func TestFiles(t *testing.T) {
 			defer remove()
 
 			got := c.GetFilesForTarget(tc.host)
-			help.Equals(t, tc.want, got)
+			require.Equal(t, tc.want, got)
 		})
 	}
 
@@ -122,7 +123,7 @@ func TestFiles(t *testing.T) {
 			_, err := c.AddFile(tc.template, tc.destination)
 			getErrFunc(t, tc.shouldError)(t, err)
 			got := c.GetAllFiles()
-			help.Equals(t, tc.want, got)
+			require.Equal(t, tc.want, got)
 		})
 	}
 
@@ -155,7 +156,7 @@ func TestFiles(t *testing.T) {
 			getErrFunc(t, tc.shouldError)(t, err)
 
 			got := c.GetFilesForTarget(TARGET)
-			help.Equals(t, tc.want, got)
+			require.Equal(t, tc.want, got)
 		})
 	}
 
@@ -208,7 +209,7 @@ func TestFiles(t *testing.T) {
 			getErrFunc(t, tc.shouldError)(t, err)
 
 			got := c.GetFilesForTarget(tc.target)
-			help.Equals(t, tc.want, got)
+			require.Equal(t, tc.want, got)
 		})
 	}
 
@@ -220,7 +221,7 @@ func TestFiles(t *testing.T) {
 		sort.Strings(got)
 		want := []string{"dot_zshrc", "some_conf", "odd_conf"}
 		sort.Strings(want)
-		help.Equals(t, want, got)
+		require.Equal(t, want, got)
 	})
 
 	t.Run("GetAllTemplateNamesForTarget", func(t *testing.T) {
@@ -231,7 +232,7 @@ func TestFiles(t *testing.T) {
 		sort.Strings(got)
 		want := []string{"dot_zshrc", "some_conf"}
 		sort.Strings(want)
-		help.Equals(t, want, got)
+		require.Equal(t, want, got)
 	})
 
 	t.Run("GetTemplateFromFullPath", func(t *testing.T) {
@@ -239,10 +240,10 @@ func TestFiles(t *testing.T) {
 		defer remove()
 
 		got, err := c.GetTemplateFromFullPath(filepath.Join(c.Home, ".zshrc"))
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := filepath.Join(c.DotfilesRoot, "templates", "dot_zshrc")
-		help.Equals(t, want, got)
+		require.Equal(t, want, got)
 	})
 
 	t.Run("GetTemplateFromFullPath_not_found", func(t *testing.T) {
@@ -250,7 +251,7 @@ func TestFiles(t *testing.T) {
 		defer remove()
 
 		_, err := c.GetTemplateFromFullPath(filepath.Join(c.Home, "not_a_file"))
-		help.ShouldError(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("ListAllFiles", func(t *testing.T) {
@@ -259,7 +260,7 @@ func TestFiles(t *testing.T) {
 
 		b := bytes.NewBufferString("")
 		err := c.ListAllFiles(b)
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := strings.Join(
 			[]string{
@@ -269,7 +270,7 @@ func TestFiles(t *testing.T) {
 			},
 			"\n",
 		) + "\n"
-		help.Equals(t, want, b.String())
+		require.Equal(t, want, b.String())
 	})
 
 	t.Run("ListTargetFiles", func(t *testing.T) {
@@ -278,7 +279,7 @@ func TestFiles(t *testing.T) {
 
 		b := bytes.NewBufferString("")
 		err := c.ListTargetFiles("host1", b)
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := strings.Join(
 			[]string{
@@ -287,7 +288,7 @@ func TestFiles(t *testing.T) {
 			},
 			"\n",
 		) + "\n"
-		help.Equals(t, want, b.String())
+		require.Equal(t, want, b.String())
 	})
 }
 
@@ -486,10 +487,10 @@ func TestBootstrapping(t *testing.T) {
 
 			err := c.AddTargetBootstrap(tc.host, tc.item)
 			if tc.shouldError {
-				help.ShouldError(t, err)
+				require.Error(t, err)
 				return
 			} else {
-				help.Ensure(t, err)
+				require.NoError(t, err)
 			}
 
 			got := c.content.Hosts[tc.host].Bootstraps
@@ -567,7 +568,7 @@ func TestBootstrapping(t *testing.T) {
 			defer remove()
 
 			got := c.GetBootstrapTargetsForTarget(tc.target)
-			help.Equals(t, tc.want, got)
+			require.Equal(t, tc.want, got)
 		})
 	}
 
@@ -577,7 +578,7 @@ func TestBootstrapping(t *testing.T) {
 
 		b := bytes.NewBufferString("")
 		err := c.ListAllBootstraps(b)
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := strings.Join(
 			[]string{
@@ -586,7 +587,7 @@ func TestBootstrapping(t *testing.T) {
 			},
 			"\n",
 		) + "\n"
-		help.Equals(t, want, b.String())
+		require.Equal(t, want, b.String())
 	})
 
 	t.Run("ListBootstrapForTarget", func(t *testing.T) {
@@ -595,7 +596,7 @@ func TestBootstrapping(t *testing.T) {
 
 		b := bytes.NewBufferString("")
 		err := c.ListBootstrapsForTarget(b, "host1")
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := strings.Join(
 			[]string{
@@ -603,7 +604,7 @@ func TestBootstrapping(t *testing.T) {
 			},
 			"\n",
 		) + "\n"
-		help.Equals(t, want, b.String())
+		require.Equal(t, want, b.String())
 	})
 
 	t.Run("GetRelevantBootstrapImpls_noErrors", func(t *testing.T) {
@@ -656,14 +657,14 @@ func TestBootstrapping(t *testing.T) {
 		defer remove()
 
 		got, err := c.GetRelevantBootstrapImpls("host1")
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := []BootstrapImpl{
 			{Name: "apt", Item: BootstrapItem{Name: "ripgrep"}},
 			{Name: "git", Item: BootstrapItem{Name: "https://github.com/pyenv/pyenv.git", Location: filepath.Join(c.Home, ".pyenv")}},
 		}
 
-		help.Equals(t, want, got)
+		require.Equal(t, want, got)
 	})
 
 	t.Run("GetRelevantBootstrapImpls_errors", func(t *testing.T) {
@@ -717,7 +718,7 @@ func TestBootstrapping(t *testing.T) {
 		defer remove()
 
 		_, err := c.GetRelevantBootstrapImpls("host2")
-		help.ShouldError(t, err)
+		require.Error(t, err)
 
 		got := err.Error()
 		want := strings.Join([]string{
@@ -725,6 +726,6 @@ func TestBootstrapping(t *testing.T) {
 			"\t* No suitable manager found for broke_1, broke_1's available managers are brew",
 			"\t* No suitable manager found for broke_2, broke_2's available managers are brew, yum",
 		}, "\n") + "\n\n"
-		help.Equals(t, want, got)
+		require.Equal(t, want, got)
 	})
 }

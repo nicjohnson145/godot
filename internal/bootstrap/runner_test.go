@@ -5,8 +5,9 @@ package bootstrap
 
 import (
 	"fmt"
-	"github.com/nicjohnson145/godot/internal/help"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 type mockItem struct {
@@ -41,7 +42,7 @@ func TestRunSingle(t *testing.T) {
 		m := &mockItem{CheckReturn: true, CheckError: nil, InstallError: nil}
 		r := runner{}
 		err := r.runSingleItem(m)
-		help.Ensure(t, err)
+		require.NoError(t, err)
 
 		assertCallCount(t, "check", m.CheckCalls, 1)
 		assertCallCount(t, "install", m.InstallCalls, 0)
@@ -51,7 +52,7 @@ func TestRunSingle(t *testing.T) {
 		m := &mockItem{CheckReturn: false, CheckError: nil, InstallError: nil}
 		r := runner{}
 		err := r.runSingleItem(m)
-		help.Ensure(t, err)
+		require.NoError(t, err)
 
 		assertCallCount(t, "check", m.CheckCalls, 1)
 		assertCallCount(t, "install", m.InstallCalls, 1)
@@ -61,7 +62,7 @@ func TestRunSingle(t *testing.T) {
 		m := &mockItem{CheckReturn: false, CheckError: fmt.Errorf("boo"), InstallError: nil}
 		r := runner{}
 		err := r.runSingleItem(m)
-		help.ShouldError(t, err)
+		require.Error(t, err)
 
 		assertCallCount(t, "check", m.CheckCalls, 1)
 		assertCallCount(t, "install", m.InstallCalls, 0)
