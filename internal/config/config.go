@@ -28,6 +28,8 @@ const (
 
 var ValidManagers = []string{APT, BREW, GIT}
 
+var NotFoundError = errors.New("not found")
+
 func IsValidPackageManager(candidate string) bool {
 	for _, val := range ValidManagers {
 		if candidate == val {
@@ -490,7 +492,7 @@ func (c *Config) removeItem(slice []string, item string) ([]string, error) {
 
 	var err error
 	if !found {
-		err = fmt.Errorf("item %q not found", item)
+		err = fmt.Errorf("%q: %w", item, NotFoundError)
 	}
 	return newSlice, err
 }

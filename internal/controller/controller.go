@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"errors"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/ktr0731/go-fuzzyfinder"
@@ -300,7 +301,9 @@ func (c *Controller) targetRemoveFileAll(target string, args []string) error {
 		var errs *multierror.Error
 		for _, target := range c.config.GetAllTargets() {
 			if err := c.config.RemoveTargetFile(target, tmpl); err != nil {
-				errs = multierror.Append(errs, err)
+				if !errors.Is(err, config.NotFoundError) {
+					errs = multierror.Append(errs, err)
+				}
 			}
 		}
 
@@ -511,7 +514,9 @@ func (c *Controller) removeTargetBootstrapAll(target string, args []string) erro
 		var errs *multierror.Error
 		for _, target := range c.config.GetAllTargets() {
 			if err := c.config.RemoveTargetBootstrap(target, bootstrap); err != nil {
-				errs = multierror.Append(errs, err)
+				if !errors.Is(err, config.NotFoundError) {
+					errs = multierror.Append(errs, err)
+				}
 			}
 		}
 
