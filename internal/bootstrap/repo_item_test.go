@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/nicjohnson145/godot/internal/help"
+	"github.com/stretchr/testify/require"
 )
 
 func repoSetup(t *testing.T, isGit bool) (repoItem, func()) {
@@ -16,7 +17,7 @@ func repoSetup(t *testing.T, isGit bool) (repoItem, func()) {
 	dir, remove := help.CreateTempDir(t, "git-checkout")
 	if isGit {
 		err := os.Mkdir(filepath.Join(dir, ".git"), 0600)
-		help.Ok(t, err)
+		require.NoError(t, err)
 	}
 
 	return NewRepoItem("https://somerepo.github.com", dir), remove
@@ -29,9 +30,9 @@ func TestCheck(t *testing.T) {
 		defer remove()
 
 		exists, err := r.Check()
-		help.Ok(t, err)
+		require.NoError(t, err)
 
-		help.Assert(t, exists == true, "Repo should show as existing")
+		require.Equal(t, exists, true, "Repo should show as existing")
 	})
 
 	t.Run("Check_directory_exists_not_git", func(t *testing.T) {
@@ -39,14 +40,14 @@ func TestCheck(t *testing.T) {
 		defer remove()
 
 		_, err := r.Check()
-		help.ShouldError(t, err)
+		require.Error(t, err)
 	})
 
 	t.Run("Check_directory_missing", func(t *testing.T) {
 		r := NewRepoItem("https://somerepo.github.com", "/some/path")
 		exists, err := r.Check()
-		help.Ok(t, err)
+		require.NoError(t, err)
 
-		help.Assert(t, exists == false, "Repo should show as not existing")
+		require.Equal(t, exists, false, "Repo should show as not existing")
 	})
 }

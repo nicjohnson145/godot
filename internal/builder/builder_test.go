@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/nicjohnson145/godot/internal/help"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBuilder(t *testing.T) {
@@ -16,7 +17,7 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(false)
-		help.Ok(t, err)
+		require.NoError(t, err)
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
 	})
 
@@ -27,7 +28,7 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(false)
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		expected := "host3 zsh contents"
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
@@ -40,12 +41,12 @@ func TestBuilder(t *testing.T) {
 
 		build := filepath.Join(dotPath, "build")
 		err := os.Mkdir(build, 0744)
-		help.Ok(t, err)
+		require.NoError(t, err)
 		help.WriteData(t, filepath.Join(build, "some_file"), "some_data")
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err = b.Build(false)
-		help.Ok(t, err)
+		require.NoError(t, err)
 		help.AssertDirectoryContentsRecursive(t, build, []string{"dot_zshrc"})
 	})
 
@@ -55,14 +56,14 @@ func TestBuilder(t *testing.T) {
 		defer remove()
 
 		err := os.Mkdir(filepath.Join(dotPath, "build"), 0744)
-		help.Ok(t, err)
+		require.NoError(t, err)
 		buildFile := filepath.Join(dotPath, "build/dot_zshrc")
 		help.WriteData(t, buildFile, "orig")
 		os.Symlink(filepath.Join(home, ".zshrc"), filepath.Join(dotPath, "build/dot_zshrc"))
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err = b.Build(false)
-		help.Ok(t, err)
+		require.NoError(t, err)
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
 	})
 
@@ -76,7 +77,7 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(false)
-		help.ShouldError(t, err)
+		require.Error(t, err)
 		help.AssertFileContents(t, destPath, "")
 	})
 
@@ -90,7 +91,7 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err := b.Build(true)
-		help.Ok(t, err)
+		require.NoError(t, err)
 		help.AssertFileContents(t, destPath, "zsh contents")
 	})
 
@@ -152,7 +153,7 @@ func TestBuilder(t *testing.T) {
 		// Touch some file in the build dir
 		buildDir := filepath.Join(dotPath, "build")
 		err := os.Mkdir(buildDir, 0744)
-		help.Ok(t, err)
+		require.NoError(t, err)
 		help.WriteData(t, filepath.Join(buildDir, "orphan_file"), "")
 
 		// Write an invalid template
@@ -161,7 +162,7 @@ func TestBuilder(t *testing.T) {
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
 		err = b.Build(true)
-		help.ShouldError(t, err)
+		require.Error(t, err)
 		help.AssertDirectoryContentsRecursive(t, buildDir, []string{"orphan_file"})
 	})
 }

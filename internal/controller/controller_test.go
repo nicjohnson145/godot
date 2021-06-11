@@ -33,7 +33,7 @@ func writeFile(t *testing.T, dotpath string, tmpl string, contents string) {
 		[]byte(contents),
 		0644,
 	)
-	help.Ok(t, err)
+	require.NoError(t, err)
 }
 
 func writeFiles(t *testing.T, dotpath string, tmplData map[string]string) {
@@ -94,7 +94,7 @@ func TestSync(t *testing.T) {
 		help.AssertDirectoryContents(t, obj.Home, []string{".config", "dotfiles"})
 
 		err := obj.C.Sync(SyncOpts{Force: false})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		help.AssertDirectoryContents(
 			t,
@@ -117,7 +117,7 @@ func TestSync(t *testing.T) {
 			},
 		}
 		r := obj.C.runner.(*bootstrap.NoopRunner)
-		help.Equals(t, want, r.RunAllArgs)
+		require.Equal(t, want, r.RunAllArgs)
 
 	})
 
@@ -129,7 +129,7 @@ func TestSync(t *testing.T) {
 
 		// Should error out
 		err := obj.C.Sync(SyncOpts{Force: false})
-		help.ShouldError(t, err)
+		require.Error(t, err)
 
 		// But some_conf should still be created
 		assertSomeConf(t, obj)
@@ -142,7 +142,7 @@ func TestSync(t *testing.T) {
 		help.Touch(t, filepath.Join(obj.Home, ".zshrc"))
 
 		err := obj.C.Sync(SyncOpts{Force: true})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		assertZshRc(t, obj)
 		assertSomeConf(t, obj)
@@ -155,7 +155,7 @@ func TestSync(t *testing.T) {
 		obj.C.runner.(*bootstrap.NoopRunner).RunAllErr = errors.New("bad")
 
 		err := obj.C.Sync(SyncOpts{})
-		help.ShouldError(t, err)
+		require.Error(t, err)
 
 		// Symlinks should still be there
 		assertZshRc(t, obj)
@@ -171,8 +171,8 @@ func TestImport(t *testing.T) {
 		confPath := filepath.Join(obj.Home, ".new_conf")
 		help.WriteData(t, confPath, "my new conf")
 		err := obj.C.Import(confPath, "")
-		help.Ok(t, err)
-		help.Equals(
+		require.NoError(t, err)
+		require.Equal(
 			t,
 			config.StringMap{
 				"dot_zshrc":    "~/.zshrc",
@@ -191,8 +191,8 @@ func TestImport(t *testing.T) {
 		confPath := filepath.Join(obj.Home, "subfolder", "some_conf")
 		help.WriteData(t, confPath, "my new conf")
 		err := obj.C.Import(confPath, "")
-		help.ShouldError(t, err)
-		help.Equals(
+		require.Error(t, err)
+		require.Equal(
 			t,
 			config.StringMap{
 				"dot_zshrc": "~/.zshrc",
@@ -210,8 +210,8 @@ func TestImport(t *testing.T) {
 		confPath := filepath.Join(obj.Home, "subfolder", "some_conf")
 		help.WriteData(t, confPath, "my new conf")
 		err := obj.C.Import(confPath, "sub_some_conf")
-		help.Ok(t, err)
-		help.Equals(
+		require.NoError(t, err)
+		require.Equal(
 			t,
 			config.StringMap{
 				"dot_zshrc":     "~/.zshrc",
@@ -263,8 +263,8 @@ func TestShowFilesEntry(t *testing.T) {
 
 			buf := bytes.NewBufferString("")
 			err := obj.C.ShowFilesEntry(tc.target, buf)
-			help.Ok(t, err)
-			help.Equals(t, tc.want, buf.String())
+			require.NoError(t, err)
+			require.Equal(t, tc.want, buf.String())
 		})
 	}
 }
@@ -275,9 +275,9 @@ func TestTargetAddFile(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.TargetAddFile("", []string{"odd_conf"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
-		help.Equals(
+		require.Equal(
 			t,
 			[]string{"dot_zshrc", "some_conf", "odd_conf"},
 			obj.C.config.GetRawContent().Hosts[TARGET].Files,
@@ -289,9 +289,9 @@ func TestTargetAddFile(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.TargetAddFile("host2", []string{"odd_conf"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
-		help.Equals(
+		require.Equal(
 			t,
 			[]string{"some_conf", "odd_conf"},
 			obj.C.config.GetRawContent().Hosts["host2"].Files,
@@ -305,9 +305,9 @@ func TestTargetRemoveFile(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.TargetRemoveFile("", []string{"dot_zshrc"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
-		help.Equals(
+		require.Equal(
 			t,
 			[]string{"some_conf"},
 			obj.C.config.GetRawContent().Hosts[TARGET].Files,
@@ -319,9 +319,9 @@ func TestTargetRemoveFile(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.TargetRemoveFile("host2", []string{"some_conf"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
-		help.Equals(
+		require.Equal(
 			t,
 			[]string{},
 			obj.C.config.GetRawContent().Hosts["host2"].Files,
@@ -365,9 +365,9 @@ func TestShowBootstrapEntry(t *testing.T) {
 
 			buf := bytes.NewBufferString("")
 			err := obj.C.ShowBootstrapsEntry(tc.target, buf)
-			help.Ok(t, err)
+			require.NoError(t, err)
 
-			help.Equals(t, tc.want, buf.String())
+			require.Equal(t, tc.want, buf.String())
 		})
 	}
 }
@@ -378,11 +378,11 @@ func TestAddBootstrapItem(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.AddBootstrapItem("ripgrep", "git", "http://repo.com", "~/.ripgrep")
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		item, hasGit := obj.C.config.GetRawContent().Bootstraps["ripgrep"]["git"]
-		help.Assert(t, hasGit, "git manager not present")
-		help.Equals(t, config.BootstrapItem{Name: "http://repo.com", Location: "~/.ripgrep"}, item)
+		require.Equal(t, hasGit, true, "git manager not present")
+		require.Equal(t, config.BootstrapItem{Name: "http://repo.com", Location: "~/.ripgrep"}, item)
 	})
 
 	t.Run("add_new", func(t *testing.T) {
@@ -390,11 +390,11 @@ func TestAddBootstrapItem(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.AddBootstrapItem("new_package", "brew", "new_package", "")
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		item, hasNew := obj.C.config.GetRawContent().Bootstraps["new_package"]
-		help.Assert(t, hasNew, "new_package not added")
-		help.Equals(t, config.Bootstrap{"brew": {Name: "new_package"}}, item)
+		require.Equal(t, hasNew, true, "new_package not added")
+		require.Equal(t, config.Bootstrap{"brew": {Name: "new_package"}}, item)
 	})
 
 	t.Run("invalid manager", func(t *testing.T) {
@@ -402,7 +402,7 @@ func TestAddBootstrapItem(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.AddBootstrapItem("new_package", "not_a_manager", "new_package", "")
-		help.ShouldError(t, err)
+		require.Error(t, err)
 	})
 }
 
@@ -412,10 +412,10 @@ func TestAddTargetBootstrap(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.AddTargetBootstrap("", []string{"pyenv"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := []string{"ripgrep", "pyenv"}
-		help.Equals(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
+		require.Equal(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
 	})
 
 	t.Run("current_target", func(t *testing.T) {
@@ -423,10 +423,10 @@ func TestAddTargetBootstrap(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.AddTargetBootstrap(config.CURRENT, []string{"pyenv"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := []string{"ripgrep", "pyenv"}
-		help.Equals(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
+		require.Equal(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
 	})
 
 	t.Run("specific_target", func(t *testing.T) {
@@ -434,10 +434,10 @@ func TestAddTargetBootstrap(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.AddTargetBootstrap("host3", []string{"pyenv"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := []string{"pyenv"}
-		help.Equals(t, want, obj.C.config.GetRawContent().Hosts["host3"].Bootstraps)
+		require.Equal(t, want, obj.C.config.GetRawContent().Hosts["host3"].Bootstraps)
 	})
 
 	t.Run("not_a_bootstrap", func(t *testing.T) {
@@ -445,10 +445,10 @@ func TestAddTargetBootstrap(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.AddTargetBootstrap("", []string{"not_a_bootstrap"})
-		help.ShouldError(t, err)
+		require.Error(t, err)
 
 		want := []string{"ripgrep"}
-		help.Equals(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
+		require.Equal(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
 	})
 }
 
@@ -458,10 +458,10 @@ func TestRemoveBootstrapTarget(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.RemoveTargetBootstrap("", []string{"ripgrep"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := []string{}
-		help.Equals(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
+		require.Equal(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
 	})
 
 	t.Run("current_target", func(t *testing.T) {
@@ -469,10 +469,10 @@ func TestRemoveBootstrapTarget(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.RemoveTargetBootstrap(config.CURRENT, []string{"ripgrep"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := []string{}
-		help.Equals(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
+		require.Equal(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
 	})
 
 	t.Run("specific_target", func(t *testing.T) {
@@ -480,10 +480,10 @@ func TestRemoveBootstrapTarget(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.RemoveTargetBootstrap("host2", []string{"pyenv"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		want := []string{"ripgrep"}
-		help.Equals(t, want, obj.C.config.GetRawContent().Hosts["host2"].Bootstraps)
+		require.Equal(t, want, obj.C.config.GetRawContent().Hosts["host2"].Bootstraps)
 	})
 
 	t.Run("not_a_bootstrap", func(t *testing.T) {
@@ -491,10 +491,10 @@ func TestRemoveBootstrapTarget(t *testing.T) {
 		defer obj.Remove()
 
 		err := obj.C.RemoveTargetBootstrap("", []string{"not_a_bootstrap"})
-		help.ShouldError(t, err)
+		require.Error(t, err)
 
 		want := []string{"ripgrep"}
-		help.Equals(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
+		require.Equal(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
 	})
 }
 
@@ -512,10 +512,10 @@ func TestAllTarget(t *testing.T) {
 		sort.Strings(beforeHosts)
 
 		err := obj.C.Import("~/new_file", "new_file")
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		err = obj.C.TargetAddFile("ALL", []string{"new_file"})
-		help.Ok(t, err)
+		require.NoError(t, err)
 
 		afterAddHosts := []string{}
 		for h, host := range obj.C.config.GetRawContent().Hosts {
