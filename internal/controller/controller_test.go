@@ -5,9 +5,9 @@ import (
 	"errors"
 	"io/ioutil"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
-	"sort"
 
 	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/config"

@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"errors"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/ktr0731/go-fuzzyfinder"
