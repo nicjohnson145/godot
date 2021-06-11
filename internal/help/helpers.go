@@ -343,3 +343,26 @@ func ShouldError(t *testing.T, err error) {
 		t.Fatal("Code should have errored")
 	}
 }
+
+func AssertStringInSlice(t *testing.T, str string, slice []string) {
+	if StringInSlice(str, slice) {
+		return
+	}
+	t.Fatalf("%v not in slice %v", str, slice)
+}
+
+func AssertStringNotInSlice(t *testing.T, str string, slice []string) {
+	if !StringInSlice(str, slice) {
+		return
+	}
+	t.Fatalf("%v in slice %v", str, slice)
+}
+
+func StringInSlice(str string, slice []string) bool {
+	for _, s := range slice {
+		if s == str {
+			return true
+		}
+	}
+	return false
+}

@@ -7,11 +7,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"sort"
 
 	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/help"
 	"github.com/nicjohnson145/godot/internal/repo"
+	"github.com/stretchr/testify/require"
 )
 
 const TARGET = "host1"
@@ -493,5 +495,48 @@ func TestRemoveBootstrapTarget(t *testing.T) {
 
 		want := []string{"ripgrep"}
 		help.Equals(t, want, obj.C.config.GetRawContent().Hosts[TARGET].Bootstraps)
+	})
+}
+
+func TestAllTarget(t *testing.T) {
+	t.Run("files", func(t *testing.T) {
+		obj := baseSetup(t)
+		defer obj.Remove()
+
+		beforeHosts := []string{}
+		for h, host := range obj.C.config.GetRawContent().Hosts {
+			t.Logf("Checking host pre add %v", h)
+			beforeHosts = append(beforeHosts, h)
+			help.AssertStringNotInSlice(t, "new_file", host.Files)
+		}
+		sort.Strings(beforeHosts)
+
+		err := obj.C.Import("~/new_file", "new_file")
+		help.Ok(t, err)
+
+		err = obj.C.TargetAddFile("ALL", []string{"new_file"})
+		help.Ok(t, err)
+
+		afterAddHosts := []string{}
+		for h, host := range obj.C.config.GetRawContent().Hosts {
+			t.Logf("Checking host post add %v", h)
+			afterAddHosts = append(afterAddHosts, h)
+			help.AssertStringInSlice(t, "new_file", host.Files)
+		}
+		sort.Strings(afterAddHosts)
+		require.Equal(t, afterAddHosts, beforeHosts)
+
+		// Now remove the file from all hosts
+		err = obj.C.TargetRemoveFile("ALL", []string{"new_file"})
+		require.NoError(t, err)
+
+		afterRemoveHosts := []string{}
+		for h, host := range obj.C.config.GetRawContent().Hosts {
+			t.Logf("Checking host post remove %v", h)
+			afterRemoveHosts = append(afterRemoveHosts, h)
+			help.AssertStringNotInSlice(t, "new_file", host.Files)
+		}
+		sort.Strings(afterRemoveHosts)
+		require.Equal(t, afterRemoveHosts, beforeHosts)
 	})
 }

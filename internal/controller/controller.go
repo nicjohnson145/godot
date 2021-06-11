@@ -15,6 +15,10 @@ import (
 	"github.com/nicjohnson145/godot/internal/util"
 )
 
+const (
+	AllTarget = "ALL"
+)
+
 type Controller struct {
 	homeDirGetter util.HomeDirGetter
 	repo          repo.Repo
@@ -189,6 +193,14 @@ func (c *Controller) TargetShowFiles(target string, w io.Writer) error {
 }
 
 func (c *Controller) TargetAddFile(target string, args []string) error {
+	if target != AllTarget {
+		return c.targetAddFileSingle(target, args)
+	} else {
+		return c.targetAddFileAll(target, args)
+	}
+}
+
+func (c *Controller) targetAddFileSingle(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 
@@ -212,7 +224,44 @@ func (c *Controller) TargetAddFile(target string, args []string) error {
 	return c.git_pushAndPull(f)
 }
 
+func (c *Controller) targetAddFileAll(target string, args []string) error {
+	f := func() error {
+		options := c.config.GetAllTemplateNames()
+		tmpl, err := c.fuzzyOrArgs(args, options)
+		if err != nil {
+			if err == fuzzyfinder.ErrAbort {
+				fmt.Println("Aborting...")
+				return nil
+			}
+			return err
+		}
+
+		var errs *multierror.Error
+		for _, target := range c.config.GetAllTargets() {
+			if err := c.config.AddTargetFile(target, tmpl); err != nil {
+				errs = multierror.Append(errs, err)
+			}
+		}
+
+		if errs == nil {
+			return c.write()
+		} else {
+			return errs.ErrorOrNil()
+		}
+	}
+
+	return c.git_pushAndPull(f)
+}
+
 func (c *Controller) TargetRemoveFile(target string, args []string) error {
+	if target != AllTarget {
+		return c.targetRemoveFileSingle(target, args)
+	} else {
+		return c.targetRemoveFileAll(target, args)
+	}
+}
+
+func (c *Controller) targetRemoveFileSingle(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 
@@ -231,6 +280,35 @@ func (c *Controller) TargetRemoveFile(target string, args []string) error {
 		}
 
 		return c.write()
+	}
+
+	return c.git_pushAndPull(f)
+}
+
+func (c *Controller) targetRemoveFileAll(target string, args []string) error {
+	f := func() error {
+		options := c.config.GetAllTemplateNames()
+		tmpl, err := c.fuzzyOrArgs(args, options)
+		if err != nil {
+			if err == fuzzyfinder.ErrAbort {
+				fmt.Println("Aborting...")
+				return nil
+			}
+			return err
+		}
+
+		var errs *multierror.Error
+		for _, target := range c.config.GetAllTargets() {
+			if err := c.config.RemoveTargetFile(target, tmpl); err != nil {
+				errs = multierror.Append(errs, err)
+			}
+		}
+
+		if errs == nil {
+			return c.write()
+		} else {
+			return errs.ErrorOrNil()
+		}
 	}
 
 	return c.git_pushAndPull(f)

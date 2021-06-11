@@ -469,6 +469,14 @@ func (c *Config) RemoveTargetBootstrap(target string, name string) error {
 	return nil
 }
 
+func (c *Config) GetAllTargets() []string {
+	targets := []string{}
+	for target := range c.content.Hosts {
+		targets = append(targets, target)
+	}
+	return targets
+}
+
 func (c *Config) removeItem(slice []string, item string) ([]string, error) {
 	newSlice := make([]string, 0, len(slice))
 	found := false
