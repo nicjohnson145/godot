@@ -79,12 +79,12 @@ func New() Main {
 		false,
 		"Do not perform any git operations (this will require the git operations to be completed manually)",
 	)
-	m.rootCmd.PersistentFlags().StringVarP(
+	m.rootCmd.PersistentFlags().StringVar(
 		&m.target,
 		"target",
-		"t",
 		"",
-		"Apply the command to the given target, not supplying a value (i.e --target vs --target=a), will result in the current target being used",
+		"Apply the command to the given target, not supplying a value (i.e --target vs --target=a), will result in the current target being used. " +
+		"The special value of 'ALL' will apply the change to all available targets",
 	)
 	m.rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = config.CURRENT
 
