@@ -1,5 +1,10 @@
 package bootstrap
 
+import (
+	"github.com/nicjohnson145/godot/internal/help"
+	"github.com/nicjohnson145/godot/internal/bootstrap/brewcache"
+)
+
 type brewItem struct {
 	Name string
 }
@@ -11,15 +16,11 @@ func NewBrewItem(name string) brewItem {
 }
 
 func (i brewItem) Check() (bool, error) {
-	_, _, err := runCmd("brew", "list", i.Name)
-	returnCode, err := getReturnCode(err)
-	if err != nil {
-		return false, err
-	}
-	return returnCode == 0, nil
+	b := brewcache.GetInstance()
+	return b.IsInstalled(i.Name), nil
 }
 
 func (i brewItem) Install() error {
-	_, _, err := runCmd("brew", "install", i.Name)
+	_, _, err := help.RunCmd("brew", "install", i.Name)
 	return err
 }
