@@ -19,3 +19,7 @@ archives:
     # Per https://goreleaser.com/customization/archive/#packaging-only-the-binaries
     files:
       - none*
+changelog:
+  filters:
+    exclude:
+      - '^Merge pull request #'
