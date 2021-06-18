@@ -1,9 +1,7 @@
 package bootstrap
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/nicjohnson145/godot/internal/config"
@@ -66,25 +64,4 @@ func (r runner) runSingleItem(item Item) error {
 
 	// Otherwise, install it
 	return item.Install()
-}
-
-func runCmd(bin string, args ...string) (string, string, error) {
-	var stdout, stderr bytes.Buffer
-	cmd := exec.Command(bin, args...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	return stdout.String(), stderr.String(), err
-}
-
-func getReturnCode(err error) (int, error) {
-	if err == nil {
-		return 0, nil
-	}
-
-	if exitError, ok := err.(*exec.ExitError); ok {
-		return exitError.ExitCode(), nil
-	} else {
-		return -1, err
-	}
 }

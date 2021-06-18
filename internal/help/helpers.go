@@ -1,9 +1,11 @@
 package help
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -321,4 +323,25 @@ func StringInSlice(str string, slice []string) bool {
 		}
 	}
 	return false
+}
+
+func RunCmd(bin string, args ...string) (string, string, error) {
+	var stdout, stderr bytes.Buffer
+	cmd := exec.Command(bin, args...)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), err
+}
+
+func GetReturnCode(err error) (int, error) {
+	if err == nil {
+		return 0, nil
+	}
+
+	if exitError, ok := err.(*exec.ExitError); ok {
+		return exitError.ExitCode(), nil
+	} else {
+		return -1, err
+	}
 }

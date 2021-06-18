@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"github.com/nicjohnson145/godot/internal/help"
 )
 
 type repoItem struct {
@@ -52,6 +53,6 @@ func (i repoItem) dirExists(path string) (bool, error) {
 }
 
 func (i repoItem) Install() error {
-	_, _, err := runCmd("git", "clone", i.Name, i.Location)
+	_, _, err := help.RunCmd("git", "clone", i.Name, i.Location)
 	return err
 }
