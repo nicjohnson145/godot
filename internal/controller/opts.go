@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/builder"
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/repo"
@@ -22,6 +21,6 @@ type ControllerOpts struct {
 	Repo          repo.Repo
 	Config        *config.Config
 	Builder       *builder.Builder
-	Runner        bootstrap.Runner
+	Runner        ItemRunner
 	NoGit         bool
 }

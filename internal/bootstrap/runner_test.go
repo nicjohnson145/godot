@@ -40,7 +40,7 @@ func assertCallCount(t *testing.T, method string, got int, want int) {
 func TestRunSingle(t *testing.T) {
 	t.Run("already_installed", func(t *testing.T) {
 		m := &mockItem{CheckReturn: true, CheckError: nil, InstallError: nil}
-		r := runner{}
+		r := Runner{}
 		err := r.runSingleItem(m)
 		require.NoError(t, err)
 
@@ -50,7 +50,7 @@ func TestRunSingle(t *testing.T) {
 
 	t.Run("not_installed", func(t *testing.T) {
 		m := &mockItem{CheckReturn: false, CheckError: nil, InstallError: nil}
-		r := runner{}
+		r := Runner{}
 		err := r.runSingleItem(m)
 		require.NoError(t, err)
 
@@ -60,7 +60,7 @@ func TestRunSingle(t *testing.T) {
 
 	t.Run("check_error", func(t *testing.T) {
 		m := &mockItem{CheckReturn: false, CheckError: fmt.Errorf("boo"), InstallError: nil}
-		r := runner{}
+		r := Runner{}
 		err := r.runSingleItem(m)
 		require.Error(t, err)
 

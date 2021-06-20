@@ -18,39 +18,43 @@ func main() {
 
 type Main struct {
 	// Flags
-	force       bool
-	noBootstrap bool
-	noGit       bool
-	target      string
-	noSync      bool
-	name        string
-	manager     string
-	location    string
-	as          string
+	force        bool
+	noBootstrap  bool
+	noGit        bool
+	target       string
+	noSync       bool
+	name         string
+	manager      string
+	location     string
+	as           string
+	trackUpdates bool
 
 	// Commands
 	rootCmd *cobra.Command
 
 	// Cease Cmds
-	ceaseCmd          *cobra.Command
-	ceaseFileCmd      *cobra.Command
-	ceaseBootstrapCmd *cobra.Command
+	ceaseCmd              *cobra.Command
+	ceaseFileCmd          *cobra.Command
+	ceaseBootstrapCmd     *cobra.Command
+	ceaseGithubReleaseCmd *cobra.Command
 
 	// Sync Cmds
 	syncCmd *cobra.Command
 
 	// List Cmds
-	listCmd           *cobra.Command
-	listFilesCmd      *cobra.Command
-	listBootstrapsCmd *cobra.Command
+	listCmd               *cobra.Command
+	listFilesCmd          *cobra.Command
+	listBootstrapsCmd     *cobra.Command
+	listGithubReleasesCmd *cobra.Command
 
 	// Edit Cmds
 	editCmd *cobra.Command
 
 	// Use Cmds
-	useCmd          *cobra.Command
-	useFileCmd      *cobra.Command
-	useBootstrapCmd *cobra.Command
+	useCmd           *cobra.Command
+	useFileCmd       *cobra.Command
+	useBootstrapCmd  *cobra.Command
+	useGithubRelease *cobra.Command
 
 	// Add Cmds
 	addCmd          *cobra.Command
@@ -83,8 +87,8 @@ func New() Main {
 		&m.target,
 		"target",
 		"",
-		"Apply the command to the given target, not supplying a value (i.e --target vs --target=a), will result in the current target being used. " +
-		"The special value of 'ALL' will apply the change to all available targets",
+		"Apply the command to the given target, not supplying a value (i.e --target vs --target=a), will result in the current target being used. "+
+			"The special value of 'ALL' will apply the change to all available targets",
 	)
 	m.rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = config.CURRENT
 
@@ -115,9 +119,22 @@ func New() Main {
 			return c.RemoveTargetBootstrap(m.target, args)
 		},
 	}
+	m.ceaseGithubReleaseCmd = &cobra.Command{
+		Use:     "github-release <ghr>",
+		Aliases: []string{"ghr"},
+		Short:   "Remove a github release from a target",
+		Long: "Remove a github release from a target. If a release name is not given, a prompt " +
+			"will open. If no target is given, the current target will be used.",
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
+			return c.TargetCeaseGithubRelease(m.target, args)
+		},
+	}
 	m.ceaseCmd.AddCommand(
 		m.ceaseBootstrapCmd,
 		m.ceaseFileCmd,
+		m.ceaseGithubReleaseCmd,
 	)
 
 	// Sync Cmds
@@ -158,9 +175,20 @@ func New() Main {
 			return c.ShowBootstrapsEntry(m.target, os.Stdout)
 		},
 	}
+	m.listGithubReleasesCmd = &cobra.Command{
+		Use:   "github-release",
+		Aliases: []string{"ghr"},
+		Short: "List github releases managed by godot",
+		Long:  "List github releases managed by godot, if -t/--target is given, only that targets in-use releases items will be listed",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
+			return c.ShowGithubRelease(m.target, cmd.OutOrStdout())
+		},
+	}
 	m.listCmd.AddCommand(
 		m.listFilesCmd,
 		m.listBootstrapsCmd,
+		m.listGithubReleasesCmd,
 	)
 
 	// Edit Cmd
@@ -203,9 +231,35 @@ func New() Main {
 			return c.AddTargetBootstrap(m.target, args)
 		},
 	}
+	m.useGithubRelease = &cobra.Command{
+		Use:     "github-release <ghr>",
+		Aliases: []string{"ghr"},
+		Short:   "Add a github release to a target",
+		Long: "Add a github release to a target. If no target is given, the current target will be used.",
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
+			return c.TargetUseGithubRelease(m.target, args[0], m.location, m.trackUpdates)
+		},
+	}
+	//m.useGithubRelease.Flags().BoolVarP(
+	//    &m.trackUpdates,
+	//    "track-updates",
+	//    "u",
+	//    true,
+	//    "If new updates are found, get them. (Default: true)",
+	//)
+	m.useGithubRelease.Flags().StringVarP(
+		&m.location,
+		"location",
+		"l",
+		"",
+		"The location to place the resulting binary. (Default: ~/bin)",
+	)
 	m.useCmd.AddCommand(
 		m.useFileCmd,
 		m.useBootstrapCmd,
+		m.useGithubRelease,
 	)
 
 	// Add Cmds

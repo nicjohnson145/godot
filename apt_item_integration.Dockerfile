@@ -1,4 +1,4 @@
-FROM golang:1.15.6 as intermediate
+FROM golang:1.16 as intermediate
 ARG TYPE="apt_integration"
 WORKDIR /app
 COPY . .

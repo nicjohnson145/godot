@@ -1,22 +1,18 @@
 package bootstrap
 
-import (
-	"github.com/nicjohnson145/godot/internal/config"
-)
-
 type NoopRunner struct {
-	RunAllArgs    [][]config.BootstrapImpl
-	RunSingleArgs []config.BootstrapImpl
+	RunAllArgs    [][]Item
+	RunSingleArgs []Item
 	RunAllErr     error
 	RunSingleErr  error
 }
 
-func (n *NoopRunner) RunAll(items []config.BootstrapImpl) error {
+func (n *NoopRunner) RunAll(items []Item) error {
 	n.RunAllArgs = append(n.RunAllArgs, items)
 	return n.RunAllErr
 }
 
-func (n *NoopRunner) RunSingle(item config.BootstrapImpl) error {
+func (n *NoopRunner) RunSingle(item Item) error {
 	n.RunSingleArgs = append(n.RunSingleArgs, item)
 	return n.RunSingleErr
 }

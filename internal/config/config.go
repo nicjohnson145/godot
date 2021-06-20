@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
 	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/tidwall/pretty"
 )
 
@@ -42,9 +43,10 @@ func IsValidPackageManager(candidate string) bool {
 type StringMap map[string]string
 
 type RepoConfig struct {
-	Files      StringMap            `json:"files"`
-	Bootstraps map[string]Bootstrap `json:"bootstraps"`
-	Hosts      map[string]Host      `json:"hosts"`
+	Files          StringMap                `json:"files"`
+	Bootstraps     map[string]Bootstrap     `json:"bootstraps"`
+	GithubReleases map[string]GithubRelease `json:"github_releases"`
+	Hosts          map[string]Host          `json:"hosts"`
 }
 
 type BootstrapItem struct {
@@ -70,8 +72,9 @@ func (b Bootstrap) MethodsString() string {
 }
 
 type Host struct {
-	Files      []string `json:"files"`
-	Bootstraps []string `json:"bootstraps"`
+	Files         []string             `json:"files"`
+	Bootstraps    []string             `json:"bootstraps"`
+	GithubRelease []GithubReleaseUsage `json:"github_releases"`
 }
 
 func (c *RepoConfig) makeMaps() {
@@ -85,6 +88,18 @@ func (c *RepoConfig) makeMaps() {
 
 	if c.Hosts == nil {
 		c.Hosts = make(map[string]Host)
+	}
+
+	if c.GithubReleases == nil {
+		c.GithubReleases = make(map[string]GithubRelease)
+	}
+}
+
+func (c *RepoConfig) setGithubReleaseNames() {
+	for name := range c.GithubReleases {
+		current := c.GithubReleases[name]
+		current.name = name
+		c.GithubReleases[name] = current
 	}
 }
 
@@ -115,6 +130,7 @@ func NewConfig(getter util.HomeDirGetter) *Config {
 	c.parseUserConfig()
 	c.readRepoConfig()
 	c.content.makeMaps()
+	c.content.setGithubReleaseNames()
 	return c
 }
 
@@ -355,16 +371,23 @@ func (c *Config) GetBootstrapTargetsForTarget(target string) []string {
 	return c.content.Hosts[target].Bootstraps
 }
 
-func (c *Config) GetRelevantBootstrapImpls(target string) ([]BootstrapImpl, error) {
-	impls := []BootstrapImpl{}
+func (c *Config) GetRelevantBootstrapImpls(target string) ([]bootstrap.Item, error) {
+	impls := []bootstrap.Item{}
 	var errs *multierror.Error
 
 	for _, t := range c.GetBootstrapTargetsForTarget(target) {
 		found := false
 		for _, mgr := range c.PackageManagers {
 			if item, ok := c.content.Bootstraps[t][mgr]; ok {
-				impl := BootstrapImpl{Name: mgr, Item: c.translateItemLocation(item)}
-				impls = append(impls, impl)
+				switch mgr {
+				case APT:
+					impls = append(impls, bootstrap.NewAptItem(item.Name))
+				case BREW:
+					impls = append(impls, bootstrap.NewBrewItem(item.Name))
+				case GIT:
+					i := c.translateItemLocation(item)
+					impls = append(impls, bootstrap.NewRepoItem(i.Name, i.Location))
+				}
 				found = true
 				break
 			}

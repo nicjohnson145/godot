@@ -20,12 +20,17 @@ const (
 	AllTarget = "ALL"
 )
 
+type ItemRunner interface {
+	RunSingle(bootstrap.Item) error
+	RunAll([]bootstrap.Item) error
+}
+
 type Controller struct {
 	homeDirGetter util.HomeDirGetter
 	repo          repo.Repo
 	config        *config.Config
 	builder       *builder.Builder
-	runner        bootstrap.Runner
+	runner        ItemRunner
 }
 
 func NewController(opts ControllerOpts) *Controller {
@@ -64,7 +69,7 @@ func NewController(opts ControllerOpts) *Controller {
 		}
 	}
 
-	var rn bootstrap.Runner
+	var rn ItemRunner
 	if opts.Runner != nil {
 		rn = opts.Runner
 	} else {
@@ -127,7 +132,9 @@ func (c *Controller) sync(opts SyncOpts) error {
 	}
 
 	if !opts.NoBootstrap {
-		impls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
+		var allImpls []bootstrap.Item
+
+		bsImpls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
 		if err != nil {
 			if merr, ok := err.(*multierror.Error); ok {
 				for _, e := range merr.Errors {
@@ -138,8 +145,22 @@ func (c *Controller) sync(opts SyncOpts) error {
 			}
 			return errs.ErrorOrNil()
 		}
+		allImpls = append(allImpls, bsImpls...)
 
-		if err := c.runner.RunAll(impls); err != nil {
+		ghrImpls, err := c.config.GetGithubReleaseImplForTarget(c.config.Target)
+		if err != nil {
+			if merr, ok := err.(*multierror.Error); ok {
+				for _, e := range merr.Errors {
+					errs = multierror.Append(errs, e)
+				}
+			} else {
+				errs = multierror.Append(errs, err)
+			}
+			return errs.ErrorOrNil()
+		}
+		allImpls = append(allImpls, ghrImpls...)
+
+		if err := c.runner.RunAll(allImpls); err != nil {
 			if merr, ok := err.(*multierror.Error); ok {
 				for _, e := range merr.Errors {
 					errs = multierror.Append(errs, e)

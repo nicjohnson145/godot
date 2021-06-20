@@ -43,6 +43,7 @@ func (b *Builder) Build(force bool) error {
 		err = fl.Render(dir, vars, force)
 		if err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("rendering: %w", err))
+			continue
 		}
 
 		err = fl.Symlink(dir)

@@ -111,9 +111,9 @@ func TestSync(t *testing.T) {
 		assertSomeConf(t, obj)
 
 		// Make sure our runner was called with the relavant configs
-		want := [][]config.BootstrapImpl{
+		want := [][]bootstrap.Item{
 			{
-				{Name: "apt", Item: config.BootstrapItem{Name: "ripgrep"}},
+				bootstrap.NewAptItem("ripgrep"),
 			},
 		}
 		r := obj.C.runner.(*bootstrap.NoopRunner)

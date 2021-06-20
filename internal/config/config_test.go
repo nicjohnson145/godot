@@ -11,6 +11,7 @@ import (
 
 	"github.com/nicjohnson145/godot/internal/help"
 	"github.com/stretchr/testify/require"
+	"github.com/nicjohnson145/godot/internal/bootstrap"
 )
 
 const TARGET = "host1"
@@ -659,9 +660,9 @@ func TestBootstrapping(t *testing.T) {
 		got, err := c.GetRelevantBootstrapImpls("host1")
 		require.NoError(t, err)
 
-		want := []BootstrapImpl{
-			{Name: "apt", Item: BootstrapItem{Name: "ripgrep"}},
-			{Name: "git", Item: BootstrapItem{Name: "https://github.com/pyenv/pyenv.git", Location: filepath.Join(c.Home, ".pyenv")}},
+		want := []bootstrap.Item{
+			bootstrap.NewAptItem("ripgrep"),
+			bootstrap.NewRepoItem("https://github.com/pyenv/pyenv.git", filepath.Join(c.Home, ".pyenv")),
 		}
 
 		require.Equal(t, want, got)
