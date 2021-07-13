@@ -23,7 +23,7 @@ func setupGithubRelease(t *testing.T) testData {
 					"linux": "repo_.*-unknown-linux-musl.tar.gz"
 				},
 				"download": {
-					"type": "archive",
+					"type": "tar_gz",
 					"path": "bin/repo"
 				}
 			}
@@ -59,7 +59,7 @@ func TestGithubRelease(t *testing.T) {
 	expected := strings.Join(
 		[]string{
 			"repo (https://github.com/some/repo)",
-			"     - DownloadType: archive",
+			"     - DownloadType: tar_gz",
 			"     - DownloadPath: bin/repo",
 			"     - darwin Pattern: repo_.*-apple-darwin.tar.gz",
 			"     - linux Pattern: repo_.*-unknown-linux-musl.tar.gz",
@@ -86,8 +86,7 @@ func TestGithubRelease(t *testing.T) {
 	expected = strings.Join(
 		[]string{
 			"repo",
-			"     - Location: ~/bin/repo",
-			"     - Track Updates: true",
+			"     - Location: ~/bin",
 		},
 		"\n",
 	) + "\n"

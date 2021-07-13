@@ -107,6 +107,7 @@ type usrConfig struct {
 	Target          string   `json:"target"`
 	DotfilesRoot    string   `json:"dotfiles_root"`
 	PackageManagers []string `json:"package_managers"`
+	GithubUser      string   `json:"github_user"`
 }
 
 type Config struct {
@@ -117,6 +118,7 @@ type Config struct {
 	repoConfig      string     // Path to repo config, we'll need to rewrite it often
 	Home            string     // Users home directory
 	PackageManagers []string   // Available package managers, in order of preference
+	githubUser      string     // User to authenticate with when downloading github releases through API
 }
 
 func NewConfig(getter util.HomeDirGetter) *Config {

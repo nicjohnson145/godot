@@ -3,17 +3,12 @@ package config
 import (
 	"fmt"
 	"io"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"text/tabwriter"
 
 	"github.com/nicjohnson145/godot/internal/bootstrap"
-)
-
-const (
-	archive    = "archive"
-	binaryOnly = "binary_only"
+	"github.com/nicjohnson145/godot/internal/util"
 )
 
 type GithubRelease struct {
@@ -136,10 +131,13 @@ func (c *Config) ShowAllGithubRelease(w io.Writer) error {
 }
 
 func (c *Config) writeGithubReleaseUsage(gru GithubReleaseUsage, tw *tabwriter.Writer) error {
+	location := bootstrap.DefaultLocation
+	if gru.Location != "" {
+		location = gru.Location
+	}
 	rows := []string{
 		fmt.Sprintf("%v\t", gru.Name),
-		fmt.Sprintf("\t - Location: %v", gru.Location),
-		fmt.Sprintf("\t - Track Updates: %v", gru.TrackUpdates),
+		fmt.Sprintf("\t - Location: %v", location),
 	}
 
 	for _, r := range rows {
@@ -159,7 +157,7 @@ func (c *Config) writeGithubRelease(ghr GithubRelease, tw *tabwriter.Writer) err
 		fmt.Sprintf("\t - DownloadType: %v", ghr.Download.Type),
 	}
 
-	if ghr.Download.Type == "archive" {
+	if ghr.Download.Type == bootstrap.TarGz {
 		rows = append(rows, fmt.Sprintf("\t - DownloadPath: %v", ghr.Download.Path))
 	}
 
@@ -207,7 +205,10 @@ func (c *Config) GetGithubReleaseImplForTarget(target string) ([]bootstrap.Item,
 			Pattern:      pattern,
 		}
 		if ghr.Location == "" {
-			ghr.Location = filepath.Join(c.Home, "bin")
+			ghr.Location = util.ReplacePrefix(bootstrap.DefaultLocation, "~/", c.Home)
+		}
+		if c.githubUser != "" {
+			ghr.GithubUser = c.githubUser
 		}
 
 		impls = append(impls, ghr)

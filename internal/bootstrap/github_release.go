@@ -12,6 +12,12 @@ import (
 	"regexp"
 )
 
+const (
+	TarGz = "tar_gz"
+	BinaryOnly = "binary_only"
+	DefaultLocation = "~/bin"
+)
+
 var _ Item = (*GithubRelease)(nil)
 
 type GithubRelease struct {
@@ -21,6 +27,7 @@ type GithubRelease struct {
 	Pattern      string
 	DownloadType string
 	DownloadPath string
+	GithubUser   string
 }
 
 type releaseResponse struct {
@@ -77,10 +84,12 @@ func (g *GithubRelease) Install() error {
 	}
 
 	switch g.DownloadType {
-	case "tar_gz":
+	case TarGz:
 		err = g.handleTarGz(dest.Name(), release.Name)
-	case "binary_only":
+	case BinaryOnly:
 		err = g.handleBinaryOnly(dest.Name())
+	default:
+		return fmt.Errorf("%v has unsupported download type of %v", g.Name, g.DownloadType)
 	}
 
 	return err
@@ -136,9 +145,8 @@ func (g *GithubRelease) makeRequest() (*http.Response, error) {
 	}
 
 	val, found := os.LookupEnv("GITHUB_PAT")
-	if found {
-		// TODO: this needs to be dynamic
-		req.SetBasicAuth("nicjohnson145", val)
+	if found && g.GithubUser != "" {
+		req.SetBasicAuth(g.GithubUser, val)
 	}
 
 	return client.Do(req)
