@@ -5,6 +5,8 @@ import (
 	"github.com/nicjohnson145/godot/internal/bootstrap/brewcache"
 )
 
+var _ Item = (*brewItem)(nil)
+
 type brewItem struct {
 	Name string
 }
@@ -23,4 +25,8 @@ func (i brewItem) Check() (bool, error) {
 func (i brewItem) Install() error {
 	_, _, err := help.RunCmd("brew", "install", i.Name)
 	return err
+}
+
+func (i brewItem) GetName() string {
+	return i.Name
 }

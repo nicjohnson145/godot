@@ -14,6 +14,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/repo"
 	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -21,8 +22,8 @@ const (
 )
 
 type ItemRunner interface {
-	RunSingle(bootstrap.Item) error
-	RunAll([]bootstrap.Item) error
+	RunSingle(bootstrap.Item)
+	RunAll([]bootstrap.Item)
 }
 
 type Controller struct {
@@ -34,6 +35,7 @@ type Controller struct {
 }
 
 func NewController(opts ControllerOpts) *Controller {
+	logrus.Trace("Initializing controller")
 	var getter util.HomeDirGetter
 	if opts.HomeDirGetter != nil {
 		getter = opts.HomeDirGetter
@@ -134,41 +136,13 @@ func (c *Controller) sync(opts SyncOpts) error {
 	if !opts.NoBootstrap {
 		var allImpls []bootstrap.Item
 
-		bsImpls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
-		if err != nil {
-			if merr, ok := err.(*multierror.Error); ok {
-				for _, e := range merr.Errors {
-					errs = multierror.Append(errs, e)
-				}
-			} else {
-				errs = multierror.Append(errs, err)
-			}
-			return errs.ErrorOrNil()
-		}
+		bsImpls := c.config.GetRelevantBootstrapImpls(c.config.Target)
 		allImpls = append(allImpls, bsImpls...)
 
-		ghrImpls, err := c.config.GetGithubReleaseImplForTarget(c.config.Target)
-		if err != nil {
-			if merr, ok := err.(*multierror.Error); ok {
-				for _, e := range merr.Errors {
-					errs = multierror.Append(errs, e)
-				}
-			} else {
-				errs = multierror.Append(errs, err)
-			}
-			return errs.ErrorOrNil()
-		}
+		ghrImpls := c.config.GetGithubReleaseImplForTarget(c.config.Target)
 		allImpls = append(allImpls, ghrImpls...)
 
-		if err := c.runner.RunAll(allImpls); err != nil {
-			if merr, ok := err.(*multierror.Error); ok {
-				for _, e := range merr.Errors {
-					errs = multierror.Append(errs, e)
-				}
-			} else {
-				errs = multierror.Append(errs, err)
-			}
-		}
+		c.runner.RunAll(allImpls)
 	}
 
 	return errs.ErrorOrNil()

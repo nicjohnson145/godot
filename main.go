@@ -7,6 +7,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/controller"
 	"github.com/spf13/cobra"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -28,6 +29,7 @@ type Main struct {
 	location     string
 	as           string
 	trackUpdates bool
+	verbosity    string
 
 	// Commands
 	rootCmd *cobra.Command
@@ -72,6 +74,23 @@ func New() Main {
 		Long:  "A staticly linked dotfiles manager written in Go",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			cmd.SilenceUsage = true
+
+			// Configure logging
+			switch m.verbosity {
+			case "trace":
+				logrus.SetLevel(logrus.TraceLevel)
+			case "debug":
+				logrus.SetLevel(logrus.DebugLevel)
+			case "info":
+				logrus.SetLevel(logrus.InfoLevel)
+			case "warn":
+				logrus.SetLevel(logrus.WarnLevel)
+			}
+			logrus.SetFormatter(&logrus.TextFormatter{
+				DisableLevelTruncation: true,
+				PadLevelText: true,
+				DisableTimestamp: true,
+			})
 		},
 	}
 
@@ -89,6 +108,13 @@ func New() Main {
 		"",
 		"Apply the command to the given target, not supplying a value (i.e --target vs --target=a), will result in the current target being used. "+
 			"The special value of 'ALL' will apply the change to all available targets",
+	)
+	m.rootCmd.PersistentFlags().StringVarP(
+		&m.verbosity,
+		"verbosity",
+		"v",
+		"warn",
+		"Set verbosity of output. Accepted values are trace,debug,info,warn",
 	)
 	m.rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = config.CURRENT
 

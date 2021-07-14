@@ -43,6 +43,10 @@ type release struct {
 	DownloadUrl string `json:"browser_download_url"`
 }
 
+func (g *GithubRelease) GetName() string {
+	return g.Name
+}
+
 func (g *GithubRelease) Check() (bool, error) {
 	_, err := os.Stat(filepath.Join(g.Location, g.Name))
 

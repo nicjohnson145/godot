@@ -13,11 +13,11 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
 	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/tidwall/pretty"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -373,9 +373,8 @@ func (c *Config) GetBootstrapTargetsForTarget(target string) []string {
 	return c.content.Hosts[target].Bootstraps
 }
 
-func (c *Config) GetRelevantBootstrapImpls(target string) ([]bootstrap.Item, error) {
+func (c *Config) GetRelevantBootstrapImpls(target string) []bootstrap.Item {
 	impls := []bootstrap.Item{}
-	var errs *multierror.Error
 
 	for _, t := range c.GetBootstrapTargetsForTarget(target) {
 		found := false
@@ -395,19 +394,16 @@ func (c *Config) GetRelevantBootstrapImpls(target string) ([]bootstrap.Item, err
 			}
 		}
 		if !found {
-			errs = multierror.Append(
-				errs,
-				fmt.Errorf(
-					"No suitable manager found for %v, %v's available managers are %v",
-					t,
-					t,
-					strings.Join(c.getManagersForBootstrapItem(t), ", "),
-				),
-			)
+			logrus.Error(fmt.Sprintf(
+				"No suitable manager found for %v, %v's available managers are %v",
+				t,
+				t,
+				strings.Join(c.getManagersForBootstrapItem(t), ", "),
+			))
 		}
 	}
 
-	return impls, errs.ErrorOrNil()
+	return impls
 }
 
 func (c *Config) translateItemLocation(i BootstrapItem) BootstrapItem {

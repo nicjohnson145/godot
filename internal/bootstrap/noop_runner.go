@@ -3,16 +3,12 @@ package bootstrap
 type NoopRunner struct {
 	RunAllArgs    [][]Item
 	RunSingleArgs []Item
-	RunAllErr     error
-	RunSingleErr  error
 }
 
-func (n *NoopRunner) RunAll(items []Item) error {
+func (n *NoopRunner) RunAll(items []Item) {
 	n.RunAllArgs = append(n.RunAllArgs, items)
-	return n.RunAllErr
 }
 
-func (n *NoopRunner) RunSingle(item Item) error {
+func (n *NoopRunner) RunSingle(item Item) {
 	n.RunSingleArgs = append(n.RunSingleArgs, item)
-	return n.RunSingleErr
 }

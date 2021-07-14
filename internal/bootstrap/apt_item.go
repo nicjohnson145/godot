@@ -6,6 +6,8 @@ import (
 	"github.com/nicjohnson145/godot/internal/help"
 )
 
+var _ Item = (*aptItem)(nil)
+
 type aptItem struct {
 	Name string
 }
@@ -28,4 +30,8 @@ func (i aptItem) Check() (bool, error) {
 func (i aptItem) Install() error {
 	_, _, err := help.RunCmd("/bin/sh", "-c", fmt.Sprintf("sudo apt install -y %v", i.Name))
 	return err
+}
+
+func (i aptItem) GetName() string {
+	return i.Name
 }

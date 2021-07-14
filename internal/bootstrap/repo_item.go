@@ -7,6 +7,8 @@ import (
 	"github.com/nicjohnson145/godot/internal/help"
 )
 
+var _ Item = (*repoItem)(nil)
+
 type repoItem struct {
 	Name     string
 	Location string
@@ -17,6 +19,10 @@ func NewRepoItem(name string, location string) repoItem {
 		Name:     name,
 		Location: location,
 	}
+}
+
+func (i repoItem) GetName() string {
+	return i.Name
 }
 
 func (i repoItem) Check() (bool, error) {

@@ -9,6 +9,7 @@ import (
 
 	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/sirupsen/logrus"
 )
 
 type GithubRelease struct {
@@ -182,19 +183,21 @@ func (c *Config) writeGithubRelease(ghr GithubRelease, tw *tabwriter.Writer) err
 	return nil
 }
 
-func (c *Config) GetGithubReleaseImplForTarget(target string) ([]bootstrap.Item, error) {
+func (c *Config) GetGithubReleaseImplForTarget(target string) []bootstrap.Item {
 	impls := []bootstrap.Item{}
 
 	current, ok := c.content.Hosts[target]
 	if !ok {
-		return impls, fmt.Errorf("Target %v: %w", target, NotFoundError)
+		logrus.Error(fmt.Sprintf("Target %v not found", target))
+		return impls
 	}
 
 	for _, usage := range current.GithubRelease {
 		obj := c.content.GithubReleases[usage.Name]
 		pattern, ok := obj.Patterns[runtime.GOOS]
 		if !ok {
-			return impls, fmt.Errorf("%v does not have a pattern for %v: %w", usage.Name, runtime.GOOS, NotFoundError)
+			logrus.Error(fmt.Sprintf("%v does not have a pattern for %v", usage.Name, runtime.GOOS))
+			continue
 		}
 		ghr := &bootstrap.GithubRelease{
 			Name:         usage.Name,
@@ -214,5 +217,5 @@ func (c *Config) GetGithubReleaseImplForTarget(target string) ([]bootstrap.Item,
 		impls = append(impls, ghr)
 	}
 
-	return impls, nil
+	return impls
 }

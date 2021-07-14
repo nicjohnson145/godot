@@ -3,6 +3,7 @@ package bootstrap
 type Item interface {
 	Check() (bool, error)
 	Install() error
+	GetName() string
 }
 
 //type Runner interface {
