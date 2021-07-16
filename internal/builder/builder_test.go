@@ -16,8 +16,7 @@ func TestBuilder(t *testing.T) {
 		defer remove()
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
-		err := b.Build(false)
-		require.NoError(t, err)
+		b.Build(false)
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
 	})
 
@@ -27,8 +26,7 @@ func TestBuilder(t *testing.T) {
 		defer remove()
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
-		err := b.Build(false)
-		require.NoError(t, err)
+		b.Build(false)
 
 		expected := "host3 zsh contents"
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
@@ -45,8 +43,7 @@ func TestBuilder(t *testing.T) {
 		help.WriteData(t, filepath.Join(build, "some_file"), "some_data")
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
-		err = b.Build(false)
-		require.NoError(t, err)
+		b.Build(false)
 		help.AssertDirectoryContentsRecursive(t, build, []string{"dot_zshrc"})
 	})
 
@@ -62,8 +59,7 @@ func TestBuilder(t *testing.T) {
 		os.Symlink(filepath.Join(home, ".zshrc"), filepath.Join(dotPath, "build/dot_zshrc"))
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
-		err = b.Build(false)
-		require.NoError(t, err)
+		b.Build(false)
 		help.AssertFileContents(t, filepath.Join(home, ".zshrc"), expected)
 	})
 
@@ -76,8 +72,7 @@ func TestBuilder(t *testing.T) {
 		help.WriteData(t, destPath, "")
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
-		err := b.Build(false)
-		require.Error(t, err)
+		b.Build(false)
 		help.AssertFileContents(t, destPath, "")
 	})
 
@@ -90,8 +85,7 @@ func TestBuilder(t *testing.T) {
 		help.WriteData(t, destPath, "")
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
-		err := b.Build(true)
-		require.NoError(t, err)
+		b.Build(true)
 		help.AssertFileContents(t, destPath, "zsh contents")
 	})
 
@@ -161,8 +155,7 @@ func TestBuilder(t *testing.T) {
 		help.WriteData(t, template, "{{ .NotAValidKey }}")
 
 		b := Builder{Getter: &help.TempHomeDir{HomeDir: home}}
-		err = b.Build(true)
-		require.Error(t, err)
+		b.Build(true)
 		help.AssertDirectoryContentsRecursive(t, buildDir, []string{"orphan_file"})
 	})
 }

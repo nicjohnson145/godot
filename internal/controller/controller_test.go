@@ -2,7 +2,7 @@ package controller
 
 import (
 	"bytes"
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"sort"
@@ -13,6 +13,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/help"
 	"github.com/nicjohnson145/godot/internal/repo"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/require"
 )
 
@@ -125,12 +126,22 @@ func TestSync(t *testing.T) {
 		obj := baseSetup(t)
 		defer obj.Remove()
 
+		hook := test.NewGlobal()
+		defer hook.Reset()
 		help.Touch(t, filepath.Join(obj.Home, ".zshrc"))
+		obj.C.Sync(SyncOpts{Force: false})
 
-		// Should error out
-		err := obj.C.Sync(SyncOpts{Force: false})
-		require.Error(t, err)
-
+		// Should be an entry for failing to render dot_zshrc
+		found := false
+		for _, entry := range hook.AllEntries() {
+			if strings.HasPrefix(entry.Message, fmt.Sprintf("Error rendering %v/templates/dot_zshrc", obj.Dotpath)) {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatal("Could not find dot_zshrc error log")
+		}
+		
 		// But some_conf should still be created
 		assertSomeConf(t, obj)
 	})
@@ -144,20 +155,6 @@ func TestSync(t *testing.T) {
 		err := obj.C.Sync(SyncOpts{Force: true})
 		require.NoError(t, err)
 
-		assertZshRc(t, obj)
-		assertSomeConf(t, obj)
-	})
-
-	t.Run("error_bootstrapping", func(t *testing.T) {
-		obj := baseSetup(t)
-		defer obj.Remove()
-
-		obj.C.runner.(*bootstrap.NoopRunner).RunAllErr = errors.New("bad")
-
-		err := obj.C.Sync(SyncOpts{})
-		require.Error(t, err)
-
-		// Symlinks should still be there
 		assertZshRc(t, obj)
 		assertSomeConf(t, obj)
 	})

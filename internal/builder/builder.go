@@ -2,15 +2,14 @@ package builder
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/sirupsen/logrus"
 )
 
 type Builder struct {
@@ -18,41 +17,44 @@ type Builder struct {
 	Config *config.Config
 }
 
-func (b *Builder) Build(force bool) error {
+func (b *Builder) Build(force bool) {
 	b.ensureConfig()
 
 	vars := b.makeTemplateVars()
 
+	templateErr := false
 	// Before clearing the build directory, make sure nothing is going to error out, i.e fail safe
 	for _, fl := range b.buildFileObjs(b.Config.GetFilesForTarget(b.Config.Target)) {
 		_, err := fl.Execute(vars)
 		if err != nil {
-			return err
+			logrus.Errorf("Error parsing template %v: %v", fl.TemplatePath, err)
+			templateErr = true
 		}
+	}
+	if templateErr {
+		return
 	}
 
 	// Clean out the build directory
 	dir, err := b.ensureBuildDir()
 	if err != nil {
-		return err
+		logrus.Errorf("Error cleaning build directory: %v", err)
+		return
 	}
 
-	var errs *multierror.Error
 	// Actually render/symlink the files
 	for _, fl := range b.buildFileObjs(b.Config.GetFilesForTarget(b.Config.Target)) {
 		err = fl.Render(dir, vars, force)
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("rendering: %w", err))
+			logrus.Errorf("Error rendering %v: %v", fl.TemplatePath, err)
 			continue
 		}
 
 		err = fl.Symlink(dir)
 		if err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("symlinking: %w", err))
+			logrus.Errorf("Error symlinking %v: %v", fl.TemplatePath, err)
 		}
 	}
-
-	return errs.ErrorOrNil()
 }
 
 func (b *Builder) buildFileObjs(m config.StringMap) []file.File {

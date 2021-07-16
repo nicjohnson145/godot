@@ -6,8 +6,6 @@ package bootstrap
 import (
 	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/require"
 )
 
 type mockItem struct {
@@ -29,6 +27,10 @@ func (i *mockItem) Install() error {
 	return i.InstallError
 }
 
+func (i *mockItem) GetName() string {
+	return "mock_item"
+}
+
 func assertCallCount(t *testing.T, method string, got int, want int) {
 	t.Helper()
 
@@ -41,8 +43,7 @@ func TestRunSingle(t *testing.T) {
 	t.Run("already_installed", func(t *testing.T) {
 		m := &mockItem{CheckReturn: true, CheckError: nil, InstallError: nil}
 		r := Runner{}
-		err := r.runSingleItem(m)
-		require.NoError(t, err)
+		r.runSingleItem(m)
 
 		assertCallCount(t, "check", m.CheckCalls, 1)
 		assertCallCount(t, "install", m.InstallCalls, 0)
@@ -51,8 +52,7 @@ func TestRunSingle(t *testing.T) {
 	t.Run("not_installed", func(t *testing.T) {
 		m := &mockItem{CheckReturn: false, CheckError: nil, InstallError: nil}
 		r := Runner{}
-		err := r.runSingleItem(m)
-		require.NoError(t, err)
+		r.runSingleItem(m)
 
 		assertCallCount(t, "check", m.CheckCalls, 1)
 		assertCallCount(t, "install", m.InstallCalls, 1)
@@ -61,8 +61,7 @@ func TestRunSingle(t *testing.T) {
 	t.Run("check_error", func(t *testing.T) {
 		m := &mockItem{CheckReturn: false, CheckError: fmt.Errorf("boo"), InstallError: nil}
 		r := Runner{}
-		err := r.runSingleItem(m)
-		require.Error(t, err)
+		r.runSingleItem(m)
 
 		assertCallCount(t, "check", m.CheckCalls, 1)
 		assertCallCount(t, "install", m.InstallCalls, 0)

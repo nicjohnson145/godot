@@ -120,18 +120,15 @@ func (c *Controller) git_pullOnly(function func() error) error {
 
 func (c *Controller) Sync(opts SyncOpts) error {
 	f := func() error {
-		return c.sync(opts)
+		c.sync(opts)
+		return nil
 	}
 
 	return c.git_pullOnly(f)
 }
 
-func (c *Controller) sync(opts SyncOpts) error {
-	var errs *multierror.Error
-
-	if err := c.builder.Build(opts.Force); err != nil {
-		errs = multierror.Append(errs, err)
-	}
+func (c *Controller) sync(opts SyncOpts) {
+	c.builder.Build(opts.Force)
 
 	if !opts.NoBootstrap {
 		var allImpls []bootstrap.Item
@@ -144,8 +141,6 @@ func (c *Controller) sync(opts SyncOpts) error {
 
 		c.runner.RunAll(allImpls)
 	}
-
-	return errs.ErrorOrNil()
 }
 
 func (c *Controller) Import(file string, as string) error {
@@ -328,9 +323,7 @@ func (c *Controller) EditFile(args []string, opts EditOpts) error {
 		}
 
 		if !opts.NoSync {
-			if err := c.sync(SyncOpts{NoBootstrap: true}); err != nil {
-				return err
-			}
+			c.sync(SyncOpts{NoBootstrap: true})
 		}
 
 		return nil

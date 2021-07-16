@@ -30,6 +30,7 @@ github.com/rivo/uniseg
 # github.com/sirupsen/logrus v1.7.0
 ## explicit
 github.com/sirupsen/logrus
+github.com/sirupsen/logrus/hooks/test
 # github.com/spf13/cobra v1.1.1
 ## explicit
 github.com/spf13/cobra

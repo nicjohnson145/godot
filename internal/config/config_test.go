@@ -657,9 +657,7 @@ func TestBootstrapping(t *testing.T) {
 		}`)
 		defer remove()
 
-		got, err := c.GetRelevantBootstrapImpls("host1")
-		require.NoError(t, err)
-
+		got := c.GetRelevantBootstrapImpls("host1")
 		want := []bootstrap.Item{
 			bootstrap.NewAptItem("ripgrep"),
 			bootstrap.NewRepoItem("https://github.com/pyenv/pyenv.git", filepath.Join(c.Home, ".pyenv")),
@@ -718,15 +716,8 @@ func TestBootstrapping(t *testing.T) {
 		}`)
 		defer remove()
 
-		_, err := c.GetRelevantBootstrapImpls("host2")
-		require.Error(t, err)
-
-		got := err.Error()
-		want := strings.Join([]string{
-			"2 errors occurred:",
-			"\t* No suitable manager found for broke_1, broke_1's available managers are brew",
-			"\t* No suitable manager found for broke_2, broke_2's available managers are brew, yum",
-		}, "\n") + "\n\n"
+		got := c.GetRelevantBootstrapImpls("host2")
+		want := []bootstrap.Item{}
 		require.Equal(t, want, got)
 	})
 }
