@@ -207,7 +207,7 @@ func New(dependencies Components) Main {
 		Long:  "List bootstrap items managed by godot, if -t/--target is given, only that targets bootstrap items will be listed",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := controller.NewController(m.controllerOpts())
-			return c.ShowBootstrapsEntry(m.target, os.Stdout)
+			return c.ShowBootstrapsEntry(m.target, cmd.OutOrStdout())
 		},
 	}
 	m.listGithubReleasesCmd = &cobra.Command{
