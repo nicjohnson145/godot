@@ -158,4 +158,33 @@ func TestBootstrapOps(t *testing.T) {
 		}, "\n"),
 		stdOut.String(),
 	)
+
+	// Add a usage back, but all at once
+	_, _, err = runCmd(t, opts, "use", "bootstrap", "exa", "--target=ALL")
+
+	// List out all the bootstraps for host1
+	stdOut, _, err = runCmd(t, opts, "list", "bootstraps", "--target")
+	require.NoError(t, err)
+	require.Equal(
+		t,
+		strings.Join([]string{
+			"exa => brew",
+			" jq => apt",
+			"",
+		}, "\n"),
+		stdOut.String(),
+	)
+
+	// List out all the bootstraps for host2
+	stdOut, _, err = runCmd(t, opts, "list", "bootstraps", "--target=host2")
+	require.NoError(t, err)
+	require.Equal(
+		t,
+		strings.Join([]string{
+			"  exa => brew",
+			"pyenv => brew, git",
+			"",
+		}, "\n"),
+		stdOut.String(),
+	)
 }
