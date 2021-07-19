@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"path/filepath"
 	"testing"
 
 	"github.com/nicjohnson145/godot/internal/help"
@@ -11,8 +12,9 @@ import (
 )
 
 type Setup struct {
-	ConfData interface{}
-	Target   string
+	ConfData        interface{}
+	Target          string
+	TemplateContent map[string]string
 }
 
 type Paths struct {
@@ -29,9 +31,13 @@ func setupConfigs(t *testing.T, setup Setup) (Paths, Components) {
 	require.NoError(t, err)
 	help.WriteRepoConf(t, dotpath, string(data))
 
+	for tmp, content := range setup.TemplateContent {
+		help.WriteData(t, filepath.Join(dotpath, "templates", tmp), content)
+	}
+
 	o := Components{
 		HomeDirGetter: &help.TempHomeDir{HomeDir: home},
-		Repo: repo.NoopRepo{},
+		Repo:          repo.NoopRepo{},
 	}
 	p := Paths{
 		Home:     home,
@@ -56,4 +62,3 @@ func runCmd(t *testing.T, opts Components, args ...string) (*bytes.Buffer, *byte
 	_, err := main.rootCmd.ExecuteC()
 	return stdOut, stdErr, err
 }
-
