@@ -9,9 +9,9 @@ import (
 
 	"reflect"
 
+	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/help"
 	"github.com/stretchr/testify/require"
-	"github.com/nicjohnson145/godot/internal/bootstrap"
 )
 
 const TARGET = "host1"

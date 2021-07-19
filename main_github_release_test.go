@@ -23,7 +23,7 @@ func TestGithubReleaseOps(t *testing.T) {
 					"repo_name": "some/repo",
 					"patterns": map[string]string{
 						"darwin": "repo_.*-apple-darwin.tar.gz",
-						"linux": "repo_.*-unknown-linux-musl.tar.gz",
+						"linux":  "repo_.*-unknown-linux-musl.tar.gz",
 					},
 					"download": map[string]string{
 						"type": "tar_gz",
@@ -37,7 +37,6 @@ func TestGithubReleaseOps(t *testing.T) {
 	defer paths.Remove()
 
 	// Don't have the mechanisms for adding releases yet, so just use/cease/list
-
 
 	// List out all the releases
 	stdOut, _, err := runCmd(t, opts, "list", "github-release")

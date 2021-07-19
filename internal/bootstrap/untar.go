@@ -120,4 +120,3 @@ func validRelPath(p string) bool {
 	}
 	return true
 }
-

@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	TarGz = "tar_gz"
-	BinaryOnly = "binary_only"
+	TarGz           = "tar_gz"
+	BinaryOnly      = "binary_only"
 	DefaultLocation = "~/bin"
 )
 
@@ -172,7 +172,7 @@ func (g *GithubRelease) handleTarGz(tempPath string, releaseName string) error {
 	}
 
 	// Remove ".tar.gz" from filename
-	minusExt := releaseName[0:len(releaseName) - 7]
+	minusExt := releaseName[0 : len(releaseName)-7]
 	binary := filepath.Join(dest, minusExt, g.DownloadPath)
 
 	return g.copyBinaryToDestination(binary)

@@ -1,8 +1,8 @@
 package bootstrap
 
 import (
-	"github.com/nicjohnson145/godot/internal/help"
 	"github.com/nicjohnson145/godot/internal/bootstrap/brewcache"
+	"github.com/nicjohnson145/godot/internal/help"
 )
 
 type brewItem struct {

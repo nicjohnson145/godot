@@ -15,8 +15,8 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/jinzhu/copier"
-	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/nicjohnson145/godot/internal/bootstrap"
+	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/tidwall/pretty"
 )
 

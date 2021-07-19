@@ -14,7 +14,7 @@ func TestSync(t *testing.T) {
 			"files": map[string]string{
 				"dot_zshrc": "~/.zshrc",
 				"some_conf": "~/.config/prog/conf",
-				"my_conf": "~/my_conf",
+				"my_conf":   "~/my_conf",
 			},
 			"hosts": map[string]interface{}{
 				"host1": map[string][]string{
@@ -26,7 +26,7 @@ func TestSync(t *testing.T) {
 		TemplateContent: map[string]string{
 			"dot_zshrc": "zshrc content",
 			"some_conf": "some conf content",
-			"my_conf": "new my conf content",
+			"my_conf":   "new my conf content",
 		},
 	})
 	defer paths.Remove()

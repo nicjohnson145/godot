@@ -29,7 +29,7 @@ func TestBootstrapOps(t *testing.T) {
 						"name": "pyenv",
 					},
 					"git": map[string]string{
-						"name": "https::/github.com/pyenv/pyenv",
+						"name":     "https::/github.com/pyenv/pyenv",
 						"location": "~/.pyenv",
 					},
 				},

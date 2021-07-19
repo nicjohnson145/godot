@@ -2,9 +2,9 @@ package bootstrap
 
 import (
 	"fmt"
+	"github.com/nicjohnson145/godot/internal/help"
 	"os"
 	"path/filepath"
-	"github.com/nicjohnson145/godot/internal/help"
 )
 
 type repoItem struct {

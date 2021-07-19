@@ -3,10 +3,10 @@
 package bootstrap
 
 import (
+	"github.com/nicjohnson145/godot/internal/bootstrap/brewcache"
+	"github.com/stretchr/testify/require"
 	"os/exec"
 	"testing"
-	"github.com/stretchr/testify/require"
-	"github.com/nicjohnson145/godot/internal/bootstrap/brewcache"
 )
 
 func TestBrewItem(t *testing.T) {
