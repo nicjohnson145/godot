@@ -144,4 +144,32 @@ func TestFileOps(t *testing.T) {
 		}, "\n"),
 		stdOut.String(),
 	)
+
+	// Now add one back, but this time use the all arg to do everything at once
+	_, _, err = runCmd(t, opts, "use", "file", "home_conf", "--target=ALL")
+	require.NoError(t, err)
+
+	// Prove they've used them
+	stdOut, _, err = runCmd(t, opts, "list", "files", "--target")
+	require.NoError(t, err)
+	require.Equal(
+		t,
+		strings.Join([]string{
+			"home_conf => ~/conf",
+			"some_conf => /etc/conf",
+			"",
+		}, "\n"),
+		stdOut.String(),
+	)
+	stdOut, _, err = runCmd(t, opts, "list", "files", "--target=host2")
+	require.NoError(t, err)
+	require.Equal(
+		t,
+		strings.Join([]string{
+			"dot_zshrc => ~/.zshrc",
+			"home_conf => ~/conf",
+			"",
+		}, "\n"),
+		stdOut.String(),
+	)
 }
