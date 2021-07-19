@@ -15,6 +15,7 @@ type Setup struct {
 	ConfData        interface{}
 	Target          string
 	TemplateContent map[string]string
+	PackageManagers []string
 }
 
 type Paths struct {
@@ -26,7 +27,7 @@ type Paths struct {
 func setupConfigs(t *testing.T, setup Setup) (Paths, Components) {
 	t.Helper()
 
-	home, dotpath, remove := help.SetupDirectories(t, setup.Target)
+	home, dotpath, remove := help.SetupDirectories(t, setup.Target, setup.PackageManagers...)
 	data, err := json.Marshal(setup.ConfData)
 	require.NoError(t, err)
 	help.WriteRepoConf(t, dotpath, string(data))
