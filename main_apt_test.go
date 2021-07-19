@@ -28,10 +28,14 @@ func TestBootstrapApt(t *testing.T) {
 	})
 	defer paths.Remove()
 
-	_, _, err := runCmd(t, opts, "sync")
+	cmd := exec.Command("rg", "--version")
+	err := cmd.Run()
+	require.Error(t, err)
+
+	_, _, err = runCmd(t, opts, "sync")
 	require.NoError(t, err)
 
-	cmd := exec.Command("rg", "--version")
+	cmd = exec.Command("rg", "--version")
 	err = cmd.Run()
 	require.NoError(t, err)
 }
