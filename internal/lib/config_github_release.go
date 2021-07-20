@@ -1,4 +1,4 @@
-package config
+package lib
 
 import (
 	"fmt"
@@ -7,27 +7,8 @@ import (
 	"sort"
 	"text/tabwriter"
 
-	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/util"
 )
-
-type GithubRelease struct {
-	name     string            `json:"-"`
-	RepoName string            `json:"repo_name"`
-	Patterns map[string]string `json:"patterns"`
-	Download Download          `json:"download"`
-}
-
-type Download struct {
-	Type string `json:"type"`
-	Path string `json:"path,omitempty"`
-}
-
-type GithubReleaseUsage struct {
-	Name         string `json:"name"`
-	Location     string `json:"location"`
-	TrackUpdates bool   `json:"track_updates"`
-}
 
 func (c *Config) GetAllGithubReleaseNames() []string {
 	names := []string{}
@@ -131,7 +112,7 @@ func (c *Config) ShowAllGithubRelease(w io.Writer) error {
 }
 
 func (c *Config) writeGithubReleaseUsage(gru GithubReleaseUsage, tw *tabwriter.Writer) error {
-	location := bootstrap.DefaultLocation
+	location := DefaultLocation
 	if gru.Location != "" {
 		location = gru.Location
 	}
@@ -151,13 +132,13 @@ func (c *Config) writeGithubReleaseUsage(gru GithubReleaseUsage, tw *tabwriter.W
 	return nil
 }
 
-func (c *Config) writeGithubRelease(ghr GithubRelease, tw *tabwriter.Writer) error {
+func (c *Config) writeGithubRelease(ghr GithubReleaseConfiguration, tw *tabwriter.Writer) error {
 	rows := []string{
 		fmt.Sprintf("%v\t (https://github.com/%v)", ghr.name, ghr.RepoName),
 		fmt.Sprintf("\t - DownloadType: %v", ghr.Download.Type),
 	}
 
-	if ghr.Download.Type == bootstrap.TarGz {
+	if ghr.Download.Type == TarGz {
 		rows = append(rows, fmt.Sprintf("\t - DownloadPath: %v", ghr.Download.Path))
 	}
 
@@ -182,8 +163,8 @@ func (c *Config) writeGithubRelease(ghr GithubRelease, tw *tabwriter.Writer) err
 	return nil
 }
 
-func (c *Config) GetGithubReleaseImplForTarget(target string) ([]bootstrap.Item, error) {
-	impls := []bootstrap.Item{}
+func (c *Config) GetGithubReleaseImplForTarget(target string) ([]Item, error) {
+	impls := []Item{}
 
 	current, ok := c.content.Hosts[target]
 	if !ok {
@@ -196,7 +177,7 @@ func (c *Config) GetGithubReleaseImplForTarget(target string) ([]bootstrap.Item,
 		if !ok {
 			return impls, fmt.Errorf("%v does not have a pattern for %v: %w", usage.Name, runtime.GOOS, NotFoundError)
 		}
-		ghr := &bootstrap.GithubRelease{
+		ghr := &GithubReleaseItem{
 			Name:         usage.Name,
 			Location:     usage.Location,
 			RepoName:     obj.RepoName,
@@ -205,7 +186,7 @@ func (c *Config) GetGithubReleaseImplForTarget(target string) ([]bootstrap.Item,
 			Pattern:      pattern,
 		}
 		if ghr.Location == "" {
-			ghr.Location = util.ReplacePrefix(bootstrap.DefaultLocation, "~/", c.Home)
+			ghr.Location = util.ReplacePrefix(DefaultLocation, "~/", c.Home)
 		}
 		if c.githubUser != "" {
 			ghr.GithubUser = c.githubUser

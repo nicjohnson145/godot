@@ -1,4 +1,4 @@
-package controller
+package lib
 
 import (
 	"fmt"
@@ -64,3 +64,4 @@ func (c *Controller) TargetCeaseGithubRelease(target string, args []string) erro
 	}
 	return c.git_pushAndPull(f)
 }
+

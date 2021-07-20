@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/nicjohnson145/godot/internal/help"
-	"github.com/nicjohnson145/godot/internal/repo"
+	"github.com/nicjohnson145/godot/internal/lib"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,7 +38,7 @@ func setupConfigs(t *testing.T, setup Setup) (Paths, Components) {
 
 	o := Components{
 		HomeDirGetter: &help.TempHomeDir{HomeDir: home},
-		Repo:          repo.NoopRepo{},
+		Repo:          lib.NoopRepo{},
 	}
 	p := Paths{
 		Home:     home,

@@ -1,26 +1,19 @@
-package bootstrap
+package lib
 
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 )
 
-const (
-	TarGz           = "tar_gz"
-	BinaryOnly      = "binary_only"
-	DefaultLocation = "~/bin"
-)
+var _ Item = (*GithubReleaseItem)(nil)
 
-var _ Item = (*GithubRelease)(nil)
-
-type GithubRelease struct {
+type GithubReleaseItem struct {
 	Name         string
 	Location     string
 	RepoName     string
@@ -43,7 +36,7 @@ type release struct {
 	DownloadUrl string `json:"browser_download_url"`
 }
 
-func (g *GithubRelease) Check() (bool, error) {
+func (g *GithubReleaseItem) Check() (bool, error) {
 	_, err := os.Stat(filepath.Join(g.Location, g.Name))
 
 	if err == nil {
@@ -57,7 +50,7 @@ func (g *GithubRelease) Check() (bool, error) {
 	return false, err
 }
 
-func (g *GithubRelease) Install() error {
+func (g *GithubReleaseItem) Install() error {
 	release, err := g.getRelease()
 	if err != nil {
 		return err
@@ -95,7 +88,7 @@ func (g *GithubRelease) Install() error {
 	return err
 }
 
-func (g *GithubRelease) getRelease() (release, error) {
+func (g *GithubReleaseItem) getRelease() (release, error) {
 	var release release
 	resp, err := g.makeRequest()
 	if err != nil {
@@ -137,7 +130,7 @@ func (g *GithubRelease) getRelease() (release, error) {
 	return release, nil
 }
 
-func (g *GithubRelease) makeRequest() (*http.Response, error) {
+func (g *GithubReleaseItem) makeRequest() (*http.Response, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%v/releases/latest", g.RepoName), nil)
 	if err != nil {
@@ -152,7 +145,7 @@ func (g *GithubRelease) makeRequest() (*http.Response, error) {
 	return client.Do(req)
 }
 
-func (g *GithubRelease) handleTarGz(tempPath string, releaseName string) error {
+func (g *GithubReleaseItem) handleTarGz(tempPath string, releaseName string) error {
 	file, err := os.Open(tempPath)
 	if err != nil {
 		return err
@@ -178,7 +171,7 @@ func (g *GithubRelease) handleTarGz(tempPath string, releaseName string) error {
 	return g.copyBinaryToDestination(binary)
 }
 
-func (g *GithubRelease) copyBinaryToDestination(path string) error {
+func (g *GithubReleaseItem) copyBinaryToDestination(path string) error {
 	src, err := os.Open(path)
 	if err != nil {
 		return err
@@ -198,6 +191,6 @@ func (g *GithubRelease) copyBinaryToDestination(path string) error {
 	return os.Chmod(dest.Name(), 0755)
 }
 
-func (g *GithubRelease) handleBinaryOnly(tempPath string) error {
+func (g *GithubReleaseItem) handleBinaryOnly(tempPath string) error {
 	return g.copyBinaryToDestination(tempPath)
 }

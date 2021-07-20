@@ -1,4 +1,4 @@
-package bootstrap
+package lib
 
 import (
 	"github.com/hashicorp/go-multierror"
