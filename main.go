@@ -6,10 +6,10 @@ import (
 
 	"github.com/nicjohnson145/godot/internal/bootstrap"
 	"github.com/nicjohnson145/godot/internal/builder"
-	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/controller"
 	"github.com/nicjohnson145/godot/internal/repo"
 	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/nicjohnson145/godot/internal/lib"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ func main() {
 type Components struct {
 	HomeDirGetter util.HomeDirGetter
 	Repo          repo.Repo
-	Config        *config.Config
+	Config        *lib.Config
 	Builder       *builder.Builder
 	Runner        controller.ItemRunner
 }
@@ -85,7 +85,7 @@ func New(dependencies Components) Main {
 		m.dependencies.HomeDirGetter = &util.OSHomeDir{}
 	}
 	if m.dependencies.Config == nil {
-		m.dependencies.Config = config.NewConfig(m.dependencies.HomeDirGetter)
+		m.dependencies.Config = lib.NewConfig(m.dependencies.HomeDirGetter)
 	}
 	if m.dependencies.Builder == nil {
 		m.dependencies.Builder = &builder.Builder{
@@ -125,7 +125,7 @@ func New(dependencies Components) Main {
 		"Apply the command to the given target, not supplying a value (i.e --target vs --target=a), will result in the current target being used. "+
 			"The special value of 'ALL' will apply the change to all available targets",
 	)
-	m.rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = config.CURRENT
+	m.rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = lib.CURRENT
 
 	// Cease Cmds
 	m.ceaseCmd = &cobra.Command{
@@ -344,7 +344,7 @@ func New(dependencies Components) Main {
 		"manager",
 		"m",
 		"",
-		"The name of the package manager, one of "+strings.Join(config.ValidManagers, ", "),
+		"The name of the package manager, one of "+strings.Join(lib.ValidManagers, ", "),
 	)
 	m.addBootstrapCmd.MarkFlagRequired("manager")
 	m.addBootstrapCmd.Flags().StringVarP(

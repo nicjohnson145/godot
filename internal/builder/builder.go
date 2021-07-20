@@ -8,14 +8,14 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/lib"
 	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
 )
 
 type Builder struct {
 	Getter util.HomeDirGetter
-	Config *config.Config
+	Config *lib.Config
 }
 
 func (b *Builder) Build(force bool) error {
@@ -55,7 +55,7 @@ func (b *Builder) Build(force bool) error {
 	return errs.ErrorOrNil()
 }
 
-func (b *Builder) buildFileObjs(m config.StringMap) []file.File {
+func (b *Builder) buildFileObjs(m lib.StringMap) []file.File {
 	files := make([]file.File, 0, len(m))
 	for tmpl, dest := range m {
 		files = append(files, file.File{
@@ -76,7 +76,7 @@ func (b *Builder) makeTemplateVars() file.TemplateVars {
 
 func (b *Builder) ensureConfig() {
 	if b.Config == nil {
-		b.Config = config.NewConfig(b.Getter)
+		b.Config = lib.NewConfig(b.Getter)
 	}
 }
 

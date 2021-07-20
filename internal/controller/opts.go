@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/nicjohnson145/godot/internal/builder"
-	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/lib"
 	"github.com/nicjohnson145/godot/internal/repo"
 	"github.com/nicjohnson145/godot/internal/util"
 )
@@ -19,7 +19,7 @@ type EditOpts struct {
 type ControllerOpts struct {
 	HomeDirGetter util.HomeDirGetter
 	Repo          repo.Repo
-	Config        *config.Config
+	Config        *lib.Config
 	Builder       *builder.Builder
 	Runner        ItemRunner
 	NoGit         bool

@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/ktr0731/go-fuzzyfinder"
 	"github.com/nicjohnson145/godot/internal/bootstrap"
+	"github.com/nicjohnson145/godot/internal/lib"
 	"github.com/nicjohnson145/godot/internal/builder"
-	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/nicjohnson145/godot/internal/repo"
 	"github.com/nicjohnson145/godot/internal/util"
 )
@@ -21,14 +21,14 @@ const (
 )
 
 type ItemRunner interface {
-	RunSingle(bootstrap.Item) error
-	RunAll([]bootstrap.Item) error
+	RunSingle(lib.Item) error
+	RunAll([]lib.Item) error
 }
 
 type Controller struct {
 	homeDirGetter util.HomeDirGetter
 	repo          repo.Repo
-	config        *config.Config
+	config        *lib.Config
 	builder       *builder.Builder
 	runner        ItemRunner
 }
@@ -41,11 +41,11 @@ func NewController(opts ControllerOpts) *Controller {
 		getter = &util.OSHomeDir{}
 	}
 
-	var conf *config.Config
+	var conf *lib.Config
 	if opts.Config != nil {
 		conf = opts.Config
 	} else {
-		conf = config.NewConfig(getter)
+		conf = lib.NewConfig(getter)
 	}
 
 	var r repo.Repo
@@ -90,7 +90,7 @@ func (c *Controller) targetIsSet(t string) bool {
 }
 
 func (c *Controller) getTarget(t string) string {
-	if t == "" || t == config.CURRENT {
+	if t == "" || t == lib.CURRENT {
 		t = c.config.Target
 	}
 	return t
@@ -132,7 +132,7 @@ func (c *Controller) sync(opts SyncOpts) error {
 	}
 
 	if !opts.NoBootstrap {
-		var allImpls []bootstrap.Item
+		var allImpls []lib.Item
 
 		bsImpls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
 		if err != nil {
@@ -322,7 +322,7 @@ func (c *Controller) targetRemoveFileAll(target string, args []string) error {
 		var errs *multierror.Error
 		for _, target := range c.config.GetAllTargets() {
 			if err := c.config.RemoveTargetFile(target, tmpl); err != nil {
-				if !errors.Is(err, config.NotFoundError) {
+				if !errors.Is(err, lib.NotFoundError) {
 					errs = multierror.Append(errs, err)
 				}
 			}
@@ -393,7 +393,7 @@ func (c *Controller) ListAllBootstrapsForTarget(target string, w io.Writer) erro
 
 func (c *Controller) AddBootstrapItem(item, manager, pkg, location string) error {
 	f := func() error {
-		if !config.IsValidPackageManager(manager) {
+		if !lib.IsValidPackageManager(manager) {
 			return fmt.Errorf("non-supported package manager of %q", manager)
 		}
 
@@ -535,7 +535,7 @@ func (c *Controller) removeTargetBootstrapAll(target string, args []string) erro
 		var errs *multierror.Error
 		for _, target := range c.config.GetAllTargets() {
 			if err := c.config.RemoveTargetBootstrap(target, bootstrap); err != nil {
-				if !errors.Is(err, config.NotFoundError) {
+				if !errors.Is(err, lib.NotFoundError) {
 					errs = multierror.Append(errs, err)
 				}
 			}

@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"github.com/hashicorp/go-multierror"
+	"github.com/nicjohnson145/godot/internal/lib"
 )
 
 type Runner struct{}
@@ -10,7 +11,7 @@ func NewRunner() *Runner {
 	return &Runner{}
 }
 
-func (r Runner) RunAll(items []Item) error {
+func (r Runner) RunAll(items []lib.Item) error {
 	var errs *multierror.Error
 	for _, item := range items {
 		if err := r.runSingleItem(item); err != nil {
@@ -20,11 +21,11 @@ func (r Runner) RunAll(items []Item) error {
 	return errs.ErrorOrNil()
 }
 
-func (r Runner) RunSingle(item Item) error {
+func (r Runner) RunSingle(item lib.Item) error {
 	return r.runSingleItem(item)
 }
 
-func (r Runner) runSingleItem(item Item) error {
+func (r Runner) runSingleItem(item lib.Item) error {
 	// Check if the item is already installed, and bail early
 	installed, err := item.Check()
 	if err != nil {
