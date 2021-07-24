@@ -239,8 +239,8 @@ func SetupDirectories(t *testing.T, target string, managers ...string) (string, 
 		mgrs = managers
 	}
 	bytes, err := json.Marshal(map[string]interface{}{
-		"target": target,
-		"dotfiles_root": dotPath,
+		"target":           target,
+		"dotfiles_root":    dotPath,
 		"package_managers": mgrs,
 	})
 	require.NoError(t, err)

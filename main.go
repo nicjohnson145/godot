@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/nicjohnson145/godot/internal/lib"
+	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/spf13/cobra"
 )
 

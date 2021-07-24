@@ -24,7 +24,7 @@ func TestBootstrapApt(t *testing.T) {
 				},
 			},
 		},
-		Target: "host1",
+		Target:          "host1",
 		PackageManagers: []string{"brew"},
 	})
 	defer paths.Remove()
