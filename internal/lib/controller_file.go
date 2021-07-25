@@ -12,7 +12,7 @@ import (
 	"github.com/nicjohnson145/godot/internal/util"
 )
 
-func (c *Controller) Import(file string, as string) error {
+func (c *Controller) AddFile(file string, as string) error {
 	f := func() error {
 		// import the file into the repo
 		if err := c.builder.Import(file, as); err != nil {
@@ -31,36 +31,36 @@ func (c *Controller) Import(file string, as string) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *Controller) ShowFilesEntry(target string, w io.Writer) error {
+func (c *Controller) ShowFile(target string, w io.Writer) error {
 	f := func() error {
 		if c.targetIsSet(target) {
-			return c.TargetShowFiles(target, w)
+			return c.showTargetFiles(target, w)
 		} else {
-			return c.ListAllFiles(w)
+			return c.showAllFiles(w)
 		}
 	}
 
 	return c.git_pullOnly(f)
 }
 
-func (c *Controller) ListAllFiles(w io.Writer) error {
+func (c *Controller) showAllFiles(w io.Writer) error {
 	return c.config.ListAllFiles(w)
 }
 
-func (c *Controller) TargetShowFiles(target string, w io.Writer) error {
+func (c *Controller) showTargetFiles(target string, w io.Writer) error {
 	target = c.getTarget(target)
 	return c.config.ListTargetFiles(target, w)
 }
 
-func (c *Controller) TargetAddFile(target string, args []string) error {
+func (c *Controller) TargetUseFile(target string, args []string) error {
 	if target != AllTarget {
-		return c.targetAddFileSingle(target, args)
+		return c.targetUseFileSingle(target, args)
 	} else {
-		return c.targetAddFileAll(target, args)
+		return c.targetUseFileAll(target, args)
 	}
 }
 
-func (c *Controller) targetAddFileSingle(target string, args []string) error {
+func (c *Controller) targetUseFileSingle(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 
@@ -84,7 +84,7 @@ func (c *Controller) targetAddFileSingle(target string, args []string) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *Controller) targetAddFileAll(target string, args []string) error {
+func (c *Controller) targetUseFileAll(target string, args []string) error {
 	f := func() error {
 		options := c.config.GetAllTemplateNames()
 		tmpl, err := c.fuzzyOrArgs(args, options)
@@ -113,15 +113,15 @@ func (c *Controller) targetAddFileAll(target string, args []string) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *Controller) TargetRemoveFile(target string, args []string) error {
+func (c *Controller) TargetCeaseFile(target string, args []string) error {
 	if target != AllTarget {
-		return c.targetRemoveFileSingle(target, args)
+		return c.targetCeaseFileSingle(target, args)
 	} else {
-		return c.targetRemoveFileAll(target, args)
+		return c.targetCeaseFileAll(target, args)
 	}
 }
 
-func (c *Controller) targetRemoveFileSingle(target string, args []string) error {
+func (c *Controller) targetCeaseFileSingle(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 
@@ -145,7 +145,7 @@ func (c *Controller) targetRemoveFileSingle(target string, args []string) error 
 	return c.git_pushAndPull(f)
 }
 
-func (c *Controller) targetRemoveFileAll(target string, args []string) error {
+func (c *Controller) targetCeaseFileAll(target string, args []string) error {
 	f := func() error {
 		options := c.config.GetAllTemplateNames()
 		tmpl, err := c.fuzzyOrArgs(args, options)

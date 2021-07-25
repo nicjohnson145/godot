@@ -9,33 +9,33 @@ import (
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
-func (c *Controller) ShowBootstrapsEntry(target string, w io.Writer) error {
+func (c *Controller) ShowBootstrap(target string, w io.Writer) error {
 	f := func() error {
 		if c.targetIsSet(target) {
-			return c.ListAllBootstrapsForTarget(target, w)
+			return c.showBootstrapTarget(target, w)
 		} else {
-			return c.ListAllBootstraps(w)
+			return c.showBootstrapAll(w)
 		}
 	}
 
 	return c.git_pullOnly(f)
 }
 
-func (c *Controller) ListAllBootstraps(w io.Writer) error {
+func (c *Controller) showBootstrapAll(w io.Writer) error {
 	f := func() error {
 		return c.config.ListAllBootstraps(w)
 	}
 	return c.git_pullOnly(f)
 }
 
-func (c *Controller) ListAllBootstrapsForTarget(target string, w io.Writer) error {
+func (c *Controller) showBootstrapTarget(target string, w io.Writer) error {
 	f := func() error {
 		return c.config.ListBootstrapsForTarget(w, c.getTarget(target))
 	}
 	return c.git_pullOnly(f)
 }
 
-func (c *Controller) AddBootstrapItem(item, manager, pkg, location string) error {
+func (c *Controller) AddBootstrap(item, manager, pkg, location string) error {
 	f := func() error {
 		if !IsValidPackageManager(manager) {
 			return fmt.Errorf("non-supported package manager of %q", manager)
@@ -48,15 +48,15 @@ func (c *Controller) AddBootstrapItem(item, manager, pkg, location string) error
 	return c.git_pushAndPull(f)
 }
 
-func (c *Controller) AddTargetBootstrap(target string, args []string) error {
+func (c *Controller) TargetUseBootstrap(target string, args []string) error {
 	if target != AllTarget {
-		return c.addTargetBootstrapSingle(target, args)
+		return c.targetUseSingleBootstrap(target, args)
 	} else {
-		return c.addTargetBootstrapAll(target, args)
+		return c.targetUseBootsrapAll(target, args)
 	}
 }
 
-func (c *Controller) addTargetBootstrapSingle(target string, args []string) error {
+func (c *Controller) targetUseSingleBootstrap(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 
@@ -88,7 +88,7 @@ func (c *Controller) addTargetBootstrapSingle(target string, args []string) erro
 	return c.git_pushAndPull(f)
 }
 
-func (c *Controller) addTargetBootstrapAll(target string, args []string) error {
+func (c *Controller) targetUseBootsrapAll(target string, args []string) error {
 	f := func() error {
 		all := c.config.GetAllBootstraps()
 		if len(all) == 0 {
@@ -125,15 +125,15 @@ func (c *Controller) addTargetBootstrapAll(target string, args []string) error {
 	return c.git_pushAndPull(f)
 }
 
-func (c *Controller) RemoveTargetBootstrap(target string, args []string) error {
+func (c *Controller) TargetCeaseBootstrap(target string, args []string) error {
 	if target != AllTarget {
-		return c.removeTargetBootstrapSingle(target, args)
+		return c.targetCeaseBootstrapSingle(target, args)
 	} else {
-		return c.removeTargetBootstrapAll(target, args)
+		return c.targetCeaseBootstrapAll(target, args)
 	}
 }
 
-func (c *Controller) removeTargetBootstrapSingle(target string, args []string) error {
+func (c *Controller) targetCeaseBootstrapSingle(target string, args []string) error {
 	f := func() error {
 		target = c.getTarget(target)
 		options := c.config.GetBootstrapTargetsForTarget(target)
@@ -156,7 +156,7 @@ func (c *Controller) removeTargetBootstrapSingle(target string, args []string) e
 	return c.git_pushAndPull(f)
 }
 
-func (c *Controller) removeTargetBootstrapAll(target string, args []string) error {
+func (c *Controller) targetCeaseBootstrapAll(target string, args []string) error {
 	f := func() error {
 		all := c.config.GetAllBootstraps()
 		if len(all) == 0 {

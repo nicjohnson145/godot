@@ -136,7 +136,7 @@ func New(dependencies Components) Main {
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := lib.NewController(m.controllerOpts())
-			return c.TargetRemoveFile(m.target, args)
+			return c.TargetCeaseFile(m.target, args)
 		},
 	}
 	m.ceaseBootstrapCmd = &cobra.Command{
@@ -147,7 +147,7 @@ func New(dependencies Components) Main {
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := lib.NewController(m.controllerOpts())
-			return c.RemoveTargetBootstrap(m.target, args)
+			return c.TargetCeaseBootstrap(m.target, args)
 		},
 	}
 	m.ceaseGithubReleaseCmd = &cobra.Command{
@@ -194,7 +194,7 @@ func New(dependencies Components) Main {
 		Long:  "List files managed by godot, if -t/--target is given, only that targets files will be listed",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := lib.NewController(m.controllerOpts())
-			return c.ShowFilesEntry(m.target, cmd.OutOrStdout())
+			return c.ShowFile(m.target, cmd.OutOrStdout())
 		},
 	}
 	m.listBootstrapsCmd = &cobra.Command{
@@ -203,7 +203,7 @@ func New(dependencies Components) Main {
 		Long:  "List bootstrap items managed by godot, if -t/--target is given, only that targets bootstrap items will be listed",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := lib.NewController(m.controllerOpts())
-			return c.ShowBootstrapsEntry(m.target, cmd.OutOrStdout())
+			return c.ShowBootstrap(m.target, cmd.OutOrStdout())
 		},
 	}
 	m.listGithubReleasesCmd = &cobra.Command{
@@ -248,7 +248,7 @@ func New(dependencies Components) Main {
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := lib.NewController(m.controllerOpts())
-			return c.TargetAddFile(m.target, args)
+			return c.TargetUseFile(m.target, args)
 		},
 	}
 	m.useBootstrapCmd = &cobra.Command{
@@ -259,7 +259,7 @@ func New(dependencies Components) Main {
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := lib.NewController(m.controllerOpts())
-			return c.AddTargetBootstrap(m.target, args)
+			return c.TargetUseBootstrap(m.target, args)
 		},
 	}
 	m.useGithubRelease = &cobra.Command{
@@ -305,7 +305,7 @@ func New(dependencies Components) Main {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := lib.NewController(m.controllerOpts())
-			return c.Import(args[0], m.as)
+			return c.AddFile(args[0], m.as)
 		},
 	}
 	m.addBootstrapCmd = &cobra.Command{
@@ -314,7 +314,7 @@ func New(dependencies Components) Main {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c := lib.NewController(m.controllerOpts())
-			return c.AddBootstrapItem(args[0], m.manager, m.name, m.location)
+			return c.AddBootstrap(args[0], m.manager, m.name, m.location)
 		},
 	}
 	m.addCmd.AddCommand(
