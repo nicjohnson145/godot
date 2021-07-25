@@ -4,53 +4,59 @@ import (
 	"os"
 	"strings"
 
-	"github.com/nicjohnson145/godot/internal/config"
-	"github.com/nicjohnson145/godot/internal/controller"
+	"github.com/nicjohnson145/godot/internal/lib"
+	"github.com/nicjohnson145/godot/internal/util"
 	"github.com/spf13/cobra"
 )
 
 func main() {
-	m := New()
+	m := New(lib.ControllerOpts{})
 	if err := m.rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
 type Main struct {
+	dependencies lib.ControllerOpts
+
 	// Flags
-	force       bool
-	noBootstrap bool
-	noGit       bool
-	target      string
-	noSync      bool
-	name        string
-	manager     string
-	location    string
-	as          string
+	force        bool
+	noBootstrap  bool
+	noGit        bool
+	target       string
+	noSync       bool
+	name         string
+	manager      string
+	location     string
+	as           string
+	trackUpdates bool
 
 	// Commands
 	rootCmd *cobra.Command
 
 	// Cease Cmds
-	ceaseCmd          *cobra.Command
-	ceaseFileCmd      *cobra.Command
-	ceaseBootstrapCmd *cobra.Command
+	ceaseCmd              *cobra.Command
+	ceaseFileCmd          *cobra.Command
+	ceaseBootstrapCmd     *cobra.Command
+	ceaseGithubReleaseCmd *cobra.Command
 
 	// Sync Cmds
 	syncCmd *cobra.Command
 
 	// List Cmds
-	listCmd           *cobra.Command
-	listFilesCmd      *cobra.Command
-	listBootstrapsCmd *cobra.Command
+	listCmd               *cobra.Command
+	listFilesCmd          *cobra.Command
+	listBootstrapsCmd     *cobra.Command
+	listGithubReleasesCmd *cobra.Command
 
 	// Edit Cmds
 	editCmd *cobra.Command
 
 	// Use Cmds
-	useCmd          *cobra.Command
-	useFileCmd      *cobra.Command
-	useBootstrapCmd *cobra.Command
+	useCmd           *cobra.Command
+	useFileCmd       *cobra.Command
+	useBootstrapCmd  *cobra.Command
+	useGithubRelease *cobra.Command
 
 	// Add Cmds
 	addCmd          *cobra.Command
@@ -58,8 +64,28 @@ type Main struct {
 	addBootstrapCmd *cobra.Command
 }
 
-func New() Main {
-	m := Main{}
+func New(dependencies lib.ControllerOpts) Main {
+	m := Main{
+		dependencies: dependencies,
+	}
+
+	if m.dependencies.HomeDirGetter == nil {
+		m.dependencies.HomeDirGetter = &util.OSHomeDir{}
+	}
+	if m.dependencies.Config == nil {
+		m.dependencies.Config = lib.NewConfig(m.dependencies.HomeDirGetter)
+	}
+	if m.dependencies.Builder == nil {
+		m.dependencies.Builder = &lib.Builder{
+			Config: m.dependencies.Config,
+		}
+	}
+	if m.dependencies.Runner == nil {
+		m.dependencies.Runner = lib.NewRunner()
+	}
+	if m.dependencies.Repo == nil {
+		m.dependencies.Repo = lib.NewShellGitRepo(m.dependencies.Config.DotfilesRoot)
+	}
 
 	// Root cmd
 	m.rootCmd = &cobra.Command{
@@ -83,10 +109,10 @@ func New() Main {
 		&m.target,
 		"target",
 		"",
-		"Apply the command to the given target, not supplying a value (i.e --target vs --target=a), will result in the current target being used. " +
-		"The special value of 'ALL' will apply the change to all available targets",
+		"Apply the command to the given target, not supplying a value (i.e --target vs --target=a), will result in the current target being used. "+
+			"The special value of 'ALL' will apply the change to all available targets",
 	)
-	m.rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = config.CURRENT
+	m.rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = lib.CURRENT
 
 	// Cease Cmds
 	m.ceaseCmd = &cobra.Command{
@@ -100,8 +126,8 @@ func New() Main {
 			"open. If no target is given, the current target will be used",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.TargetRemoveFile(m.target, args)
+			c := lib.NewController(m.controllerOpts())
+			return c.TargetCeaseFile(m.target, args)
 		},
 	}
 	m.ceaseBootstrapCmd = &cobra.Command{
@@ -111,13 +137,26 @@ func New() Main {
 			"selection prompt wil open. If no target is given, the current target will be used",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.RemoveTargetBootstrap(m.target, args)
+			c := lib.NewController(m.controllerOpts())
+			return c.TargetCeaseBootstrap(m.target, args)
+		},
+	}
+	m.ceaseGithubReleaseCmd = &cobra.Command{
+		Use:     "github-release <ghr>",
+		Aliases: []string{"ghr"},
+		Short:   "Remove a github release from a target",
+		Long: "Remove a github release from a target. If a release name is not given, a prompt " +
+			"will open. If no target is given, the current target will be used.",
+		Args: cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c := lib.NewController(m.controllerOpts())
+			return c.TargetCeaseGithubRelease(m.target, args)
 		},
 	}
 	m.ceaseCmd.AddCommand(
 		m.ceaseBootstrapCmd,
 		m.ceaseFileCmd,
+		m.ceaseGithubReleaseCmd,
 	)
 
 	// Sync Cmds
@@ -126,8 +165,8 @@ func New() Main {
 		Short: "Build and symlink dotfiles",
 		Long:  "Compile templates, symlink them to their final destinations, install configured bootstraps",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.Sync(controller.SyncOpts{Force: m.force, NoBootstrap: m.noBootstrap})
+			c := lib.NewController(m.controllerOpts())
+			return c.Sync(lib.SyncOpts{Force: m.force, NoBootstrap: m.noBootstrap})
 		},
 	}
 	// Sync Flags
@@ -145,8 +184,8 @@ func New() Main {
 		Short: "List files managed by godot",
 		Long:  "List files managed by godot, if -t/--target is given, only that targets files will be listed",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.ShowFilesEntry(m.target, os.Stdout)
+			c := lib.NewController(m.controllerOpts())
+			return c.ShowFile(m.target, cmd.OutOrStdout())
 		},
 	}
 	m.listBootstrapsCmd = &cobra.Command{
@@ -154,13 +193,24 @@ func New() Main {
 		Short: "List bootstrap items managed by godot",
 		Long:  "List bootstrap items managed by godot, if -t/--target is given, only that targets bootstrap items will be listed",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.ShowBootstrapsEntry(m.target, os.Stdout)
+			c := lib.NewController(m.controllerOpts())
+			return c.ShowBootstrap(m.target, cmd.OutOrStdout())
+		},
+	}
+	m.listGithubReleasesCmd = &cobra.Command{
+		Use:     "github-release",
+		Aliases: []string{"ghr"},
+		Short:   "List github releases managed by godot",
+		Long:    "List github releases managed by godot, if -t/--target is given, only that targets in-use releases items will be listed",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c := lib.NewController(m.controllerOpts())
+			return c.ShowGithubRelease(m.target, cmd.OutOrStdout())
 		},
 	}
 	m.listCmd.AddCommand(
 		m.listFilesCmd,
 		m.listBootstrapsCmd,
+		m.listGithubReleasesCmd,
 	)
 
 	// Edit Cmd
@@ -170,8 +220,8 @@ func New() Main {
 		Long:  "Edit a file managed by godot, if no file is suppled a prompt will be displayed",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.EditFile(args, controller.EditOpts{NoSync: m.noSync})
+			c := lib.NewController(m.controllerOpts())
+			return c.EditFile(args, lib.EditOpts{NoSync: m.noSync})
 		},
 	}
 	m.editCmd.Flags().BoolVarP(&m.noSync, "no-sync", "s", false, "Do not issue a sync after editing")
@@ -188,8 +238,8 @@ func New() Main {
 			"open. If no target is given, the current target will be used",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.TargetAddFile(m.target, args)
+			c := lib.NewController(m.controllerOpts())
+			return c.TargetUseFile(m.target, args)
 		},
 	}
 	m.useBootstrapCmd = &cobra.Command{
@@ -199,13 +249,39 @@ func New() Main {
 			"selection prompt wil open. If no target is given, the current target will be used",
 		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.AddTargetBootstrap(m.target, args)
+			c := lib.NewController(m.controllerOpts())
+			return c.TargetUseBootstrap(m.target, args)
 		},
 	}
+	m.useGithubRelease = &cobra.Command{
+		Use:     "github-release <ghr>",
+		Aliases: []string{"ghr"},
+		Short:   "Add a github release to a target",
+		Long:    "Add a github release to a target. If no target is given, the current target will be used.",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c := lib.NewController(m.controllerOpts())
+			return c.TargetUseGithubRelease(m.target, args[0], m.location, m.trackUpdates)
+		},
+	}
+	//m.useGithubRelease.Flags().BoolVarP(
+	//    &m.trackUpdates,
+	//    "track-updates",
+	//    "u",
+	//    true,
+	//    "If new updates are found, get them. (Default: true)",
+	//)
+	m.useGithubRelease.Flags().StringVarP(
+		&m.location,
+		"location",
+		"l",
+		"",
+		"The location to place the resulting binary. (Default: ~/bin)",
+	)
 	m.useCmd.AddCommand(
 		m.useFileCmd,
 		m.useBootstrapCmd,
+		m.useGithubRelease,
 	)
 
 	// Add Cmds
@@ -219,8 +295,8 @@ func New() Main {
 		Short: "Add a file",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.Import(args[0], m.as)
+			c := lib.NewController(m.controllerOpts())
+			return c.AddFile(args[0], m.as)
 		},
 	}
 	m.addBootstrapCmd = &cobra.Command{
@@ -228,8 +304,8 @@ func New() Main {
 		Short: "Add a bootstrap item",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			c := controller.NewController(controller.ControllerOpts{NoGit: m.noGit})
-			return c.AddBootstrapItem(args[0], m.manager, m.name, m.location)
+			c := lib.NewController(m.controllerOpts())
+			return c.AddBootstrap(args[0], m.manager, m.name, m.location)
 		},
 	}
 	m.addCmd.AddCommand(
@@ -255,7 +331,7 @@ func New() Main {
 		"manager",
 		"m",
 		"",
-		"The name of the package manager, one of "+strings.Join(config.ValidManagers, ", "),
+		"The name of the package manager, one of "+strings.Join(lib.ValidManagers, ", "),
 	)
 	m.addBootstrapCmd.MarkFlagRequired("manager")
 	m.addBootstrapCmd.Flags().StringVarP(
@@ -276,4 +352,9 @@ func New() Main {
 	)
 
 	return m
+}
+
+func (m Main) controllerOpts() lib.ControllerOpts {
+	m.dependencies.NoGit = m.noGit
+	return m.dependencies
 }

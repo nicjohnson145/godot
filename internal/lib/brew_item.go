@@ -1,9 +1,11 @@
-package bootstrap
+package lib
 
 import (
 	"github.com/nicjohnson145/godot/internal/help"
-	"github.com/nicjohnson145/godot/internal/bootstrap/brewcache"
+	"github.com/nicjohnson145/godot/internal/lib/brewcache"
 )
+
+var _ Item = (*brewItem)(nil)
 
 type brewItem struct {
 	Name string

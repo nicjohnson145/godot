@@ -1,4 +1,4 @@
-package builder
+package lib
 
 import (
 	"errors"
@@ -8,19 +8,14 @@ import (
 	"path/filepath"
 
 	"github.com/hashicorp/go-multierror"
-	"github.com/nicjohnson145/godot/internal/config"
-	"github.com/nicjohnson145/godot/internal/file"
 	"github.com/nicjohnson145/godot/internal/util"
 )
 
 type Builder struct {
-	Getter util.HomeDirGetter
-	Config *config.Config
+	Config *Config
 }
 
 func (b *Builder) Build(force bool) error {
-	b.ensureConfig()
-
 	vars := b.makeTemplateVars()
 
 	// Before clearing the build directory, make sure nothing is going to error out, i.e fail safe
@@ -43,6 +38,7 @@ func (b *Builder) Build(force bool) error {
 		err = fl.Render(dir, vars, force)
 		if err != nil {
 			errs = multierror.Append(errs, fmt.Errorf("rendering: %w", err))
+			continue
 		}
 
 		err = fl.Symlink(dir)
@@ -54,10 +50,10 @@ func (b *Builder) Build(force bool) error {
 	return errs.ErrorOrNil()
 }
 
-func (b *Builder) buildFileObjs(m config.StringMap) []file.File {
-	files := make([]file.File, 0, len(m))
+func (b *Builder) buildFileObjs(m StringMap) []File {
+	files := make([]File, 0, len(m))
 	for tmpl, dest := range m {
-		files = append(files, file.File{
+		files = append(files, File{
 			TemplatePath:    filepath.Join(b.Config.TemplateRoot, tmpl),
 			DestinationPath: util.ReplacePrefix(dest, "~/", b.Config.Home),
 		})
@@ -65,17 +61,11 @@ func (b *Builder) buildFileObjs(m config.StringMap) []file.File {
 	return files
 }
 
-func (b *Builder) makeTemplateVars() file.TemplateVars {
-	return file.TemplateVars{
+func (b *Builder) makeTemplateVars() TemplateVars {
+	return TemplateVars{
 		Target:     b.Config.Target,
 		Submodules: filepath.Join(b.Config.DotfilesRoot, "submodules"),
 		Home:       b.Config.Home,
-	}
-}
-
-func (b *Builder) ensureConfig() {
-	if b.Config == nil {
-		b.Config = config.NewConfig(b.Getter)
 	}
 }
 
@@ -90,8 +80,6 @@ func (b *Builder) ensureBuildDir() (string, error) {
 }
 
 func (b *Builder) Import(path string, as string) error {
-	b.ensureConfig()
-
 	readData := true
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		readData = false

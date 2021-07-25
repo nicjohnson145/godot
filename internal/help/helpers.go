@@ -2,6 +2,7 @@ package help
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -218,7 +219,7 @@ func SetupFullConfig(t *testing.T, target string, data *string) (string, string,
 	return home, dotPath, remove
 }
 
-func SetupDirectories(t *testing.T, target string) (string, string, func()) {
+func SetupDirectories(t *testing.T, target string, managers ...string) (string, string, func()) {
 	t.Helper()
 
 	home, remove := CreateTempDir(t, "home")
@@ -233,15 +234,17 @@ func SetupDirectories(t *testing.T, target string) (string, string, func()) {
 	if err != nil {
 		t.Errorf("error making dir, %v", err)
 	}
-	WriteConfig(t, home, fmt.Sprintf(
-		`{
-			"target": "%v",
-			"dotfiles_root": "%v",
-			"package_managers": ["apt", "git"]
-		}`,
-		target,
-		dotPath,
-	))
+	mgrs := []string{"apt", "git"}
+	if len(managers) != 0 {
+		mgrs = managers
+	}
+	bytes, err := json.Marshal(map[string]interface{}{
+		"target":           target,
+		"dotfiles_root":    dotPath,
+		"package_managers": mgrs,
+	})
+	require.NoError(t, err)
+	WriteConfig(t, home, string(bytes))
 
 	return home, dotPath, remove
 }

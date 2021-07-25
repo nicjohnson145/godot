@@ -1,10 +1,12 @@
-package bootstrap
+package lib
 
 import (
 	"fmt"
 
 	"github.com/nicjohnson145/godot/internal/help"
 )
+
+var _ Item = (*aptItem)(nil)
 
 type aptItem struct {
 	Name string
