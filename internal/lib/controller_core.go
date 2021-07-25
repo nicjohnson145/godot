@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"github.com/hashicorp/go-multierror"
 	"github.com/ktr0731/go-fuzzyfinder"
 	"github.com/nicjohnson145/godot/internal/util"
 )
@@ -83,4 +84,17 @@ func (c *Controller) fuzzyOrArgs(args []string, options []string) (string, error
 
 func (c *Controller) write() error {
 	return c.config.Write()
+}
+
+func (c *Controller) handleMultiError(errs *multierror.Error, err error) bool {
+	if err != nil {
+		if merr, ok := err.(*multierror.Error); ok {
+			for _, e := range merr.Errors {
+				errs = multierror.Append(errs, e)
+			}
+		} else {
+			errs = multierror.Append(errs, err)
+		}
+	}
+	return err != nil
 }

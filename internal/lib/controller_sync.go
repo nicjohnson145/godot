@@ -23,39 +23,20 @@ func (c *Controller) sync(opts SyncOpts) error {
 		var allImpls []Item
 
 		bsImpls, err := c.config.GetRelevantBootstrapImpls(c.config.Target)
-		if err != nil {
-			if merr, ok := err.(*multierror.Error); ok {
-				for _, e := range merr.Errors {
-					errs = multierror.Append(errs, e)
-				}
-			} else {
-				errs = multierror.Append(errs, err)
-			}
-			return errs.ErrorOrNil()
+		if c.handleMultiError(errs, err) {
+			return errs
 		}
 		allImpls = append(allImpls, bsImpls...)
 
 		ghrImpls, err := c.config.GetGithubReleaseImplForTarget(c.config.Target)
-		if err != nil {
-			if merr, ok := err.(*multierror.Error); ok {
-				for _, e := range merr.Errors {
-					errs = multierror.Append(errs, e)
-				}
-			} else {
-				errs = multierror.Append(errs, err)
-			}
-			return errs.ErrorOrNil()
+		if c.handleMultiError(errs, err) {
+			return errs
 		}
 		allImpls = append(allImpls, ghrImpls...)
 
-		if err := c.runner.RunAll(allImpls); err != nil {
-			if merr, ok := err.(*multierror.Error); ok {
-				for _, e := range merr.Errors {
-					errs = multierror.Append(errs, e)
-				}
-			} else {
-				errs = multierror.Append(errs, err)
-			}
+		err = c.runner.RunAll(allImpls)
+		if c.handleMultiError(errs, err) {
+			return errs
 		}
 	}
 
