@@ -74,7 +74,7 @@ func (c *Controller) targetUseFileSingle(target string, args []string) error {
 			return err
 		}
 
-		if err := c.config.AddTargetFile(target, tmpl); err != nil {
+		if err := c.config.TargetUseFile(target, tmpl); err != nil {
 			return err
 		}
 
@@ -98,7 +98,7 @@ func (c *Controller) targetUseFileAll(target string, args []string) error {
 
 		var errs *multierror.Error
 		for _, target := range c.config.GetAllTargets() {
-			if err := c.config.AddTargetFile(target, tmpl); err != nil {
+			if err := c.config.TargetUseFile(target, tmpl); err != nil {
 				errs = multierror.Append(errs, err)
 			}
 		}
@@ -135,7 +135,7 @@ func (c *Controller) targetCeaseFileSingle(target string, args []string) error {
 			return err
 		}
 
-		if err := c.config.RemoveTargetFile(target, tmpl); err != nil {
+		if err := c.config.TargetCeaseFile(target, tmpl); err != nil {
 			return err
 		}
 
@@ -159,7 +159,7 @@ func (c *Controller) targetCeaseFileAll(target string, args []string) error {
 
 		var errs *multierror.Error
 		for _, target := range c.config.GetAllTargets() {
-			if err := c.config.RemoveTargetFile(target, tmpl); err != nil {
+			if err := c.config.TargetCeaseFile(target, tmpl); err != nil {
 				if !errors.Is(err, NotFoundError) {
 					errs = multierror.Append(errs, err)
 				}

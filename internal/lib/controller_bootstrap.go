@@ -41,7 +41,7 @@ func (c *Controller) AddBootstrap(item, manager, pkg, location string) error {
 			return fmt.Errorf("non-supported package manager of %q", manager)
 		}
 
-		c.config.AddBootstrapItem(item, manager, pkg, location)
+		c.config.AddBootstrap(item, manager, pkg, location)
 		return c.write()
 	}
 
@@ -78,7 +78,7 @@ func (c *Controller) targetUseSingleBootstrap(target string, args []string) erro
 			return err
 		}
 
-		if err := c.config.AddTargetBootstrap(target, bootstrap); err != nil {
+		if err := c.config.TargetUseBootstrap(target, bootstrap); err != nil {
 			return err
 		}
 
@@ -110,7 +110,7 @@ func (c *Controller) targetUseBootsrapAll(target string, args []string) error {
 
 		var errs *multierror.Error
 		for _, target := range c.config.GetAllTargets() {
-			if err := c.config.AddTargetBootstrap(target, bootstrap); err != nil {
+			if err := c.config.TargetUseBootstrap(target, bootstrap); err != nil {
 				errs = multierror.Append(errs, err)
 			}
 		}
@@ -146,7 +146,7 @@ func (c *Controller) targetCeaseBootstrapSingle(target string, args []string) er
 			return err
 		}
 
-		if err := c.config.RemoveTargetBootstrap(target, bootstrap); err != nil {
+		if err := c.config.TargetCeaseBootstrap(target, bootstrap); err != nil {
 			return err
 		}
 
@@ -178,7 +178,7 @@ func (c *Controller) targetCeaseBootstrapAll(target string, args []string) error
 
 		var errs *multierror.Error
 		for _, target := range c.config.GetAllTargets() {
-			if err := c.config.RemoveTargetBootstrap(target, bootstrap); err != nil {
+			if err := c.config.TargetCeaseBootstrap(target, bootstrap); err != nil {
 				if !errors.Is(err, NotFoundError) {
 					errs = multierror.Append(errs, err)
 				}

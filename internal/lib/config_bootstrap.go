@@ -116,7 +116,7 @@ func (c *Config) bootstrapToStringMap(m map[string]Bootstrap) StringMap {
 	return new
 }
 
-func (c *Config) AddBootstrapItem(item, manager, pkg, location string) {
+func (c *Config) AddBootstrap(item, manager, pkg, location string) {
 	itemMap, ok := c.content.Bootstraps[item]
 	if !ok {
 		itemMap = make(map[string]BootstrapItem)
@@ -130,7 +130,7 @@ func (c *Config) isValidBootstrap(name string) bool {
 	return ok
 }
 
-func (c *Config) AddTargetBootstrap(target string, name string) error {
+func (c *Config) TargetUseBootstrap(target string, name string) error {
 	if !c.isValidBootstrap(name) {
 		return fmt.Errorf("Unknown bootstrap item of %q", name)
 	}
@@ -144,7 +144,7 @@ func (c *Config) AddTargetBootstrap(target string, name string) error {
 	return nil
 }
 
-func (c *Config) RemoveTargetBootstrap(target string, name string) error {
+func (c *Config) TargetCeaseBootstrap(target string, name string) error {
 	if target == "" {
 		target = c.Target
 	}

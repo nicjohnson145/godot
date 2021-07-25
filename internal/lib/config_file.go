@@ -45,7 +45,7 @@ func (c *Config) AddFile(template string, destination string) (string, error) {
 	return template, nil
 }
 
-func (c *Config) AddTargetFile(target string, name string) error {
+func (c *Config) TargetUseFile(target string, name string) error {
 	if !c.IsKnownFile(name) {
 		return fmt.Errorf("Unknown template of %q", name)
 	}
@@ -58,7 +58,7 @@ func (c *Config) AddTargetFile(target string, name string) error {
 	return nil
 }
 
-func (c *Config) RemoveTargetFile(target string, name string) error {
+func (c *Config) TargetCeaseFile(target string, name string) error {
 	host, ok := c.content.Hosts[target]
 	if !ok {
 		return fmt.Errorf("unknown target %q", target)
