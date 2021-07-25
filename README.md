@@ -16,13 +16,14 @@ godot depends on 2 distinct configuration files.
 
 ### ~/.config/godot/config.json
 
-This config contains only 2 values
+This config contains the following values
 
 Value | Meaning | Optional
 ------|---------|---------
 target | This is the "name" of this computer, used to track what files it will recieve | True, defaults to current hostname
 dotfiles_root | The root of the repository godot should use to look for templates and manage its settings | True, defaults to `~/dotfiles`
 package_managers | What installation methods should attempt to be used when bootstrapping, valid values are `apt`, `brew`, `git` | True, will try to infer package manager from `GOOS`
+github_user | Used to authenticate to the GitHub API for downloading releases | True, although without auth, failures rate limiting is likely
 
 Example:
 
@@ -30,7 +31,8 @@ Example:
 {
     "target": "desktop",
     "dotfiles_root": "/home/njohnson/my_dotfiles",
-    "package_maanagers": ["apt", "git"]
+    "package_managers": ["apt", "git"],
+    "github_user": "nicjohnson145"
 }
 ```
 
@@ -57,6 +59,13 @@ it was unable to install `ripgrep`, as the only configured option was unavailabl
 
 Since `apt get install <blarg>` requires elevated permissions, godot requires that the user can run
 at minimum `sudo apt install` without a password prompt
+
+#### A note about github releases
+
+In order to avoid Github API rate limiting, the `github_user` value in `config.json` should be
+populated, and the `GITHUB_PAT` environment variable should be set. This will drastically increase
+the amount of requests per hour available. Instructions for generating a PAT (Personal Access Token)
+can be found [here](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)
 
 ## Templating
 
