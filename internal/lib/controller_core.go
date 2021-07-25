@@ -28,54 +28,12 @@ type ControllerOpts struct {
 }
 
 func NewController(opts ControllerOpts) *Controller {
-	var getter util.HomeDirGetter
-	if opts.HomeDirGetter != nil {
-		getter = opts.HomeDirGetter
-	} else {
-		getter = &util.OSHomeDir{}
-	}
-
-	var conf *Config
-	if opts.Config != nil {
-		conf = opts.Config
-	} else {
-		conf = NewConfig(getter)
-	}
-
-	var r Repo
-	if opts.Repo != nil {
-		r = opts.Repo
-	} else {
-		if opts.NoGit {
-			r = NoopRepo{}
-		} else {
-			r = NewShellGitRepo(conf.DotfilesRoot)
-		}
-	}
-
-	var b *Builder
-	if opts.Builder != nil {
-		b = opts.Builder
-	} else {
-		b = &Builder{
-			Getter: getter,
-			Config: conf,
-		}
-	}
-
-	var rn ItemRunner
-	if opts.Runner != nil {
-		rn = opts.Runner
-	} else {
-		rn = NewRunner()
-	}
-
 	return &Controller{
-		homeDirGetter: getter,
-		config:        conf,
-		repo:          r,
-		builder:       b,
-		runner:        rn,
+		homeDirGetter: opts.HomeDirGetter,
+		config:        opts.Config,
+		repo:          opts.Repo,
+		builder:       opts.Builder,
+		runner:        opts.Runner,
 	}
 }
 

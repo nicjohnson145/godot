@@ -24,7 +24,7 @@ type Paths struct {
 	Remove   func()
 }
 
-func setupConfigs(t *testing.T, setup Setup) (Paths, Components) {
+func setupConfigs(t *testing.T, setup Setup) (Paths, lib.ControllerOpts) {
 	t.Helper()
 
 	home, dotpath, remove := help.SetupDirectories(t, setup.Target, setup.PackageManagers...)
@@ -36,7 +36,7 @@ func setupConfigs(t *testing.T, setup Setup) (Paths, Components) {
 		help.WriteData(t, filepath.Join(dotpath, "templates", tmp), content)
 	}
 
-	o := Components{
+	o := lib.ControllerOpts{
 		HomeDirGetter: &help.TempHomeDir{HomeDir: home},
 		Repo:          lib.NoopRepo{},
 	}
@@ -49,7 +49,7 @@ func setupConfigs(t *testing.T, setup Setup) (Paths, Components) {
 	return p, o
 }
 
-func runCmd(t *testing.T, opts Components, args ...string) (*bytes.Buffer, *bytes.Buffer, error) {
+func runCmd(t *testing.T, opts lib.ControllerOpts, args ...string) (*bytes.Buffer, *bytes.Buffer, error) {
 	t.Helper()
 
 	stdOut := new(bytes.Buffer)

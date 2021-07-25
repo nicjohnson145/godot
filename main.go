@@ -10,22 +10,14 @@ import (
 )
 
 func main() {
-	m := New(Components{})
+	m := New(lib.ControllerOpts{})
 	if err := m.rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }
 
-type Components struct {
-	HomeDirGetter util.HomeDirGetter
-	Repo          lib.Repo
-	Config        *lib.Config
-	Builder       *lib.Builder
-	Runner        lib.ItemRunner
-}
-
 type Main struct {
-	dependencies Components
+	dependencies lib.ControllerOpts
 
 	// Flags
 	force        bool
@@ -72,7 +64,7 @@ type Main struct {
 	addBootstrapCmd *cobra.Command
 }
 
-func New(dependencies Components) Main {
+func New(dependencies lib.ControllerOpts) Main {
 	m := Main{
 		dependencies: dependencies,
 	}
@@ -364,12 +356,6 @@ func New(dependencies Components) Main {
 }
 
 func (m Main) controllerOpts() lib.ControllerOpts {
-	return lib.ControllerOpts{
-		HomeDirGetter: m.dependencies.HomeDirGetter,
-		Repo:          m.dependencies.Repo,
-		Config:        m.dependencies.Config,
-		Builder:       m.dependencies.Builder,
-		Runner:        m.dependencies.Runner,
-		NoGit:         m.noGit,
-	}
+	m.dependencies.NoGit = m.noGit
+	return m.dependencies
 }
