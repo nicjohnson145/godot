@@ -1,4 +1,4 @@
-.PHONY: build test
+.PHONY: %
 
 test: basic_tests apt_integration brew_integration
 
@@ -13,6 +13,3 @@ brew_integration:
 	docker build -t brew_integration . -f brew_item_integration.Dockerfile
 	docker run --rm brew_integration
 
-build:
-	rm -rf build/*
-	./build.sh
