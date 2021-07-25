@@ -77,7 +77,6 @@ func New(dependencies lib.ControllerOpts) Main {
 	}
 	if m.dependencies.Builder == nil {
 		m.dependencies.Builder = &lib.Builder{
-			Getter: m.dependencies.HomeDirGetter,
 			Config: m.dependencies.Config,
 		}
 	}

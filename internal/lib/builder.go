@@ -12,13 +12,10 @@ import (
 )
 
 type Builder struct {
-	Getter util.HomeDirGetter
 	Config *Config
 }
 
 func (b *Builder) Build(force bool) error {
-	b.ensureConfig()
-
 	vars := b.makeTemplateVars()
 
 	// Before clearing the build directory, make sure nothing is going to error out, i.e fail safe
@@ -72,12 +69,6 @@ func (b *Builder) makeTemplateVars() TemplateVars {
 	}
 }
 
-func (b *Builder) ensureConfig() {
-	if b.Config == nil {
-		b.Config = NewConfig(b.Getter)
-	}
-}
-
 func (b *Builder) ensureBuildDir() (string, error) {
 	buildDir := filepath.Join(b.Config.DotfilesRoot, "build")
 	err := os.RemoveAll(buildDir)
@@ -89,8 +80,6 @@ func (b *Builder) ensureBuildDir() (string, error) {
 }
 
 func (b *Builder) Import(path string, as string) error {
-	b.ensureConfig()
-
 	readData := true
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		readData = false
