@@ -64,7 +64,7 @@ func (b *Builder) buildFileObjs(m StringMap) []File {
 func (b *Builder) makeTemplateVars() TemplateVars {
 	return TemplateVars{
 		Target:     b.Config.Target,
-		Submodules: filepath.Join(b.Config.DotfilesRoot, "submodules"),
+		Submodules: filepath.Join(b.Config.DotfilesRoot, Submodules),
 		Home:       b.Config.Home,
 	}
 }

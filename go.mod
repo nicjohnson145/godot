@@ -3,6 +3,7 @@ module github.com/nicjohnson145/godot
 go 1.15
 
 require (
+	github.com/go-git/go-git/v5 v5.2.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/jinzhu/copier v0.2.4
 	github.com/ktr0731/go-fuzzyfinder v0.3.2

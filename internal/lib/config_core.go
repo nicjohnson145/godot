@@ -77,6 +77,10 @@ func (c *Config) parseUserConfig() {
 	if len(config.PackageManagers) != 0 {
 		c.PackageManagers = config.PackageManagers
 	}
+
+	if config.GithubUser != "" {
+		c.GithubUser = config.GithubUser
+	}
 }
 
 func (c *Config) readRepoConfig() {

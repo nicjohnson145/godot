@@ -84,7 +84,11 @@ func New(dependencies lib.ControllerOpts) Main {
 		m.dependencies.Runner = lib.NewRunner()
 	}
 	if m.dependencies.Repo == nil {
-		m.dependencies.Repo = lib.NewShellGitRepo(m.dependencies.Config.DotfilesRoot)
+		// m.dependencies.Repo = lib.NewShellGitRepo(m.dependencies.Config.DotfilesRoot)
+		m.dependencies.Repo = lib.PureGoRepo{
+			Path: m.dependencies.Config.DotfilesRoot,
+			User: m.dependencies.Config.GithubUser,
+		}
 	}
 
 	// Root cmd

@@ -13,6 +13,7 @@ const (
 	BinaryOnly      = "binary_only"
 	DefaultLocation = "~/bin"
 	AllTarget       = "ALL"
+	Submodules      = "submodules"
 )
 
 var ValidManagers = []string{APT, BREW, GIT}
@@ -27,7 +28,7 @@ type Config struct {
 	repoConfig      string     // Path to repo config, we'll need to rewrite it often
 	Home            string     // Users home directory
 	PackageManagers []string   // Available package managers, in order of preference
-	githubUser      string     // User to authenticate with when downloading github releases through API
+	GithubUser      string     // User to authenticate with when downloading github releases through API
 }
 
 type StringMap map[string]string

@@ -188,8 +188,8 @@ func (c *Config) GetGithubReleaseImplForTarget(target string) ([]Item, error) {
 		if ghr.Location == "" {
 			ghr.Location = util.ReplacePrefix(DefaultLocation, "~/", c.Home)
 		}
-		if c.githubUser != "" {
-			ghr.GithubUser = c.githubUser
+		if c.GithubUser != "" {
+			ghr.GithubUser = c.GithubUser
 		}
 
 		impls = append(impls, ghr)
