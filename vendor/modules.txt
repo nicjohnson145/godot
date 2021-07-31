@@ -1,6 +1,8 @@
 # github.com/Microsoft/go-winio v0.4.15
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
+# github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e
+github.com/chzyer/readline
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/emirpasic/gods v1.12.0
@@ -79,6 +81,9 @@ github.com/jbenet/go-context/io
 # github.com/jinzhu/copier v0.2.4
 ## explicit
 github.com/jinzhu/copier
+# github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a
+github.com/juju/ansiterm
+github.com/juju/ansiterm/tabwriter
 # github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351
 github.com/kevinburke/ssh_config
 # github.com/ktr0731/go-fuzzyfinder v0.3.2
@@ -86,6 +91,17 @@ github.com/kevinburke/ssh_config
 github.com/ktr0731/go-fuzzyfinder
 github.com/ktr0731/go-fuzzyfinder/matching
 github.com/ktr0731/go-fuzzyfinder/scoring
+# github.com/lunixbochs/vtclean v0.0.0-20180621232353-2d01aacdc34a
+github.com/lunixbochs/vtclean
+# github.com/manifoldco/promptui v0.8.0
+## explicit
+github.com/manifoldco/promptui
+github.com/manifoldco/promptui/list
+github.com/manifoldco/promptui/screenbuf
+# github.com/mattn/go-colorable v0.1.8
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.12
+github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.10
 github.com/mattn/go-runewidth
 # github.com/mitchellh/go-homedir v1.1.0

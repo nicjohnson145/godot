@@ -60,6 +60,6 @@ func runCmd(t *testing.T, opts lib.ControllerOpts, args ...string) (*bytes.Buffe
 	main.rootCmd.SetErr(stdErr)
 	main.rootCmd.SetArgs(args)
 
-	_, err := main.rootCmd.ExecuteC()
+	err := main.rootCmd.Execute()
 	return stdOut, stdErr, err
 }

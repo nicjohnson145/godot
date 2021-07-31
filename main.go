@@ -34,6 +34,9 @@ type Main struct {
 	// Commands
 	rootCmd *cobra.Command
 
+	// Initialization
+	initCmd *cobra.Command
+
 	// Cease Cmds
 	ceaseCmd              *cobra.Command
 	ceaseFileCmd          *cobra.Command
@@ -69,28 +72,6 @@ func New(dependencies lib.ControllerOpts) Main {
 		dependencies: dependencies,
 	}
 
-	if m.dependencies.HomeDirGetter == nil {
-		m.dependencies.HomeDirGetter = &util.OSHomeDir{}
-	}
-	if m.dependencies.Config == nil {
-		m.dependencies.Config = lib.NewConfig(m.dependencies.HomeDirGetter)
-	}
-	if m.dependencies.Builder == nil {
-		m.dependencies.Builder = &lib.Builder{
-			Config: m.dependencies.Config,
-		}
-	}
-	if m.dependencies.Runner == nil {
-		m.dependencies.Runner = lib.NewRunner()
-	}
-	if m.dependencies.Repo == nil {
-		// m.dependencies.Repo = lib.NewShellGitRepo(m.dependencies.Config.DotfilesRoot)
-		m.dependencies.Repo = lib.PureGoRepo{
-			Path: m.dependencies.Config.DotfilesRoot,
-			User: m.dependencies.Config.GithubUser,
-		}
-	}
-
 	// Root cmd
 	m.rootCmd = &cobra.Command{
 		Use:   "godot",
@@ -98,6 +79,9 @@ func New(dependencies lib.ControllerOpts) Main {
 		Long:  "A staticly linked dotfiles manager written in Go",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			cmd.SilenceUsage = true
+			if cmd != m.initCmd {
+				m.setDependencies()
+			}
 		},
 	}
 
@@ -117,6 +101,29 @@ func New(dependencies lib.ControllerOpts) Main {
 			"The special value of 'ALL' will apply the change to all available targets",
 	)
 	m.rootCmd.PersistentFlags().Lookup("target").NoOptDefVal = lib.CURRENT
+
+	// Init Command
+	m.initCmd = &cobra.Command{
+		Use:   "init",
+		Short: "Initialize godot",
+		Long:  "Initialize the required configuration for godot",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var getter util.HomeDirGetter
+			if m.dependencies.HomeDirGetter == nil {
+				getter = &util.OSHomeDir{}
+			} else {
+				getter = m.dependencies.HomeDirGetter
+			}
+
+			return lib.Init(lib.InitOpts{
+				HomeDirGetter: getter,
+			})
+		},
+	}
+	m.initCmd.Flags().BoolVarP(&m.force, "force", "f", false, "Force re-initialization if configuration is already present")
+	m.rootCmd.AddCommand(
+		m.initCmd,
+	)
 
 	// Cease Cmds
 	m.ceaseCmd = &cobra.Command{
@@ -358,7 +365,30 @@ func New(dependencies lib.ControllerOpts) Main {
 	return m
 }
 
-func (m Main) controllerOpts() lib.ControllerOpts {
+func (m *Main) controllerOpts() lib.ControllerOpts {
 	m.dependencies.NoGit = m.noGit
 	return m.dependencies
+}
+
+func (m *Main) setDependencies() {
+	if m.dependencies.HomeDirGetter == nil {
+		m.dependencies.HomeDirGetter = &util.OSHomeDir{}
+	}
+	if m.dependencies.Config == nil {
+		m.dependencies.Config = lib.NewConfig(m.dependencies.HomeDirGetter)
+	}
+	if m.dependencies.Builder == nil {
+		m.dependencies.Builder = &lib.Builder{
+			Config: m.dependencies.Config,
+		}
+	}
+	if m.dependencies.Runner == nil {
+		m.dependencies.Runner = lib.NewRunner()
+	}
+	if m.dependencies.Repo == nil {
+		m.dependencies.Repo = lib.PureGoRepo{
+			Path: m.dependencies.Config.DotfilesRoot,
+			User: m.dependencies.Config.GithubUser,
+		}
+	}
 }

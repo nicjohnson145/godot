@@ -2,6 +2,8 @@ package lib
 
 import (
 	"errors"
+
+	"github.com/nicjohnson145/godot/internal/util"
 )
 
 const (
@@ -85,4 +87,8 @@ type SyncOpts struct {
 
 type EditOpts struct {
 	NoSync bool
+}
+
+type InitOpts struct {
+	HomeDirGetter util.HomeDirGetter
 }
