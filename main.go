@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -70,6 +71,10 @@ type Main struct {
 func New(dependencies lib.ControllerOpts) Main {
 	m := Main{
 		dependencies: dependencies,
+	}
+
+	if os.Getenv(lib.GithubPAT) == "" {
+		fmt.Println("WARNING: GITHUB_PAT is not set")
 	}
 
 	// Root cmd

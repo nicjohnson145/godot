@@ -16,6 +16,7 @@ const (
 	DefaultLocation = "~/bin"
 	AllTarget       = "ALL"
 	Submodules      = "submodules"
+	GithubPAT       = "GITHUB_PAT"
 )
 
 var ValidManagers = []string{APT, BREW, GIT}

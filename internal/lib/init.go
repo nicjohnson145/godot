@@ -179,7 +179,7 @@ func cloneRepo(dotfiles string, username string) error {
 	_, err = git.PlainClone(dotfiles, false, &git.CloneOptions{
 		Auth: &http.BasicAuth{
 			Username: username,
-			Password: os.Getenv("GITHUB_PAT"),
+			Password: os.Getenv(GithubPAT),
 		},
 		URL: url,
 	})

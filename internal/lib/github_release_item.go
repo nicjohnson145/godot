@@ -137,7 +137,7 @@ func (g *GithubReleaseItem) makeRequest() (*http.Response, error) {
 		return nil, err
 	}
 
-	val, found := os.LookupEnv("GITHUB_PAT")
+	val, found := os.LookupEnv(GithubPAT)
 	if found && g.GithubUser != "" {
 		req.SetBasicAuth(g.GithubUser, val)
 	}

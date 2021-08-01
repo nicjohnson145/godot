@@ -86,7 +86,7 @@ func (p PureGoRepo) Push() error {
 	return r.Push(&git.PushOptions{
 		Auth: &http.BasicAuth{
 			Username: p.User,
-			Password: os.Getenv("GITHUB_PAT"),
+			Password: os.Getenv(GithubPAT),
 		},
 	})
 }
@@ -110,7 +110,7 @@ func (p PureGoRepo) Pull() error {
 	err = w.Pull(&git.PullOptions{
 		Auth: &http.BasicAuth{
 			Username: p.User,
-			Password: os.Getenv("GITHUB_PAT"),
+			Password: os.Getenv(GithubPAT),
 		},
 	})
 
