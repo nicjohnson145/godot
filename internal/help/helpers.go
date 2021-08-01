@@ -242,6 +242,7 @@ func SetupDirectories(t *testing.T, target string, managers ...string) (string, 
 		"target":           target,
 		"dotfiles_root":    dotPath,
 		"package_managers": mgrs,
+		"github_user": "some_user",
 	})
 	require.NoError(t, err)
 	WriteConfig(t, home, string(bytes))

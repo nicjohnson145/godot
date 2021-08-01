@@ -2,9 +2,10 @@ package lib
 
 import (
 	"fmt"
-	"github.com/nicjohnson145/godot/internal/help"
 	"os"
 	"path/filepath"
+
+	"github.com/go-git/go-git/v5"
 )
 
 type repoItem struct {
@@ -53,6 +54,8 @@ func (i repoItem) dirExists(path string) (bool, error) {
 }
 
 func (i repoItem) Install() error {
-	_, _, err := help.RunCmd("git", "clone", i.Name, i.Location)
+	_, err := git.PlainClone(i.Location, false, &git.CloneOptions{
+		URL: i.Name,
+	})
 	return err
 }

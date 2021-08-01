@@ -1,10 +1,11 @@
 package lib
 
 import (
-	"bytes"
-	"fmt"
-	"os/exec"
-	"strings"
+	"errors"
+	"os"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
 type Repo interface {
@@ -12,93 +13,110 @@ type Repo interface {
 	Push() error
 }
 
-type shellGitRepo struct {
-	Path   string
-	gitDir string
-}
-
-func NewShellGitRepo(path string) shellGitRepo {
-	return shellGitRepo{
-		Path: path,
-	}
-}
-
-func (r shellGitRepo) runCmd(args ...string) (string, string, error) {
-	var stdout, stderr bytes.Buffer
-	str := append([]string{"-C", r.Path}, args...)
-	cmd := exec.Command("git", str...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	return stdout.String(), stderr.String(), err
-}
-
-func (r shellGitRepo) dirtyFiles() ([]string, error) {
-	stdout, _, err := r.runCmd("status", "--porcelain")
-	if err != nil {
-		return []string{}, err
-	}
-
-	var files []string
-	for _, line := range strings.Split(stdout, "\n") {
-		if line == "" {
-			continue
-		}
-		files = append(files, line[3:])
-	}
-	return files, nil
-}
-
-func (r shellGitRepo) isWorkdirClean() (bool, error) {
-	files, err := r.dirtyFiles()
-	return len(files) == 0, err
-}
-
-func (r shellGitRepo) ensureClean() error {
-	clean, err := r.isWorkdirClean()
-	if err != nil {
-		return err
-	}
-	if !clean {
-		return fmt.Errorf("Godot requires a clean workdir, stash/reset any manual changes")
-	}
-	return nil
-}
-
-func (r shellGitRepo) Pull() error {
-	err := r.ensureClean()
-	if err != nil {
-		return err
-	}
-
-	_, _, err = r.runCmd("pull")
-	return err
-}
-
-func (r shellGitRepo) Push() error {
-	dirtyFiles, err := r.dirtyFiles()
-	if err != nil {
-		return err
-	}
-	if len(dirtyFiles) == 0 {
-		return nil
-	}
-
-	_, _, err = r.runCmd("add", "-A")
-	if err != nil {
-		return err
-	}
-
-	_, _, err = r.runCmd("commit", "-m", "[godot]: update configuration")
-	if err != nil {
-		return err
-	}
-
-	_, _, err = r.runCmd("push")
-	return err
-}
+var _ Repo = (*NoopRepo)(nil)
+var _ Repo = (*PureGoRepo)(nil)
 
 type NoopRepo struct{}
 
 func (n NoopRepo) Push() error { return nil }
 func (n NoopRepo) Pull() error { return nil }
+
+type PureGoRepo struct {
+	Path string
+	User string
+}
+
+func (p PureGoRepo) ensureClean() error {
+	// Open up the repo
+	r, err := git.PlainOpen(p.Path)
+	if err != nil {
+		return err
+	}
+
+	// Get a reference to the work tree
+	w, err := r.Worktree()
+	if err != nil {
+		return err
+	}
+
+	status, err := w.Status()
+	if err != nil {
+		return err
+	}
+
+	if len(status) != 0 {
+		return errors.New("Godot requires a clean workdir, stash/reset any manual changes")
+	}
+
+	return nil
+}
+
+func (p PureGoRepo) Push() error {
+	p.ensureClean()
+
+	// Open up the repo
+	r, err := git.PlainOpen(p.Path)
+	if err != nil {
+		return err
+	}
+
+	// Get a reference to the work tree
+	w, err := r.Worktree()
+	if err != nil {
+		return err
+	}
+
+	status, err := w.Status()
+	if err != nil {
+		return err
+	}
+
+	for path := range status {
+		_, err = w.Add(path)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = w.Commit("[godot]: update configuration", &git.CommitOptions{})
+	if err != nil {
+		return err
+	}
+
+	return r.Push(&git.PushOptions{
+		Auth: &http.BasicAuth{
+			Username: p.User,
+			Password: os.Getenv(GithubPAT),
+		},
+	})
+}
+
+func (p PureGoRepo) Pull() error {
+	p.ensureClean()
+
+	// Open up the repo
+	r, err := git.PlainOpen(p.Path)
+	if err != nil {
+		return err
+	}
+
+	// Get a reference to the work tree
+	w, err := r.Worktree()
+	if err != nil {
+		return err
+	}
+
+	// Execute the pull
+	err = w.Pull(&git.PullOptions{
+		Auth: &http.BasicAuth{
+			Username: p.User,
+			Password: os.Getenv(GithubPAT),
+		},
+	})
+
+	if err != nil && err != git.NoErrAlreadyUpToDate {
+		return err
+	}
+
+	return nil
+}

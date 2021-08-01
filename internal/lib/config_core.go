@@ -12,7 +12,6 @@ import (
 	"text/tabwriter"
 
 	"github.com/jinzhu/copier"
-	"github.com/tidwall/pretty"
 )
 
 func NewConfig(getter HomeDirGetter) *Config {
@@ -77,6 +76,10 @@ func (c *Config) parseUserConfig() {
 	if len(config.PackageManagers) != 0 {
 		c.PackageManagers = config.PackageManagers
 	}
+
+	if config.GithubUser != "" {
+		c.GithubUser = config.GithubUser
+	}
 }
 
 func (c *Config) readRepoConfig() {
@@ -107,12 +110,7 @@ func (c *Config) GetRawContent() RepoConfig {
 }
 
 func (c *Config) Write() error {
-	bytes, err := json.Marshal(c.content)
-	if err != nil {
-		return err
-	}
-	prettyContents := pretty.PrettyOptions(bytes, &pretty.Options{Indent: "    "})
-	return ioutil.WriteFile(c.repoConfig, prettyContents, 0644)
+	return dumpJson(c.content, c.repoConfig)
 }
 
 func (c *Config) writeStringMap(w io.Writer, m StringMap) error {
