@@ -73,10 +73,6 @@ func New(dependencies lib.ControllerOpts) Main {
 		dependencies: dependencies,
 	}
 
-	if os.Getenv(lib.GithubPAT) == "" {
-		fmt.Println("WARNING: GITHUB_PAT is not set")
-	}
-
 	// Root cmd
 	m.rootCmd = &cobra.Command{
 		Use:   "godot",
@@ -391,9 +387,16 @@ func (m *Main) setDependencies() {
 		m.dependencies.Runner = lib.NewRunner()
 	}
 	if m.dependencies.Repo == nil {
-		m.dependencies.Repo = lib.PureGoRepo{
-			Path: m.dependencies.Config.DotfilesRoot,
-			User: m.dependencies.Config.GithubUser,
+		if m.noGit {
+			m.dependencies.Repo = lib.NoopRepo{}
+		} else {
+			if os.Getenv(lib.GithubPAT) == "" {
+				fmt.Println("WARNING: GITHUB_PAT is not set")
+			}
+			m.dependencies.Repo = lib.PureGoRepo{
+				Path: m.dependencies.Config.DotfilesRoot,
+				User: m.dependencies.Config.GithubUser,
+			}
 		}
 	}
 }
