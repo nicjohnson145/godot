@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/carlmjohnson/requests"
 	"github.com/nicjohnson145/godot/internal/lib"
+	"github.com/nicjohnson145/godot/internal/config"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
@@ -39,7 +40,7 @@ type GithubRelease struct {
 	WindowsPattern string `yaml:"windows-pattern"`
 }
 
-func (g GithubRelease) Execute() {
+func (g GithubRelease) Execute(conf config.UserConfig) {
 	log.Info("Downloading ", g.Repo)
 
 	dir, err := ioutil.TempDir("", "godot-")
@@ -49,30 +50,36 @@ func (g GithubRelease) Execute() {
 	defer os.RemoveAll(dir)
 
 	filepath := path.Join(dir, "release")
-	release := g.getRelease()
+	release := g.getRelease(conf)
 
-	err = requests.
+	req := requests.
 		URL(release.DownloadUrl).
-		ToFile(filepath).
-		Fetch(context.TODO())
+		ToFile(filepath)
+	if conf.GithubAuth != "" {
+		req = req.Header("Authorization", conf.GithubAuth)
+	}
+	err = req.Fetch(context.TODO())
 	if err != nil {
 		log.Fatal("Error downloading release asset: ", err)
 	}
 
 	switch g.Type {
 	case TarGz:
-		g.handleTarGz(dir, filepath, release)
+		g.handleTarGz(conf, dir, filepath, release)
 	case Binary:
-		g.handleBinary(filepath)
+		g.handleBinary(conf, filepath)
 	}
 }
 
-func (g GithubRelease) getRelease() release {
+func (g GithubRelease) getRelease(conf config.UserConfig) release {
 	var resp releaseResponse
-	err := requests.
+	req := requests.
 		URL(fmt.Sprintf("https://api.github.com/repos/%v/releases/tags/%v", g.Repo, g.Tag)).
-		ToJSON(&resp).
-		Fetch(context.TODO())
+		ToJSON(&resp)
+	if conf.GithubAuth != "" {
+		req = req.Header("Authorization", conf.GithubAuth)
+	}
+	err := req.Fetch(context.TODO())
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Error getting release %v for %v: %v", g.Tag, g.Repo, err))
 	}
@@ -112,7 +119,7 @@ func (g GithubRelease) getDownloadPattern() *regexp.Regexp {
 	return exp
 }
 
-func (g GithubRelease) handleTarGz(tempdir string, downloadpath string, release release) {
+func (g GithubRelease) handleTarGz(conf config.UserConfig, tempdir string, downloadpath string, release release) {
 	file, err := os.Open(downloadpath)
 	if err != nil {
 		log.Fatal("Error opening downloaded release: ", err)
@@ -131,11 +138,11 @@ func (g GithubRelease) handleTarGz(tempdir string, downloadpath string, release 
 	// Strip the .targz off the release name, since that's what it will un-tar to
 	minusExt := release.Name[0 : len(release.Name)-7]
 
-	g.copyToDestination(path.Join(outpath, minusExt, g.Path), path.Join("/home/njohnson/new-bin", g.Name))
+	g.copyToDestination(path.Join(outpath, minusExt, g.Path), path.Join(conf.BinaryDir, g.Name))
 }
 
-func (g GithubRelease) handleBinary(downloadpath string) {
-	g.copyToDestination(downloadpath, path.Join("/home/njohnson/new-bin", g.Name))
+func (g GithubRelease) handleBinary(conf config.UserConfig, downloadpath string) {
+	g.copyToDestination(downloadpath, path.Join(conf.BinaryDir, g.Name))
 }
 
 func (g GithubRelease) copyToDestination(src string, dest string) {
