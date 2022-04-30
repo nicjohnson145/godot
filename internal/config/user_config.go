@@ -1,12 +1,12 @@
 package config
 
 import (
-	"os"
 	"fmt"
-	"path"
-	"gopkg.in/yaml.v2"
 	"github.com/nicjohnson145/godot/internal/lib"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+	"os"
+	"path"
 )
 
 type UserConfig struct {

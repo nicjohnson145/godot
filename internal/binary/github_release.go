@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/carlmjohnson/requests"
-	"github.com/nicjohnson145/godot/internal/lib"
 	"github.com/nicjohnson145/godot/internal/config"
+	"github.com/nicjohnson145/godot/internal/lib"
 	log "github.com/sirupsen/logrus"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
 	"runtime"
-	"io"
 )
 
 const (
