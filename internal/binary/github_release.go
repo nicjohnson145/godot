@@ -60,7 +60,7 @@ func (g GithubRelease) Execute(conf config.UserConfig) {
 	}
 	err = req.Fetch(context.TODO())
 	if err != nil {
-		log.Fatal("Error downloading release asset: ", err)
+		log.Fatalf("Error downloading release asset: %v", err)
 	}
 
 	switch g.Type {
@@ -81,7 +81,7 @@ func (g GithubRelease) getRelease(conf config.UserConfig) release {
 	}
 	err := req.Fetch(context.TODO())
 	if err != nil {
-		log.Fatal(fmt.Sprintf("Error getting release %v for %v: %v", g.Tag, g.Repo, err))
+		log.Fatalf("Error getting release %v for %v: %v", g.Tag, g.Repo, err)
 	}
 
 	pattern := g.getDownloadPattern()
@@ -92,7 +92,7 @@ func (g GithubRelease) getRelease(conf config.UserConfig) release {
 		}
 	}
 
-	log.Fatal(fmt.Sprintf("No assets in %v:%v match the pattern %v", g.Tag, g.Repo, pattern))
+	log.Fatalf("No assets in %v:%v match the pattern %v", g.Tag, g.Repo, pattern)
 	return release{}
 }
 
@@ -122,17 +122,17 @@ func (g GithubRelease) getDownloadPattern() *regexp.Regexp {
 func (g GithubRelease) handleTarGz(conf config.UserConfig, tempdir string, downloadpath string, release release) {
 	file, err := os.Open(downloadpath)
 	if err != nil {
-		log.Fatal("Error opening downloaded release: ", err)
+		log.Fatalf("Error opening downloaded release: %v", err)
 	}
 	defer file.Close()
 
 	outpath := path.Join(tempdir, "release-unpacked")
 	if err := os.Mkdir(outpath, os.ModePerm); err != nil {
-		log.Fatal("Error creating temp directory: ", err)
+		log.Fatalf("Error creating temp directory: %v", err)
 	}
 
 	if err := lib.Untar(file, outpath); err != nil {
-		log.Fatal("Error unpacking tarball: ", err)
+		log.Fatalf("Error unpacking tarball: %v", err)
 	}
 
 	// Strip the .targz off the release name, since that's what it will un-tar to
@@ -154,16 +154,16 @@ func (g GithubRelease) copyToDestination(src string, dest string) {
 
 	dfile, err := os.Create(dest)
 	if err != nil {
-		log.Fatal("Error creating destination file: ", err)
+		log.Fatalf("Error creating destination file: %v", err)
 	}
 	defer dfile.Close()
 
 	_, err = io.Copy(dfile, sfile)
 	if err != nil {
-		log.Fatal("Error copying binary to destination: ", err)
+		log.Fatalf("Error copying binary to destination: %v", err)
 	}
 
 	if err := os.Chmod(dest, 0755); err != nil {
-		log.Fatal("Error chmoding destination file: ", err)
+		log.Fatalf("Error chmoding destination file: %v", err)
 	}
 }
