@@ -36,6 +36,10 @@ func TestExecute(t *testing.T) {
 	}
 
 	t.Run("single_binary", func(t *testing.T) {
+		restore, noFatal := lib.NoFatals()
+		defer noFatal(t)
+		defer restore()
+
 		dir, err := ioutil.TempDir("", "gh-release-test-*")
 		require.NoError(t, err)
 		defer os.RemoveAll(dir)
@@ -58,6 +62,10 @@ func TestExecute(t *testing.T) {
 	})
 
 	t.Run("tarball", func(t *testing.T) {
+		restore, noFatal := lib.NoFatals()
+		defer noFatal(t)
+		defer restore()
+
 		dir, err := ioutil.TempDir("", "gh-release-test-*")
 		require.NoError(t, err)
 		defer os.RemoveAll(dir)

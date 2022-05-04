@@ -12,8 +12,8 @@ import (
 
 func TestExecute(t *testing.T) {
 	restore, noFatal := lib.NoFatals()
-	defer restore()
 	defer noFatal(t)
+	defer restore()
 
 	dir, err := ioutil.TempDir("", "godot-config-file-test-*")
 	require.NoError(t, err)

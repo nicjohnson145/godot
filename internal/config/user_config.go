@@ -43,7 +43,7 @@ func NewConfigFromPath(confPath string) UserConfig {
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal("Error getting home directory: %v", err)
+		log.Fatalf("Error getting home directory: %v", err)
 	}
 	conf.HomeDir = home
 
