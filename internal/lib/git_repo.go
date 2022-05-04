@@ -1,9 +1,8 @@
-package git
+package lib
 
 import (
 	"github.com/go-git/go-git/v5"
 	log "github.com/sirupsen/logrus"
-	"github.com/nicjohnson145/godot/internal/config"
 )
 
 type GitRepo struct {
@@ -13,7 +12,7 @@ type GitRepo struct {
 	Commit   string `yaml:"commit"`
 }
 
-func (g GitRepo) Execute(conf config.UserConfig) {
+func (g GitRepo) Execute(conf UserConfig) {
 	log.Infof("Ensuring %v cloned", g.URL)
 
 	var repo *git.Repository

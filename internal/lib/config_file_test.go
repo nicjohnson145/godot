@@ -1,17 +1,15 @@
-package file
+package lib
 
 import (
 	"testing"
-	"github.com/nicjohnson145/godot/internal/config"
-	"github.com/nicjohnson145/godot/internal/lib"
 	"io/ioutil"
 	"github.com/stretchr/testify/require"
 	"path"
 	"os"
 )
 
-func TestExecute(t *testing.T) {
-	restore, noFatal := lib.NoFatals()
+func TestConfigFileExecute(t *testing.T) {
+	restore, noFatal := NoFatals()
 	defer noFatal(t)
 	defer restore()
 
@@ -40,7 +38,7 @@ func TestExecute(t *testing.T) {
 		Name: "dot_conf",
 		Destination: "~/.config/conf",
 	}
-	f.Execute(config.UserConfig{
+	f.Execute(UserConfig{
 		CloneLocation: dir,
 		HomeDir: home,
 		BuildLocation: output,

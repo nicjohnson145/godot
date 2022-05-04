@@ -1,8 +1,7 @@
-package config
+package lib
 
 import (
 	"fmt"
-	"github.com/nicjohnson145/godot/internal/lib"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"os"
@@ -58,7 +57,7 @@ func NewConfigFromPath(confPath string) UserConfig {
 		conf.GithubPAT = pat
 	}
 	if ok && conf.GithubUser != "" {
-		conf.GithubAuth = lib.BasicAuth(conf.GithubUser, pat)
+		conf.GithubAuth = BasicAuth(conf.GithubUser, pat)
 	}
 
 	if !ok {

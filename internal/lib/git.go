@@ -1,20 +1,19 @@
-package git
+package lib
 
 import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/nicjohnson145/godot/internal/config"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path"
 )
 
-func EnsureDotfilesRepo(conf config.UserConfig) {
+func EnsureDotfilesRepo(conf UserConfig) {
 	getDotfilesRepo(conf)
 }
 
-func getDotfilesRepo(conf config.UserConfig) *git.Repository {
+func getDotfilesRepo(conf UserConfig) *git.Repository {
 	// If it's already cloned, open it and pull latest
 	if isRepoCloned(conf.CloneLocation) {
 		repo := openGitRepo(conf.CloneLocation)
@@ -45,7 +44,7 @@ func getDotfilesRepo(conf config.UserConfig) *git.Repository {
 	)
 }
 
-func authFromConfig(conf config.UserConfig) http.AuthMethod {
+func authFromConfig(conf UserConfig) http.AuthMethod {
 	return &http.BasicAuth{
 		Username: "my-cool-token",
 		Password: conf.GithubPAT,
@@ -83,7 +82,7 @@ func ClonePublicRepo(url string, location string) *git.Repository {
 	return cloneGitRepo(url, location, nil)
 }
 
-func ClonePrivateRepo(url string, location string, conf config.UserConfig) *git.Repository {
+func ClonePrivateRepo(url string, location string, conf UserConfig) *git.Repository {
 	return cloneGitRepo(
 		url,
 		location,
@@ -102,7 +101,7 @@ func dirExists(loc string) (bool, error) {
 	return true, nil
 }
 
-func ensurePrivateRepoCommitCheckedOut(repo *git.Repository, commit string, conf config.UserConfig) {
+func ensurePrivateRepoCommitCheckedOut(repo *git.Repository, commit string, conf UserConfig) {
 	ensureCommitCheckedOut(repo, commit, authFromConfig(conf))
 }
 

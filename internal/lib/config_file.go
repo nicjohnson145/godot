@@ -1,11 +1,10 @@
-package file
+package lib
 
 import (
 	"text/template"
 	"os"
 	log "github.com/sirupsen/logrus"
 	"path"
-	"github.com/nicjohnson145/godot/internal/config"
 	"github.com/samber/lo"
 	"strings"
 	"path/filepath"
@@ -32,7 +31,7 @@ type ConfigFile struct {
 }
 
 
-func (c ConfigFile) Execute(conf config.UserConfig) {
+func (c ConfigFile) Execute(conf UserConfig) {
 	tmpl := c.parseTemplate(conf.CloneLocation)
 	
 	buildPath := path.Join(conf.BuildLocation, c.Name)

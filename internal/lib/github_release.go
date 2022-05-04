@@ -1,11 +1,9 @@
-package binary
+package lib
 
 import (
 	"context"
 	"fmt"
 	"github.com/carlmjohnson/requests"
-	"github.com/nicjohnson145/godot/internal/config"
-	"github.com/nicjohnson145/godot/internal/lib"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
@@ -40,7 +38,7 @@ type GithubRelease struct {
 	WindowsPattern string `yaml:"windows-pattern"`
 }
 
-func (g GithubRelease) Execute(conf config.UserConfig) {
+func (g GithubRelease) Execute(conf UserConfig) {
 	log.Info("Downloading ", g.Repo)
 
 	dir, err := ioutil.TempDir("", "godot-")
@@ -71,7 +69,7 @@ func (g GithubRelease) Execute(conf config.UserConfig) {
 	}
 }
 
-func (g GithubRelease) getRelease(conf config.UserConfig) release {
+func (g GithubRelease) getRelease(conf UserConfig) release {
 	var resp releaseResponse
 	req := requests.
 		URL(fmt.Sprintf("https://api.github.com/repos/%v/releases/tags/%v", g.Repo, g.Tag)).
@@ -119,7 +117,7 @@ func (g GithubRelease) getDownloadPattern() *regexp.Regexp {
 	return exp
 }
 
-func (g GithubRelease) handleTarGz(conf config.UserConfig, tempdir string, downloadpath string, release release) {
+func (g GithubRelease) handleTarGz(conf UserConfig, tempdir string, downloadpath string, release release) {
 	file, err := os.Open(downloadpath)
 	if err != nil {
 		log.Fatalf("Error opening downloaded release: %v", err)
@@ -131,7 +129,7 @@ func (g GithubRelease) handleTarGz(conf config.UserConfig, tempdir string, downl
 		log.Fatalf("Error creating temp directory: %v", err)
 	}
 
-	if err := lib.Untar(file, outpath); err != nil {
+	if err := Untar(file, outpath); err != nil {
 		log.Fatalf("Error unpacking tarball: %v", err)
 	}
 
@@ -141,7 +139,7 @@ func (g GithubRelease) handleTarGz(conf config.UserConfig, tempdir string, downl
 	g.copyToDestination(path.Join(outpath, minusExt, g.Path), path.Join(conf.BinaryDir, g.Name))
 }
 
-func (g GithubRelease) handleBinary(conf config.UserConfig, downloadpath string) {
+func (g GithubRelease) handleBinary(conf UserConfig, downloadpath string) {
 	g.copyToDestination(downloadpath, path.Join(conf.BinaryDir, g.Name))
 }
 

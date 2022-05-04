@@ -1,8 +1,6 @@
-package binary
+package lib
 
 import (
-	"github.com/nicjohnson145/godot/internal/config"
-	"github.com/nicjohnson145/godot/internal/lib"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
@@ -11,7 +9,7 @@ import (
 )
 
 // Best tests are real tests? question mark?
-func TestExecute(t *testing.T) {
+func TestGithubReleaseExecute(t *testing.T) {
 	checkFiles := func(t *testing.T, dir string, want []string) {
 		t.Helper()
 
@@ -36,7 +34,7 @@ func TestExecute(t *testing.T) {
 	}
 
 	t.Run("single_binary", func(t *testing.T) {
-		restore, noFatal := lib.NoFatals()
+		restore, noFatal := NoFatals()
 		defer noFatal(t)
 		defer restore()
 
@@ -52,17 +50,17 @@ func TestExecute(t *testing.T) {
 			LinuxPattern: "godot_linux_amd64",
 			MacPattern:   "godot_darwin_amd64",
 		}
-		g.Execute(config.UserConfig{
+		g.Execute(UserConfig{
 			BinaryDir:  dir,
 			GithubUser: ghuser,
-			GithubAuth: lib.BasicAuth(ghuser, ghpat),
+			GithubAuth: BasicAuth(ghuser, ghpat),
 		})
 
 		checkFiles(t, dir, []string{"godot"})
 	})
 
 	t.Run("tarball", func(t *testing.T) {
-		restore, noFatal := lib.NoFatals()
+		restore, noFatal := NoFatals()
 		defer noFatal(t)
 		defer restore()
 
@@ -79,10 +77,10 @@ func TestExecute(t *testing.T) {
 			MacPattern:   ".*apple-darwin.*",
 			Path:         "rg",
 		}
-		g.Execute(config.UserConfig{
+		g.Execute(UserConfig{
 			BinaryDir:  dir,
 			GithubUser: ghuser,
-			GithubAuth: lib.BasicAuth(ghuser, ghpat),
+			GithubAuth: BasicAuth(ghuser, ghpat),
 		})
 
 		checkFiles(t, dir, []string{"rg"})
