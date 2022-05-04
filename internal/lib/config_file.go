@@ -6,7 +6,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"path"
 	"github.com/samber/lo"
-	"strings"
 	"path/filepath"
 )
 
@@ -56,19 +55,12 @@ func (c ConfigFile) Execute(conf UserConfig) {
 		log.Fatalf("Error rendering template: %v", err)
 	}
 
-	dest := c.replaceTilde(c.Destination, conf.HomeDir)
+	dest := replaceTilde(c.Destination, conf.HomeDir)
 	if c.pathExists(dest) {
 		c.removePath(dest)
 	}
 
 	c.symlink(buildPath, dest)
-}
-
-func (c ConfigFile) replaceTilde(s string, replacement string) string {
-	if !strings.Contains(s, "~") {
-		return s
-	}
-	return strings.ReplaceAll(s, "~", replacement)
 }
 
 func (c ConfigFile) parseTemplate(dotfiles string) *template.Template {

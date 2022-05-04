@@ -22,15 +22,17 @@ func (g GitRepo) GetName() string {
 func (g GitRepo) Execute(conf UserConfig) {
 	log.Infof("Ensuring %v cloned", g.URL)
 
+	location := replaceTilde(g.Location, conf.HomeDir)
+
 	var repo *git.Repository
-	if !isRepoCloned(g.Location) {
+	if !isRepoCloned(location) {
 		if g.Private {
-			repo = ClonePrivateRepo(g.URL, g.Location, conf)
+			repo = ClonePrivateRepo(g.URL, location, conf)
 		} else {
-			repo = ClonePublicRepo(g.URL, g.Location)
+			repo = ClonePublicRepo(g.URL, location)
 		}
 	} else {
-		repo = openGitRepo(g.Location)
+		repo = openGitRepo(location)
 	}
 
 	if g.Commit != "" {
