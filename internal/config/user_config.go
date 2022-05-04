@@ -15,8 +15,10 @@ type UserConfig struct {
 	Target        string `yaml:"target"`
 	DotfilesURL   string `yaml:"dotfiles-url"`
 	CloneLocation string `yaml:"clone-location"`
+	BuildLocation string `yaml:"build-location"`
 	GithubPAT     string
 	GithubAuth    string
+	HomeDir       string
 }
 
 func NewConfig() UserConfig {
@@ -39,14 +41,15 @@ func NewConfigFromPath(confPath string) UserConfig {
 		log.Fatalf("Error parsing user config: %v", err)
 	}
 
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal("Error getting home directory: %v", err)
+	}
+	conf.HomeDir = home
+
 	// Set the default binary directory
 	if conf.BinaryDir == "" {
-		dir, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatal("Error getting home directory: %v", err)
-		}
-
-		conf.BinaryDir = path.Join(dir, "bin")
+		conf.BinaryDir = path.Join(home, "bin")
 	}
 
 	// Now setup the github auth
@@ -85,11 +88,12 @@ func NewConfigFromPath(confPath string) UserConfig {
 
 	// Default the clone location
 	if conf.CloneLocation == "" {
-		dir, err := os.UserHomeDir()
-		if err != nil {
-			log.Fatal("Error getting home directory: %v", err)
-		}
-		conf.CloneLocation = path.Join(dir, ".config", "godot", "dotfiles")
+		conf.CloneLocation = path.Join(home, ".config", "godot", "dotfiles")
+	}
+
+	// Default the build location
+	if conf.BuildLocation == "" {
+		conf.BuildLocation = path.Join(home, ".config", "godot", "rendered")
 	}
 
 	return conf
