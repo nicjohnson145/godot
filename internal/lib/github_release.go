@@ -27,6 +27,8 @@ type release struct {
 	DownloadUrl string `json:"browser_download_url"`
 }
 
+var _ Executor = (*GithubRelease)(nil)
+
 type GithubRelease struct {
 	Name           string `yaml:"name"`
 	Repo           string `yaml:"repo"`
@@ -36,6 +38,10 @@ type GithubRelease struct {
 	MacPattern     string `yaml:"mac-pattern"`
 	LinuxPattern   string `yaml:"linux-pattern"`
 	WindowsPattern string `yaml:"windows-pattern"`
+}
+
+func (g GithubRelease) GetName() string {
+	return g.Name
 }
 
 func (g GithubRelease) Execute(conf UserConfig) {

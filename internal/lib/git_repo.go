@@ -5,11 +5,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ Executor = (*GitRepo)(nil)
+
 type GitRepo struct {
+	Name     string `yaml:"name"`
 	URL      string `yaml:"url"`
 	Location string `yaml:"location"`
 	Private  bool   `yaml:"private"`
 	Commit   string `yaml:"commit"`
+}
+
+func (g GitRepo) GetName() string {
+	return g.Name
 }
 
 func (g GitRepo) Execute(conf UserConfig) {

@@ -25,9 +25,15 @@ type TemplateVars struct {
 	Home       string
 }
 
+var _ Executor = (*ConfigFile)(nil)
+
 type ConfigFile struct {
 	Name        string `yaml:"name"`
 	Destination string `yaml:"destination"`
+}
+
+func (c ConfigFile) GetName() string {
+	return c.Name
 }
 
 
