@@ -15,7 +15,8 @@ import (
 
 const (
 	Binary = "binary"
-	TarGz  = "targz"
+	TarGzDir = "targz_dir"
+	TarGzBin = "targz_bin"
 )
 
 type releaseResponse struct {
@@ -68,10 +69,14 @@ func (g GithubRelease) Execute(conf UserConfig) {
 	}
 
 	switch g.Type {
-	case TarGz:
-		g.handleTarGz(conf, dir, filepath, release)
+	case TarGzDir:
+		g.handleTarGzDir(conf, dir, filepath, release)
+	case TarGzBin:
+		g.handleTarGzBin(conf, dir, filepath)
 	case Binary:
 		g.handleBinary(conf, filepath)
+	default:
+		log.Fatalf("Unknown type of %v", g.Type)
 	}
 }
 
@@ -123,7 +128,7 @@ func (g GithubRelease) getDownloadPattern() *regexp.Regexp {
 	return exp
 }
 
-func (g GithubRelease) handleTarGz(conf UserConfig, tempdir string, downloadpath string, release release) {
+func (g GithubRelease) handleTarGz(conf UserConfig, tempdir string, downloadpath string, dir string) {
 	file, err := os.Open(downloadpath)
 	if err != nil {
 		log.Fatalf("Error opening downloaded release: %v", err)
@@ -139,10 +144,15 @@ func (g GithubRelease) handleTarGz(conf UserConfig, tempdir string, downloadpath
 		log.Fatalf("Error unpacking tarball: %v", err)
 	}
 
-	// Strip the .targz off the release name, since that's what it will un-tar to
-	minusExt := release.Name[0 : len(release.Name)-7]
+	g.copyToDestination(path.Join(outpath, dir, g.Path), path.Join(conf.BinaryDir, g.Name))
+}
 
-	g.copyToDestination(path.Join(outpath, minusExt, g.Path), path.Join(conf.BinaryDir, g.Name))
+func (g GithubRelease) handleTarGzDir(conf UserConfig, tempdir string, downloadpath string, release release) {
+	g.handleTarGz(conf, tempdir, downloadpath, release.Name[0 : len(release.Name)-7])
+}
+
+func (g GithubRelease) handleTarGzBin(conf UserConfig, tempdir string, downloadpath string) {
+	g.handleTarGz(conf, tempdir, downloadpath, "")
 }
 
 func (g GithubRelease) handleBinary(conf UserConfig, downloadpath string) {

@@ -1,7 +1,7 @@
 .PHONY: %
 
 go_build:
-	CGO_ENABLED=0 go build
+	CGO_ENABLED=0 GOOS=linux go build
 
 check_pat_set:
 	@if [ -z "${GITHUB_PAT}" ]; then echo "GITHUB_PAT not set, integration tests can't run"; exit 1; fi

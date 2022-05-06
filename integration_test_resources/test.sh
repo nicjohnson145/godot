@@ -5,6 +5,7 @@ set -exuo pipefail
 godot sync
 
 /home/root/bin/bat -h
+/home/root/bin/kustomize -h
 
 [ -d /root/new-bin/neovim ] || exit 1
 
