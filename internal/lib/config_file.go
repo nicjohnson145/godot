@@ -6,7 +6,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"path"
 	"github.com/samber/lo"
-	"path/filepath"
 )
 
 var funcs = template.FuncMap{
@@ -40,6 +39,7 @@ func (c ConfigFile) Execute(conf UserConfig) {
 	tmpl := c.parseTemplate(conf.CloneLocation)
 	
 	buildPath := path.Join(conf.BuildLocation, c.Name)
+	ensureContainingDir(buildPath)
 	f, err := os.OpenFile(buildPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0744)
 	if err != nil {
 		log.Fatalf("Error opening destination file %v: %v", buildPath, err)
@@ -90,14 +90,9 @@ func (c ConfigFile) removePath(path string) {
 }
 
 func (c ConfigFile) symlink(source string, dest string) {
-	// First create any containing directories that don't exist
-	dir := filepath.Dir(dest)
-	err := os.MkdirAll(dir, 0744)
-	if err != nil {
-		log.Fatalf("Error creating containing directories: %v", err)
-	}
+	ensureContainingDir(dest)
 
-	err = os.Symlink(source, dest)
+	err := os.Symlink(source, dest)
 	if err != nil {
 		log.Fatalf("Error creating symlink: %v", err)
 	}
