@@ -11,7 +11,6 @@ import (
 	"path"
 	"regexp"
 	"runtime"
-	"path/filepath"
 )
 
 const (
@@ -157,12 +156,7 @@ func (g GithubRelease) copyToDestination(src string, dest string) {
 	}
 	defer sfile.Close()
 
-	// Ensure that the containing directory of the binary exists
-	dir := filepath.Dir(dest)
-	err = os.MkdirAll(dir, 0744)
-	if err != nil {
-		log.Fatalf("Error creating containing directories: %v", err)
-	}
+	ensureContainingDir(dest)
 
 	dfile, err := os.Create(dest)
 	if err != nil {
