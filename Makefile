@@ -1,5 +1,7 @@
 .PHONY: %
 
+test: integration_test
+
 go_build:
 	CGO_ENABLED=0 GOOS=linux go build
 
