@@ -66,6 +66,11 @@ func getExecutors(targetConf TargetConfig, userConf UserConfig) []Executor {
 		executors,
 		collectNamedOptions(target.GitRepos, targetConf.GitRepos, "git repository")...,
 	)
+	executors = append(
+		executors,
+		collectNamedOptions(target.SystemPackages, targetConf.SystemPackages, "system package")...,
+	)
+	
 
 	return executors
 }

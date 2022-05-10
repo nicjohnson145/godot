@@ -6,18 +6,20 @@ import (
 	"gopkg.in/yaml.v2"
 	"os"
 	"path"
+	"runtime"
 )
 
 type UserConfig struct {
-	BinaryDir     string `yaml:"binary-dir"`
-	GithubUser    string `yaml:"github-user"`
-	Target        string `yaml:"target"`
-	DotfilesURL   string `yaml:"dotfiles-url"`
-	CloneLocation string `yaml:"clone-location"`
-	BuildLocation string `yaml:"build-location"`
-	GithubPAT     string
-	GithubAuth    string
-	HomeDir       string
+	BinaryDir      string `yaml:"binary-dir"`
+	GithubUser     string `yaml:"github-user"`
+	Target         string `yaml:"target"`
+	DotfilesURL    string `yaml:"dotfiles-url"`
+	CloneLocation  string `yaml:"clone-location"`
+	BuildLocation  string `yaml:"build-location"`
+	PackageManager string `yaml:"package-manager"`
+	GithubPAT      string
+	GithubAuth     string
+	HomeDir        string
 }
 
 func NewConfig() UserConfig {
@@ -49,6 +51,8 @@ func NewConfigFromPath(confPath string) UserConfig {
 	// Set the default binary directory
 	if conf.BinaryDir == "" {
 		conf.BinaryDir = path.Join(home, "bin")
+	} else {
+		conf.BinaryDir = replaceTilde(conf.BinaryDir, home)
 	}
 
 	// Now setup the github auth
@@ -93,6 +97,20 @@ func NewConfigFromPath(confPath string) UserConfig {
 	// Default the build location
 	if conf.BuildLocation == "" {
 		conf.BuildLocation = path.Join(home, ".config", "godot", "rendered")
+	}
+
+	// Default and validate the package manager
+	if conf.PackageManager == "" {
+		switch runtime.GOOS {
+		case "linux":
+			conf.PackageManager = PackageManagerApt
+		case "darwin":
+			conf.PackageManager = PackageManagerBrew
+		}
+	} else {
+		if !isValidPackageManager(conf.PackageManager) {
+			log.Fatalf("Unsupported packaged manager of %v\n", conf.PackageManager)
+		}
 	}
 
 	return conf

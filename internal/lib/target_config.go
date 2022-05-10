@@ -11,6 +11,7 @@ type TargetConfig struct {
 	ConfigFiles    []ConfigFile      `yaml:"config-files,flow"`
 	GithubReleases []GithubRelease   `yaml:"github-releases,flow"`
 	GitRepos       []GitRepo         `yaml:"git-repos,flow"`
+	SystemPackages []SystemPackage   `yaml:"system-packages,flow"`
 	Targets        map[string]Target `yaml:"targets"`
 }
 
@@ -18,6 +19,7 @@ type Target struct {
 	ConfigFiles    []string `yaml:"config-files,flow"`
 	GithubReleases []string `yaml:"github-releases,flow"`
 	GitRepos       []string `yaml:"git-repos,flow"`
+	SystemPackages []string `yaml:"system-packages,flow"`
 }
 
 func NewTargetConfig(userConf UserConfig) TargetConfig {
