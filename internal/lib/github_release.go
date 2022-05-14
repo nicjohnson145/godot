@@ -46,6 +46,15 @@ func (g GithubRelease) GetName() string {
 }
 
 func (g GithubRelease) Execute(conf UserConfig) {
+	// Check if the destination path is already there, if so don't redownload
+	exists, err := pathExists(g.getDestination(conf))
+	if err != nil {
+		log.Fatalf("Unable to check existance of %v: %v", g.getDestination(conf), err)
+	}
+	if exists {
+		log.Infof("%v already downloaded, skipping", g.Name)
+		return
+	}
 	log.Info("Downloading ", g.Repo)
 
 	dir, err := ioutil.TempDir("", "godot-")
@@ -144,7 +153,7 @@ func (g GithubRelease) handleTarGz(conf UserConfig, tempdir string, downloadpath
 		log.Fatalf("Error unpacking tarball: %v", err)
 	}
 
-	g.copyToDestination(path.Join(outpath, dir, g.Path), path.Join(conf.BinaryDir, g.Name))
+	g.copyToDestination(path.Join(outpath, dir, g.Path), g.getDestination(conf))
 }
 
 func (g GithubRelease) handleTarGzDir(conf UserConfig, tempdir string, downloadpath string, release release) {
@@ -156,7 +165,7 @@ func (g GithubRelease) handleTarGzBin(conf UserConfig, tempdir string, downloadp
 }
 
 func (g GithubRelease) handleBinary(conf UserConfig, downloadpath string) {
-	g.copyToDestination(downloadpath, path.Join(conf.BinaryDir, g.Name))
+	g.copyToDestination(downloadpath, g.getDestination(conf))
 }
 
 func (g GithubRelease) copyToDestination(src string, dest string) {
@@ -182,4 +191,8 @@ func (g GithubRelease) copyToDestination(src string, dest string) {
 	if err := os.Chmod(dest, 0755); err != nil {
 		log.Fatalf("Error chmoding destination file: %v", err)
 	}
+}
+
+func (g GithubRelease) getDestination(conf UserConfig) string {
+	return path.Join(conf.BinaryDir, g.Name)
 }

@@ -52,7 +52,7 @@ func authFromConfig(conf UserConfig) http.AuthMethod {
 }
 
 func isRepoCloned(location string) bool {
-	exists, err := dirExists(path.Join(location, ".git"))
+	exists, err := pathExists(path.Join(location, ".git"))
 	if err != nil {
 		log.Fatalf("Error checking existence of dotfiles repo: %v", err)
 	}
@@ -90,7 +90,7 @@ func ClonePrivateRepo(url string, location string, conf UserConfig) *git.Reposit
 	)
 }
 
-func dirExists(loc string) (bool, error) {
+func pathExists(loc string) (bool, error) {
 	if _, err := os.Stat(loc); err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
