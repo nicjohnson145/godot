@@ -1,6 +1,6 @@
 .PHONY: %
 
-test: integration_test
+test: unit_test integration_test
 
 go_build:
 	CGO_ENABLED=0 GOOS=linux go build
@@ -16,3 +16,6 @@ integration_test: go_build check_pat_set docker_build
 
 integration_debug: go_build check_pat_set docker_build 
 	@docker run -e GITHUB_PAT=${GITHUB_PAT} -it --rm godot_integration /bin/bash
+
+unit_test:
+	go test -v ./...

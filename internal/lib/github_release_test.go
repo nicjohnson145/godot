@@ -71,7 +71,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 		g := GithubRelease{
 			Name:         "rg",
 			Repo:         "BurntSushi/ripgrep",
-			Type:         TarGz,
+			Type:         TarGzDir,
 			Tag:          "13.0.0",
 			LinuxPattern: ".*unknown-linux-musl.*",
 			MacPattern:   ".*apple-darwin.*",
