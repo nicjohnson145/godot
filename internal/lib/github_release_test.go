@@ -54,7 +54,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 			GithubAuth: BasicAuth(ghuser, ghpat),
 		})
 
-		checkFiles(t, dir, []string{"godot"})
+		checkFiles(t, dir, []string{"godot", "godot-v2.4.1"})
 	})
 
 	t.Run("tarball", func(t *testing.T) {
@@ -62,9 +62,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 		defer noFatal(t)
 		defer restore()
 
-		dir, err := ioutil.TempDir("", "gh-release-test-*")
-		require.NoError(t, err)
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 
 		g := GithubRelease{
 			Name:         "rg",
@@ -81,6 +79,6 @@ func TestGithubReleaseExecute(t *testing.T) {
 			GithubAuth: BasicAuth(ghuser, ghpat),
 		})
 
-		checkFiles(t, dir, []string{"rg"})
+		checkFiles(t, dir, []string{"rg", "rg-13.0.0"})
 	})
 }

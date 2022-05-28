@@ -11,10 +11,11 @@ import (
 	"path"
 	"regexp"
 	"runtime"
+	"strings"
 )
 
 const (
-	Binary = "binary"
+	Binary   = "binary"
 	TarGzDir = "targz_dir"
 	TarGzBin = "targz_bin"
 )
@@ -154,10 +155,11 @@ func (g GithubRelease) handleTarGz(conf UserConfig, tempdir string, downloadpath
 	}
 
 	g.copyToDestination(path.Join(outpath, dir, g.Path), g.getDestination(conf))
+	g.createSymlink(g.getDestination(conf), g.getSymlinkName(conf))
 }
 
 func (g GithubRelease) handleTarGzDir(conf UserConfig, tempdir string, downloadpath string, release release) {
-	g.handleTarGz(conf, tempdir, downloadpath, release.Name[0 : len(release.Name)-7])
+	g.handleTarGz(conf, tempdir, downloadpath, release.Name[0:len(release.Name)-7])
 }
 
 func (g GithubRelease) handleTarGzBin(conf UserConfig, tempdir string, downloadpath string) {
@@ -166,6 +168,7 @@ func (g GithubRelease) handleTarGzBin(conf UserConfig, tempdir string, downloadp
 
 func (g GithubRelease) handleBinary(conf UserConfig, downloadpath string) {
 	g.copyToDestination(downloadpath, g.getDestination(conf))
+	g.createSymlink(g.getDestination(conf), g.getSymlinkName(conf))
 }
 
 func (g GithubRelease) copyToDestination(src string, dest string) {
@@ -193,6 +196,17 @@ func (g GithubRelease) copyToDestination(src string, dest string) {
 	}
 }
 
+func (g GithubRelease) createSymlink(src string, dest string) {
+	err := os.Symlink(src, dest)
+	if err != nil {
+		log.Fatalf("Error symlinking binary to tagged version: %v", err)
+	}
+}
+
 func (g GithubRelease) getDestination(conf UserConfig) string {
-	return path.Join(conf.BinaryDir, g.Name)
+	return path.Join(conf.BinaryDir, g.Name + "-" + g.Tag)
+}
+
+func (g GithubRelease) getSymlinkName(conf UserConfig) string {
+	return strings.TrimSuffix(g.getDestination(conf), "-" + g.Tag)
 }
