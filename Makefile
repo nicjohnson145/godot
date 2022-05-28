@@ -1,15 +1,21 @@
 .PHONY: %
 
-test: basic_tests apt_integration brew_integration
+test: unit_test integration_test
 
-basic_tests:
-	go test ./...
+go_build:
+	CGO_ENABLED=0 GOOS=linux go build
 
-apt_integration:
-	docker build -t apt_integration . -f apt_item_integration.Dockerfile
-	docker run --rm apt_integration
+check_pat_set:
+	@if [ -z "${GITHUB_PAT}" ]; then echo "GITHUB_PAT not set, integration tests can't run"; exit 1; fi
 
-brew_integration:
-	docker build -t brew_integration . -f brew_item_integration.Dockerfile
-	docker run --rm brew_integration
+docker_build:
+	docker build . -t godot_integration --no-cache -f integration_test.Dockerfile
 
+integration_test: go_build check_pat_set docker_build 
+	@docker run -e GITHUB_PAT=${GITHUB_PAT} --rm godot_integration 
+
+integration_debug: go_build check_pat_set docker_build 
+	@docker run -e GITHUB_PAT=${GITHUB_PAT} -it --rm godot_integration /bin/bash
+
+unit_test:
+	go test -v ./...

@@ -1,113 +1,99 @@
 package lib
 
 import (
-	"errors"
-	"fmt"
-	"io"
-	"path/filepath"
-
-	"github.com/nicjohnson145/godot/internal/util"
+	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
+	"os"
+	"path"
+	"text/template"
 )
 
-func (c *Config) GetAllFiles() StringMap {
-	return c.content.Files
+var funcs = template.FuncMap{
+	"oneOf": func(vars TemplateVars, options ...string) bool {
+		return lo.Contains(options, vars.Target)
+	},
+	"notOneOf": func(vars TemplateVars, options ...string) bool {
+		return !lo.Contains(options, vars.Target)
+	},
 }
 
-func (c *Config) GetFilesForTarget(target string) StringMap {
-	if target == "" {
-		target = c.Target
-	}
-
-	ret := make(StringMap)
-	all := c.GetAllFiles()
-
-	host, ok := c.content.Hosts[target]
-	if !ok {
-		return ret
-	}
-
-	for _, file := range host.Files {
-		ret[file] = all[file]
-	}
-
-	return ret
+type TemplateVars struct {
+	Target     string
+	Submodules string
+	Home       string
 }
 
-func (c *Config) AddFile(template string, destination string) (string, error) {
-	if template == "" {
-		template = util.ToTemplateName(destination)
-	}
-	if c.IsKnownFile(template) {
-		return "", errors.New(fmt.Sprintf("template name %q already exists", template))
-	}
-	newDest := util.ReplacePrefix(destination, c.Home, "~")
-	c.content.Files[template] = newDest
-	return template, nil
+var _ Executor = (*ConfigFile)(nil)
+
+type ConfigFile struct {
+	Name        string `yaml:"name"`
+	Destination string `yaml:"destination"`
 }
 
-func (c *Config) TargetUseFile(target string, name string) error {
-	if !c.IsKnownFile(name) {
-		return fmt.Errorf("Unknown template of %q", name)
-	}
-	host, ok := c.content.Hosts[target]
-	if !ok {
-		host = Host{}
-	}
-	host.Files = append(host.Files, name)
-	c.content.Hosts[target] = host
-	return nil
+func (c ConfigFile) GetName() string {
+	return c.Name
 }
 
-func (c *Config) TargetCeaseFile(target string, name string) error {
-	host, ok := c.content.Hosts[target]
-	if !ok {
-		return fmt.Errorf("unknown target %q", target)
-	}
+func (c ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
+	log.Infof("Executing config file %v", c.Name)
+	tmpl := c.parseTemplate(conf.CloneLocation)
 
-	newFiles, err := c.removeItem(host.Files, name)
+	buildPath := path.Join(conf.BuildLocation, c.Name)
+	ensureContainingDir(buildPath)
+	f, err := os.OpenFile(buildPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0744)
 	if err != nil {
-		return fmt.Errorf("remove target file: %w", err)
+		log.Fatalf("Error opening destination file %v: %v", buildPath, err)
 	}
-	host.Files = newFiles
-	c.content.Hosts[target] = host
-	return nil
-}
+	defer f.Close()
 
-func (c *Config) GetAllTemplateNames() []string {
-	names := make([]string, 0, len(c.content.Files))
-	for name := range c.content.Files {
-		names = append(names, name)
+	err = tmpl.Execute(f, TemplateVars{
+		Target:     conf.Target,
+		Submodules: path.Join(conf.CloneLocation, "submodules"),
+		Home:       conf.HomeDir,
+	})
+	if err != nil {
+		log.Fatalf("Error rendering template: %v", err)
 	}
-	return names
-}
 
-func (c *Config) GetAllTemplateNamesForTarget(target string) []string {
-	host, ok := c.content.Hosts[target]
-	if !ok {
-		host = Host{}
+	dest := replaceTilde(c.Destination, conf.HomeDir)
+	if c.pathExists(dest) {
+		c.removePath(dest)
 	}
-	return host.Files
+
+	c.symlink(buildPath, dest)
 }
 
-func (c *Config) IsKnownFile(name string) bool {
-	_, ok := c.content.Files[name]
-	return ok
+func (c ConfigFile) parseTemplate(dotfiles string) *template.Template {
+	t := template.New(c.Name).Funcs(funcs)
+	t, err := t.ParseFiles(path.Join(dotfiles, "templates", c.Name))
+	if err != nil {
+		log.Fatalf("Error parsing template file: %v", err)
+	}
+	return t
 }
 
-func (c *Config) GetTemplateFromFullPath(path string) (string, error) {
-	for template, dest := range c.GetAllFiles() {
-		fullDest := util.ReplacePrefix(dest, "~/", c.Home)
-		if fullDest == path {
-			return filepath.Join(c.TemplateRoot, template), nil
+func (c ConfigFile) pathExists(path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		} else {
+			log.Fatalf("Error checking existance of %v: %v", path, err)
 		}
 	}
-	return "", fmt.Errorf("Path %q is not managed by godot", path)
+	return true
 }
 
-func (c *Config) ListAllFiles(w io.Writer) error {
-	return c.writeStringMap(w, c.GetAllFiles())
+func (c ConfigFile) removePath(path string) {
+	if err := os.Remove(path); err != nil {
+		log.Fatalf("Error deleting path %v: %v", path, err)
+	}
 }
 
-func (c *Config) ListTargetFiles(target string, w io.Writer) error {
-	return c.writeStringMap(w, c.GetFilesForTarget(target))
+func (c ConfigFile) symlink(source string, dest string) {
+	ensureContainingDir(dest)
+
+	err := os.Symlink(source, dest)
+	if err != nil {
+		log.Fatalf("Error creating symlink: %v", err)
+	}
 }
