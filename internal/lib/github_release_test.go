@@ -38,9 +38,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 		defer noFatal(t)
 		defer restore()
 
-		dir, err := ioutil.TempDir("", "gh-release-test-*")
-		require.NoError(t, err)
-		defer os.RemoveAll(dir)
+		dir := t.TempDir()
 
 		g := GithubRelease{
 			Name:         "godot",

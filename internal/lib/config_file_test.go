@@ -13,13 +13,11 @@ func TestConfigFileExecute(t *testing.T) {
 	defer noFatal(t)
 	defer restore()
 
-	dir, err := ioutil.TempDir("", "godot-config-file-test-*")
-	require.NoError(t, err)
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	makeSubDir := func(d string) string {
 		sub := path.Join(dir, d)
-		err = os.MkdirAll(sub, 0744)
+		err := os.MkdirAll(sub, 0744)
 		require.NoError(t, err)
 		return sub
 	}
@@ -28,7 +26,7 @@ func TestConfigFileExecute(t *testing.T) {
 	output := makeSubDir("output")
 	home := makeSubDir("home")
 
-	err = ioutil.WriteFile(
+	err := ioutil.WriteFile(
 		path.Join(templates, "dot_conf"),
 		[]byte("Hello from {{ .Target }}"),
 		0744,
