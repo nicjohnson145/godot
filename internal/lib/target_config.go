@@ -26,7 +26,7 @@ type Target struct {
 
 type Bundle struct {
 	Name string `yaml:"name"`
-	Target
+	Target `yaml:",inline"`
 }
 
 func (b Bundle) ToTarget() Target {
