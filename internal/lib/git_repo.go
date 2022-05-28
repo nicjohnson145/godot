@@ -19,7 +19,7 @@ func (g GitRepo) GetName() string {
 	return g.Name
 }
 
-func (g GitRepo) Execute(conf UserConfig) {
+func (g GitRepo) Execute(conf UserConfig, opts SyncOpts) {
 	log.Infof("Ensuring %v cloned", g.URL)
 
 	location := replaceTilde(g.Location, conf.HomeDir)

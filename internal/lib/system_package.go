@@ -28,7 +28,12 @@ type SystemPackage struct {
 	BrewName string `yaml:"brew"`
 }
 
-func (s SystemPackage) Execute(conf UserConfig) {
+func (s SystemPackage) Execute(conf UserConfig, opts SyncOpts) {
+	if opts.Quick {
+		log.Debug("skipping system package %v due to quick flag", s.Name)
+		return
+	}
+
 	if conf.PackageManager == "" {
 		log.Fatal("Package manager not configured, cannot install system packages")
 	}

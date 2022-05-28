@@ -34,7 +34,7 @@ func (c ConfigFile) GetName() string {
 	return c.Name
 }
 
-func (c ConfigFile) Execute(conf UserConfig) {
+func (c ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
 	tmpl := c.parseTemplate(conf.CloneLocation)
 
 	buildPath := path.Join(conf.BuildLocation, c.Name)

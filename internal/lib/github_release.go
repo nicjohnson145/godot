@@ -46,7 +46,7 @@ func (g GithubRelease) GetName() string {
 	return g.Name
 }
 
-func (g GithubRelease) Execute(conf UserConfig) {
+func (g GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	// Check if the destination path is already there, if so don't redownload
 	exists, err := pathExists(g.getDestination(conf))
 	if err != nil {

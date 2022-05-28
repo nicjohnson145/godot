@@ -1,10 +1,14 @@
 package lib
 
-func Sync() {
-	syncFromConf(NewConfig())
+type SyncOpts struct {
+	Quick bool
 }
 
-func syncFromConf(userConf UserConfig) {
+func Sync(opts SyncOpts) {
+	syncFromConf(NewConfig(), opts)
+}
+
+func syncFromConf(userConf UserConfig, opts SyncOpts) {
 	EnsureDotfilesRepo(userConf)
 	executors := getExecutors(
 		NewTargetConfig(userConf),
@@ -12,6 +16,6 @@ func syncFromConf(userConf UserConfig) {
 	)
 
 	for _, ex := range executors {
-		ex.Execute(userConf)
+		ex.Execute(userConf, opts)
 	}
 }

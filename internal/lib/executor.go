@@ -5,7 +5,7 @@ import (
 )
 
 type Executor interface {
-	Execute(UserConfig)
+	Execute(UserConfig, SyncOpts)
 	Namer
 }
 

@@ -14,6 +14,8 @@ func main() {
 }
 
 func buildCommand() *cobra.Command {
+	syncOpts := lib.SyncOpts{}
+
 	rootCmd := &cobra.Command{
 		Use:   "godot",
 		Short: "A dotfiles manager",
@@ -25,9 +27,10 @@ func buildCommand() *cobra.Command {
 		Short: "Sync configuration",
 		Long:  "Sync local filesystem with configuration",
 		Run: func(cmd *cobra.Command, args []string) {
-			lib.Sync()
+			lib.Sync(syncOpts)
 		},
 	}
+	syncCmd.Flags().BoolVarP(&syncOpts.Quick, "quick", "q", false, "Run a quick sync, skipping some stages")
 	rootCmd.AddCommand(syncCmd)
 
 	validateCmd := &cobra.Command{
