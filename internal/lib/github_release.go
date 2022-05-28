@@ -197,7 +197,17 @@ func (g GithubRelease) copyToDestination(src string, dest string) {
 }
 
 func (g GithubRelease) createSymlink(src string, dest string) {
-	err := os.Symlink(src, dest)
+	exists, err := pathExists(dest)
+	if err != nil {
+		log.Fatalf("Error checking path existance: %v", err)
+	}
+	if exists {
+		err := os.Remove(dest)
+		if err != nil {
+			log.Fatalf("Error removing existing file: %v", err)
+		}
+	}
+	err = os.Symlink(src, dest)
 	if err != nil {
 		log.Fatalf("Error symlinking binary to tagged version: %v", err)
 	}
