@@ -13,22 +13,6 @@ type Namer interface {
 	GetName() string
 }
 
-func Sync() {
-	syncFromConf(NewConfig())
-}
-
-func syncFromConf(userConf UserConfig) {
-	EnsureDotfilesRepo(userConf)
-	executors := getExecutors(
-		NewTargetConfig(userConf),
-		userConf,
-	)
-
-	for _, ex := range executors {
-		ex.Execute(userConf)
-	}
-}
-
 func getByName[T Namer](name string, objs []T) (int, bool) {
 	for i, o := range objs {
 		if o.GetName() == name {

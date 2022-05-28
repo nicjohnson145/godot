@@ -61,3 +61,4 @@ func NewTargetConfigFromPath(path string) TargetConfig {
 
 	return conf
 }
+
