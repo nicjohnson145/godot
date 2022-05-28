@@ -15,12 +15,25 @@ func main() {
 
 func buildCommand() *cobra.Command {
 	syncOpts := lib.SyncOpts{}
+	var debug bool
+	var verbose bool
 
 	rootCmd := &cobra.Command{
 		Use:   "godot",
 		Short: "A dotfiles manager",
 		Long:  "A staticly linked dotfiles manager written in Go",
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			log.SetLevel(log.WarnLevel)
+			if verbose {
+				log.SetLevel(log.InfoLevel)
+			}
+			if debug {
+				log.SetLevel(log.DebugLevel)
+			}
+		},
 	}
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose logging")
 
 	syncCmd := &cobra.Command{
 		Use:   "sync",

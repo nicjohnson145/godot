@@ -35,6 +35,7 @@ func (c ConfigFile) GetName() string {
 }
 
 func (c ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
+	log.Infof("Executing config file %v", c.Name)
 	tmpl := c.parseTemplate(conf.CloneLocation)
 
 	buildPath := path.Join(conf.BuildLocation, c.Name)
