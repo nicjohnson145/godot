@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/nicjohnson145/godot/internal/lib"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"github.com/nicjohnson145/godot/internal/lib"
 )
 
 func main() {
@@ -21,9 +21,9 @@ func buildCommand() *cobra.Command {
 	}
 
 	syncCmd := &cobra.Command{
-		Use: "sync",
+		Use:   "sync",
 		Short: "Sync configuration",
-		Long: "Sync local filesystem with configuration",
+		Long:  "Sync local filesystem with configuration",
 		Run: func(cmd *cobra.Command, args []string) {
 			lib.Sync()
 		},

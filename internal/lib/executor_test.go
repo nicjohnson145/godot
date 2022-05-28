@@ -1,10 +1,10 @@
 package lib
 
 import (
-	"testing"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"sort"
+	"testing"
 )
 
 func TestGetExecutors(t *testing.T) {
@@ -37,26 +37,26 @@ func TestGetExecutors(t *testing.T) {
 			{
 				Name: "bundle-1",
 				Target: Target{
-					ConfigFiles: []string{"conf-1"},
+					ConfigFiles:    []string{"conf-1"},
 					GithubReleases: []string{"github-release-1"},
-					GitRepos: []string{"git-repo-1"},
+					GitRepos:       []string{"git-repo-1"},
 					SystemPackages: []string{"sys-package-1"},
 				},
 			},
 			{
 				Name: "bundle-2",
 				Target: Target{
-					ConfigFiles: []string{"conf-2"},
+					ConfigFiles:    []string{"conf-2"},
 					GithubReleases: []string{"github-release-2"},
-					GitRepos: []string{"git-repo-2"},
+					GitRepos:       []string{"git-repo-2"},
 					SystemPackages: []string{"sys-package-2"},
-					Bundles: []string{"bundle-3"}, // Woooo, recursion
+					Bundles:        []string{"bundle-3"}, // Woooo, recursion
 				},
 			},
 			{
 				Name: "bundle-3",
 				Target: Target{
-					ConfigFiles: []string{"conf-3"},
+					ConfigFiles:    []string{"conf-3"},
 					GithubReleases: []string{"github-release-3"},
 				},
 			},
@@ -76,7 +76,7 @@ func TestGetExecutors(t *testing.T) {
 					"sys-package-1",
 				},
 				Bundles: []string{
-					"bundle-1",  // This should be all duplicates
+					"bundle-1", // This should be all duplicates
 					"bundle-2",
 				},
 			},

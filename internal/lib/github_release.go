@@ -204,9 +204,9 @@ func (g GithubRelease) createSymlink(src string, dest string) {
 }
 
 func (g GithubRelease) getDestination(conf UserConfig) string {
-	return path.Join(conf.BinaryDir, g.Name + "-" + g.Tag)
+	return path.Join(conf.BinaryDir, g.Name+"-"+g.Tag)
 }
 
 func (g GithubRelease) getSymlinkName(conf UserConfig) string {
-	return strings.TrimSuffix(g.getDestination(conf), "-" + g.Tag)
+	return strings.TrimSuffix(g.getDestination(conf), "-"+g.Tag)
 }

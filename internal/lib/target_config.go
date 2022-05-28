@@ -25,17 +25,17 @@ type Target struct {
 }
 
 type Bundle struct {
-	Name string `yaml:"name"`
+	Name   string `yaml:"name"`
 	Target `yaml:",inline"`
 }
 
 func (b Bundle) ToTarget() Target {
 	return Target{
-		ConfigFiles: b.ConfigFiles,
+		ConfigFiles:    b.ConfigFiles,
 		GithubReleases: b.GithubReleases,
-		GitRepos: b.GitRepos,
+		GitRepos:       b.GitRepos,
 		SystemPackages: b.SystemPackages,
-		Bundles: b.Bundles,
+		Bundles:        b.Bundles,
 	}
 }
 

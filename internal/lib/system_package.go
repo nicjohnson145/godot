@@ -1,13 +1,13 @@
 package lib
 
 import (
+	"fmt"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"fmt"
 )
 
 const (
-	PackageManagerApt = "apt"
+	PackageManagerApt  = "apt"
 	PackageManagerBrew = "brew"
 )
 
@@ -42,7 +42,7 @@ func (s SystemPackage) Execute(conf UserConfig) {
 	default:
 		log.Fatalf("Unknown package manager %v", conf.PackageManager)
 	}
-	
+
 }
 
 func (s SystemPackage) GetName() string {

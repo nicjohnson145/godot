@@ -1,11 +1,11 @@
 package lib
 
 import (
-	"testing"
-	"io/ioutil"
 	"github.com/stretchr/testify/require"
-	"path"
+	"io/ioutil"
 	"os"
+	"path"
+	"testing"
 )
 
 func TestConfigFileExecute(t *testing.T) {
@@ -33,14 +33,14 @@ func TestConfigFileExecute(t *testing.T) {
 	)
 
 	f := ConfigFile{
-		Name: "dot_conf",
+		Name:        "dot_conf",
 		Destination: "~/.config/conf",
 	}
 	f.Execute(UserConfig{
 		CloneLocation: dir,
-		HomeDir: home,
+		HomeDir:       home,
 		BuildLocation: output,
-		Target: "foobar",
+		Target:        "foobar",
 	})
 
 	b, err := ioutil.ReadFile(path.Join(home, ".config", "conf"))

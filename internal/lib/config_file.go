@@ -1,11 +1,11 @@
 package lib
 
 import (
-	"text/template"
-	"os"
-	log "github.com/sirupsen/logrus"
-	"path"
 	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
+	"os"
+	"path"
+	"text/template"
 )
 
 var funcs = template.FuncMap{
@@ -34,10 +34,9 @@ func (c ConfigFile) GetName() string {
 	return c.Name
 }
 
-
 func (c ConfigFile) Execute(conf UserConfig) {
 	tmpl := c.parseTemplate(conf.CloneLocation)
-	
+
 	buildPath := path.Join(conf.BuildLocation, c.Name)
 	ensureContainingDir(buildPath)
 	f, err := os.OpenFile(buildPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0744)
@@ -47,9 +46,9 @@ func (c ConfigFile) Execute(conf UserConfig) {
 	defer f.Close()
 
 	err = tmpl.Execute(f, TemplateVars{
-		Target: conf.Target,
+		Target:     conf.Target,
 		Submodules: path.Join(conf.CloneLocation, "submodules"),
-		Home: conf.HomeDir,
+		Home:       conf.HomeDir,
 	})
 	if err != nil {
 		log.Fatalf("Error rendering template: %v", err)

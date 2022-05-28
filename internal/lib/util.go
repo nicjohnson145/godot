@@ -1,12 +1,12 @@
 package lib
 
 import (
-	"strings"
-	"path/filepath"
+	"bytes"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
-	log "github.com/sirupsen/logrus"
-	"bytes"
+	"path/filepath"
+	"strings"
 )
 
 func replaceTilde(s string, replacement string) string {
