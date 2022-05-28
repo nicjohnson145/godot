@@ -134,9 +134,9 @@ defines supplements that with the following
         <td>shorthand for evaulating if the current target is in a list</td>
         <td>
             <pre>
-            {{ if oneOf . "work" "home"  }}
-            export FOO="bar"
-            {{ end }}
+{{ if oneOf . "work" "home"  }}
+export FOO="bar"
+{{ end }}
             </pre>
         </td>
     </tr>
