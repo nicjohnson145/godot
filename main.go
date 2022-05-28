@@ -48,7 +48,7 @@ func buildCommand() *cobra.Command {
 
 	validateCmd := &cobra.Command{
 		Use:   "validate <path-to-config>",
-		Args: cobra.ExactArgs(1),
+		Args:  cobra.ExactArgs(1),
 		Short: "Validate configuration",
 		Long:  "Validate a configuration file on disk",
 		Run: func(cmd *cobra.Command, args []string) {

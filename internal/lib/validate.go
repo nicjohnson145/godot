@@ -1,8 +1,8 @@
 package lib
 
 import (
-	log "github.com/sirupsen/logrus"
 	mset "github.com/deckarep/golang-set/v2"
+	log "github.com/sirupsen/logrus"
 )
 
 func Validate(filepath string) {
@@ -42,7 +42,6 @@ func validateConfig(targetConfig TargetConfig) {
 		log.Fatal("Duplicate names are not allowed")
 	}
 }
-
 
 func checkNames[T Namer](names mset.Set[string], options []T) bool {
 	foundErr := false
