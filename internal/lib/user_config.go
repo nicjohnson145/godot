@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	vault "github.com/hashicorp/vault/api"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"os"
@@ -20,7 +19,7 @@ type VaultConfig struct {
 	TokenPath          string         `yaml:"token-path"`
 	GithubPatFromVault bool           `yaml:"pat-from-vault"`
 	GithubPatConfig    VaultPatConfig `yaml:"github-pat-config"`
-	Client             *vault.Client
+	Client             VaultClient
 }
 
 type UserConfig struct {
@@ -121,11 +120,10 @@ func NewConfigFromPath(confPath string) UserConfig {
 
 	// Now setup the github auth
 	if conf.VaultConfig.GithubPatFromVault {
-		if conf.VaultConfig.Client == nil {
+		if !conf.VaultConfig.Client.Initialized() {
 			log.Fatalf("Configured to read github PAT from vault, but vault client not properly initialized")
 		}
-		conf.GithubPAT = ReadKey(
-			conf.VaultConfig.Client,
+		conf.GithubPAT = conf.VaultConfig.Client.ReadKey(
 			conf.VaultConfig.GithubPatConfig.Path,
 			conf.VaultConfig.GithubPatConfig.Key,
 		)

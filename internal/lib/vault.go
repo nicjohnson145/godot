@@ -41,12 +41,22 @@ func setVaultClient(userConf *UserConfig) {
 	}
 
 	client.SetToken(string(b))
-	userConf.VaultConfig.Client = client
+	userConf.VaultConfig.Client = VaultClient{Client: client}
 	log.Debug("Initialized vault client")
 }
 
-func ReadKey(client *vault.Client, path string, key string) string {
-	secret, err := client.Logical().Read(path)
+type VaultClient struct {
+	Client *vault.Client
+}
+
+
+func (v VaultClient) Initialized() bool {
+	return v.Client != nil
+}
+
+
+func (v VaultClient) ReadKey(path string, key string) string {
+	secret, err := v.Client.Logical().Read(path)
 	if err != nil {
 		log.Fatalf("Error reading %v from vault: %v", path, err)
 	}
