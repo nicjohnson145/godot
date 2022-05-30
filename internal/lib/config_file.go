@@ -4,6 +4,7 @@ import (
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 	"os"
+	"fmt"
 	"path"
 	"text/template"
 )
@@ -35,6 +36,8 @@ func (c ConfigFile) GetName() string {
 }
 
 func (c ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
+	c.createVaultClosure(conf)
+
 	log.Infof("Executing config file %v", c.Name)
 	tmpl := c.parseTemplate(conf.CloneLocation)
 
@@ -61,6 +64,26 @@ func (c ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
 	}
 
 	c.symlink(buildPath, dest)
+}
+
+func (c ConfigFile) createVaultClosure(conf UserConfig) {
+	if _, ok := funcs["VaultLookup"]; ok {
+		return
+	}
+
+	log.Debug("Creating vault client template func")
+	funcs["VaultLookup"] = func(path string, key string) (string, error) {
+		if !conf.VaultConfig.Client.Initialized() {
+			return "", fmt.Errorf("Template requires Valut to be set up")
+		}
+
+		val, err := conf.VaultConfig.Client.ReadKey(path, key)
+		if err != nil {
+			return "", err
+		}
+
+		return val, nil
+	}
 }
 
 func (c ConfigFile) parseTemplate(dotfiles string) *template.Template {

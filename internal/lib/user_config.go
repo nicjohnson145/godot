@@ -123,7 +123,7 @@ func NewConfigFromPath(confPath string) UserConfig {
 		if !conf.VaultConfig.Client.Initialized() {
 			log.Fatalf("Configured to read github PAT from vault, but vault client not properly initialized")
 		}
-		conf.GithubPAT = conf.VaultConfig.Client.ReadKey(
+		conf.GithubPAT = conf.VaultConfig.Client.ReadKeyOrDie(
 			conf.VaultConfig.GithubPatConfig.Path,
 			conf.VaultConfig.GithubPatConfig.Key,
 		)

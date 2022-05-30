@@ -55,10 +55,10 @@ func (v VaultClient) Initialized() bool {
 }
 
 
-func (v VaultClient) ReadKey(path string, key string) string {
+func (v VaultClient) ReadKey(path string, key string) (string, error) {
 	secret, err := v.Client.Logical().Read(path)
 	if err != nil {
-		log.Fatalf("Error reading %v from vault: %v", path, err)
+		return "", fmt.Errorf("Error reading path %v from vault: %w", path, err)
 	}
 
 	data := map[string]string{}
@@ -69,9 +69,17 @@ func (v VaultClient) ReadKey(path string, key string) string {
 
 	value, ok := data[key]
 	if !ok {
-		log.Fatalf("Key %v not present at vault path %v", key, path)
+		return "", fmt.Errorf("Key %v not present at vault path %v", key, path)
 	}
 
-	return value
+	return value, nil
 }
 
+func (v VaultClient) ReadKeyOrDie(path string, key string) string {
+	val, err := v.ReadKey(path, key)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return val
+}
