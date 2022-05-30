@@ -11,8 +11,9 @@ Optionally, clone this repository and run `go install`
 
 ## Setup/Usage
 
-Godot requires a Personal Access Token exported as `GITHUB_PAT`. _instructions on generating a PAT
-can be found [here](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token)_
+Godot requires a Personal Access Token exported as `GITHUB_PAT`. instructions on generating a PAT
+can be found [here](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token).
+Optionally, if using the Hashicorp Vault integrations, the PAT can be pulled from Vault instead.
 
 Godot requires 2 config files, `~/.config/godot/config.yaml` and a separate `config.yaml` at the
 root of your dotfiles repo
@@ -28,7 +29,7 @@ The user config file (`~/.config/godot/config.yaml`) has the following options:
 | clone-location | The location you wish godot to clone its copy of your dotfiles repo (note this is separate from your own usage & clone) | No | `~/.config/godot/dotfiles` |
 | build-location | Where to place the rendered config files to symlink against | No | `~/.config/godot/rendered` |
 | package-manager | The package manager to use when installing system packages (currently only supports `apt` & `brew`) | No | OS specific |
-
+| vault-config | All Hashicorp Vault related configurations. See the section on Vault for details | No | - |
 
 The `config.yaml` is the actual configuration of what packages, config files, etc you want
 installed. An example configuration is given below to get you started
@@ -96,6 +97,32 @@ targets:
 Since `apt get install <blarg>` requires elevated permissions, godot requires that the user can run
 at minimum `sudo apt install` without a password prompt
 
+
+### Hashicorp Vault Integrations
+
+Godot has limited ability to pull values from Hashicorp Vault. These features are gated through the
+`vault-config` section in `~/.config/godot/config.yaml`.
+
+| Option | Description | Required | Default |
+| ------ | ----------- | -------- | ------- |
+| address | Address of the vault server | Yes | - |
+| token-path | Path to the token file for vault | No | `~/.vault-token` |
+| pat-from-vault | Instruct godot to pull the Github PAT from vault, requires `github-pat-config` to be set | No | - |
+| github-pat-config | The path in vault & the key where the github pat is stored | No | - |
+
+A full example of enabling Vault, as well as pulling the PAT from vault is given below
+
+```
+github-user: foobar
+target: foo
+vault-config:
+  address: https://vault.some-domain.com
+  pat-from-vault: true
+  github-pat-config:
+    path: secrets/some/path
+    key: github-pat
+```
+
 ## Templating
 
 The files stored in the dotfiles repository will be evaluated as go templates. Information about
@@ -145,5 +172,15 @@ export FOO="bar"
         <td>function</td>
         <td>The inverse of <code>oneOf</code>, evaluates if the target is not one of the list</td>
         <td></td>
+    </tr>
+    <tr>
+        <td>VaultLookup</td>
+        <td>function</td>
+        <td>Lookup a Key/Value secret stored in Vault. Requires that vault configuration is set up</td>
+        <td>
+            <pre>
+{{ VaultLookup "secrets/super-secrets" "my-secret-password" }}
+            </pre>
+        </td>
     </tr>
 </table
