@@ -30,7 +30,7 @@ type SystemPackage struct {
 
 func (s SystemPackage) Execute(conf UserConfig, opts SyncOpts) {
 	if opts.Quick {
-		log.Debug("skipping system package %v due to quick flag", s.Name)
+		log.Debugf("skipping system package %v due to quick flag", s.Name)
 		return
 	}
 

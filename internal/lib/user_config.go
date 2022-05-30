@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	vault "github.com/hashicorp/vault/api"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"os"
@@ -9,14 +10,28 @@ import (
 	"runtime"
 )
 
+type VaultPatConfig struct {
+	Path string `yaml:"path"`
+	Key  string `yaml:"key"`
+}
+
+type VaultConfig struct {
+	Address            string         `yaml:"address"`
+	TokenPath          string         `yaml:"token-path"`
+	GithubPatFromVault bool           `yaml:"pat-from-vault"`
+	GithubPatConfig    VaultPatConfig `yaml:"github-pat-config"`
+	Client             *vault.Client
+}
+
 type UserConfig struct {
-	BinaryDir      string `yaml:"binary-dir"`
-	GithubUser     string `yaml:"github-user"`
-	Target         string `yaml:"target"`
-	DotfilesURL    string `yaml:"dotfiles-url"`
-	CloneLocation  string `yaml:"clone-location"`
-	BuildLocation  string `yaml:"build-location"`
-	PackageManager string `yaml:"package-manager"`
+	BinaryDir      string      `yaml:"binary-dir"`
+	GithubUser     string      `yaml:"github-user"`
+	Target         string      `yaml:"target"`
+	DotfilesURL    string      `yaml:"dotfiles-url"`
+	CloneLocation  string      `yaml:"clone-location"`
+	BuildLocation  string      `yaml:"build-location"`
+	PackageManager string      `yaml:"package-manager"`
+	VaultConfig    VaultConfig `yaml:"vault-config"`
 	GithubPAT      string
 	GithubAuth     string
 	HomeDir        string
@@ -53,19 +68,6 @@ func NewConfigFromPath(confPath string) UserConfig {
 		conf.BinaryDir = path.Join(home, "bin")
 	} else {
 		conf.BinaryDir = replaceTilde(conf.BinaryDir, home)
-	}
-
-	// Now setup the github auth
-	pat, ok := os.LookupEnv("GITHUB_PAT")
-	if ok {
-		conf.GithubPAT = pat
-	}
-	if ok && conf.GithubUser != "" {
-		conf.GithubAuth = BasicAuth(conf.GithubUser, pat)
-	}
-
-	if !ok {
-		log.Warn("GITHUB_PAT not set, requests to the github API might be rate limited")
 	}
 
 	if conf.GithubUser == "" {
@@ -110,6 +112,34 @@ func NewConfigFromPath(confPath string) UserConfig {
 	} else {
 		if !isValidPackageManager(conf.PackageManager) {
 			log.Fatalf("Unsupported packaged manager of %v\n", conf.PackageManager)
+		}
+	}
+
+	// Initialize the vault client (if requested), since we may get the github pat from vault and
+	// not the environment
+	setVaultClient(&conf)
+
+	// Now setup the github auth
+	if conf.VaultConfig.GithubPatFromVault {
+		if conf.VaultConfig.Client == nil {
+			log.Fatalf("Configured to read github PAT from vault, but vault client not properly initialized")
+		}
+		conf.GithubPAT = ReadKey(
+			conf.VaultConfig.Client,
+			conf.VaultConfig.GithubPatConfig.Path,
+			conf.VaultConfig.GithubPatConfig.Key,
+		)
+	} else {
+		pat, ok := os.LookupEnv("GITHUB_PAT")
+		if ok {
+			conf.GithubPAT = pat
+		}
+		if ok && conf.GithubUser != "" {
+			conf.GithubAuth = BasicAuth(conf.GithubUser, pat)
+		}
+
+		if !ok {
+			log.Warn("GITHUB_PAT not set, requests to the github API might be rate limited")
 		}
 	}
 
