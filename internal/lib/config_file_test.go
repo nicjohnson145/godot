@@ -41,7 +41,7 @@ func TestConfigFileExecute(t *testing.T) {
 		HomeDir:       home,
 		BuildLocation: output,
 		Target:        "foobar",
-	})
+	}, SyncOpts{})
 
 	b, err := ioutil.ReadFile(path.Join(home, ".config", "conf"))
 	require.NoError(t, err)
