@@ -44,6 +44,7 @@ func buildCommand() *cobra.Command {
 		},
 	}
 	syncCmd.Flags().BoolVarP(&syncOpts.Quick, "quick", "q", false, "Run a quick sync, skipping some stages")
+	syncCmd.Flags().StringSliceVarP(&syncOpts.Ignore, "ignore", "i", []string{}, "Ignore these configs")
 	rootCmd.AddCommand(syncCmd)
 
 	validateCmd := &cobra.Command{
