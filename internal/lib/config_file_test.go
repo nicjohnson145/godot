@@ -9,7 +9,7 @@ import (
 )
 
 func TestConfigFileExecute(t *testing.T) {
-	restore, noFatal := NoFatals()
+	restore, noFatal := NoFatals(t)
 	defer noFatal(t)
 	defer restore()
 
