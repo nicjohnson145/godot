@@ -16,6 +16,7 @@ import (
 	"github.com/carlmjohnson/requests"
 	"github.com/mholt/archiver"
 	log "github.com/sirupsen/logrus"
+	"github.com/flytam/filenamify"
 )
 
 type releaseResponse struct {
@@ -173,11 +174,21 @@ func (g GithubRelease) createSymlink(src string, dest string) {
 }
 
 func (g GithubRelease) getDestination(conf UserConfig) string {
-	return path.Join(conf.BinaryDir, g.Name+"-"+g.Tag)
+	return path.Join(conf.BinaryDir, g.Name+"-"+g.normalizeTag())
+}
+
+func (g GithubRelease) normalizeTag() string {
+	out, err := filenamify.Filenamify(g.Tag, filenamify.Options{
+		Replacement: "-",
+	})
+	if err != nil {
+		log.Fatalf("Error converting tag to filesystem-safe name: %v", err)
+	}
+	return out
 }
 
 func (g GithubRelease) getSymlinkName(conf UserConfig) string {
-	return strings.TrimSuffix(g.getDestination(conf), "-"+g.Tag)
+	return strings.TrimSuffix(g.getDestination(conf), "-"+g.normalizeTag())
 }
 
 func (g GithubRelease) isExecutableFile(path string) bool {
