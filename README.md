@@ -38,17 +38,15 @@ installed. An example configuration is given below to get you started
 github-releases:
 - name: bat
   repo: sharkdp/bat
-  type: targz_dir
+  is-archive: true
   tag: v0.20.0
-  path: bat
   mac-pattern: '.*x86_64-apple-darwin.*'
   linux-pattern: '.*x86_64-unknown-linux-musl.*'
 
 - name: fd
   repo: sharkdp/fd
-  type: targz_dir
+  is-archive: true
   tag: v8.3.2
-  path: fd
   mac-pattern: '.*x86_64-apple-darwin.*'
   linux-pattern: '.*x86_64-unknown-linux-musl.*'
 
