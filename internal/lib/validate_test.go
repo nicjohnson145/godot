@@ -29,7 +29,7 @@ func TestValidateConfig(t *testing.T) {
 	})
 
 	t.Run("no-duplicates", func(t *testing.T) {
-		restore, noFatal := NoFatals()
+		restore, noFatal := NoFatals(t)
 		defer noFatal(t)
 		defer restore()
 

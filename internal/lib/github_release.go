@@ -3,21 +3,19 @@ package lib
 import (
 	"context"
 	"fmt"
-	"github.com/carlmjohnson/requests"
-	log "github.com/sirupsen/logrus"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
-)
 
-const (
-	Binary   = "binary"
-	TarGzDir = "targz_dir"
-	TarGzBin = "targz_bin"
+	"github.com/carlmjohnson/requests"
+	"github.com/mholt/archiver"
+	log "github.com/sirupsen/logrus"
 )
 
 type releaseResponse struct {
@@ -34,9 +32,9 @@ var _ Executor = (*GithubRelease)(nil)
 type GithubRelease struct {
 	Name           string `yaml:"name"`
 	Repo           string `yaml:"repo"`
-	Type           string `yaml:"type"`
 	Tag            string `yaml:"tag"`
-	Path           string `yaml:"path"`
+	IsArchive      bool   `yaml:"is-archive"`
+	Regex          string `yaml:"regex"`
 	MacPattern     string `yaml:"mac-pattern"`
 	LinuxPattern   string `yaml:"linux-pattern"`
 	WindowsPattern string `yaml:"windows-pattern"`
@@ -64,8 +62,8 @@ func (g GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	}
 	defer os.RemoveAll(dir)
 
-	filepath := path.Join(dir, "release")
 	release := g.getRelease(conf)
+	filepath := path.Join(dir, release.Name)
 
 	req := requests.
 		URL(release.DownloadUrl).
@@ -78,16 +76,10 @@ func (g GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 		log.Fatalf("Error downloading release asset: %v", err)
 	}
 
-	switch g.Type {
-	case TarGzDir:
-		g.handleTarGzDir(conf, dir, filepath, release)
-	case TarGzBin:
-		g.handleTarGzBin(conf, dir, filepath)
-	case Binary:
-		g.handleBinary(conf, filepath)
-	default:
-		log.Fatalf("Unknown type of %v", g.Type)
-	}
+	extractDir := path.Join(dir, "extract")
+	binaryPath := g.extractBinary(filepath, extractDir)
+	g.copyToDestination(binaryPath, g.getDestination(conf))
+	g.createSymlink(g.getDestination(conf), g.getSymlinkName(conf))
 }
 
 func (g GithubRelease) getRelease(conf UserConfig) release {
@@ -138,39 +130,6 @@ func (g GithubRelease) getDownloadPattern() *regexp.Regexp {
 	return exp
 }
 
-func (g GithubRelease) handleTarGz(conf UserConfig, tempdir string, downloadpath string, dir string) {
-	file, err := os.Open(downloadpath)
-	if err != nil {
-		log.Fatalf("Error opening downloaded release: %v", err)
-	}
-	defer file.Close()
-
-	outpath := path.Join(tempdir, "release-unpacked")
-	if err := os.Mkdir(outpath, os.ModePerm); err != nil {
-		log.Fatalf("Error creating temp directory: %v", err)
-	}
-
-	if err := Untar(file, outpath); err != nil {
-		log.Fatalf("Error unpacking tarball: %v", err)
-	}
-
-	g.copyToDestination(path.Join(outpath, dir, g.Path), g.getDestination(conf))
-	g.createSymlink(g.getDestination(conf), g.getSymlinkName(conf))
-}
-
-func (g GithubRelease) handleTarGzDir(conf UserConfig, tempdir string, downloadpath string, release release) {
-	g.handleTarGz(conf, tempdir, downloadpath, release.Name[0:len(release.Name)-7])
-}
-
-func (g GithubRelease) handleTarGzBin(conf UserConfig, tempdir string, downloadpath string) {
-	g.handleTarGz(conf, tempdir, downloadpath, "")
-}
-
-func (g GithubRelease) handleBinary(conf UserConfig, downloadpath string) {
-	g.copyToDestination(downloadpath, g.getDestination(conf))
-	g.createSymlink(g.getDestination(conf), g.getSymlinkName(conf))
-}
-
 func (g GithubRelease) copyToDestination(src string, dest string) {
 	sfile, err := os.Open(src)
 	if err != nil {
@@ -219,4 +178,60 @@ func (g GithubRelease) getDestination(conf UserConfig) string {
 
 func (g GithubRelease) getSymlinkName(conf UserConfig) string {
 	return strings.TrimSuffix(g.getDestination(conf), "-"+g.Tag)
+}
+
+func (g GithubRelease) isExecutableFile(path string) bool {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		log.Fatalf("Error determining if file is executable: %v", err)
+	}
+
+	filePerm := fileInfo.Mode()
+	return !fileInfo.IsDir() && filePerm&0111 != 0
+}
+
+func (g GithubRelease) extractBinary(downloadPath string, extractPath string) string {
+	if g.IsArchive {
+		err := archiver.Unarchive(downloadPath, extractPath)
+		if err != nil {
+			log.Fatalf("Error extracting archive: %v", err)
+		}
+		return g.findExecutable(extractPath)
+	}
+	return downloadPath
+}
+
+func (g GithubRelease) findExecutable(path string) string {
+	executables := []string{}
+
+	var validFile func(path string) bool
+	if g.Regex != "" {
+		regex, err := regexp.Compile(g.Regex)
+		if err != nil {
+			log.Fatalf("Unable to compile executable regex: %v", err)
+		}
+		validFile = func(path string) bool {
+			return regex.MatchString(path)
+		}
+	} else {
+		validFile = g.isExecutableFile
+	}
+	err := filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if validFile(path) {
+			executables = append(executables, path)
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatalf("Error walking extracted directory tree: %v", err)
+	}
+
+	if len(executables) != 1 {
+		log.Fatalf("Expected to find 1 executable, instead found %v, please specify a regex to the binary", len(executables))
+	}
+
+	return executables[0]
 }

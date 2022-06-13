@@ -6,13 +6,16 @@ import (
 	"testing"
 )
 
-func NoFatals() (func(), func(*testing.T)) {
+func NoFatals(t *testing.T) (func(), func(*testing.T)) {
 	restore := func() {
 		log.StandardLogger().ExitFunc = nil
 	}
 
 	fatal := false
-	log.StandardLogger().ExitFunc = func(int) { fatal = true }
+	log.StandardLogger().ExitFunc = func(int) {
+		fatal = true
+		t.FailNow()
+	}
 
 	noFatal := func(t *testing.T) {
 		require.False(t, fatal, "There should be no calls to log.Fatal")

@@ -34,7 +34,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 	}
 
 	t.Run("single_binary", func(t *testing.T) {
-		restore, noFatal := NoFatals()
+		restore, noFatal := NoFatals(t)
 		defer noFatal(t)
 		defer restore()
 
@@ -43,7 +43,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 		g := GithubRelease{
 			Name:         "godot",
 			Repo:         "nicjohnson145/godot",
-			Type:         Binary,
+			IsArchive:    false,
 			Tag:          "v2.4.1",
 			LinuxPattern: "godot_linux_amd64",
 			MacPattern:   "godot_darwin_amd64",
@@ -58,7 +58,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 	})
 
 	t.Run("tarball", func(t *testing.T) {
-		restore, noFatal := NoFatals()
+		restore, noFatal := NoFatals(t)
 		defer noFatal(t)
 		defer restore()
 
@@ -67,11 +67,10 @@ func TestGithubReleaseExecute(t *testing.T) {
 		g := GithubRelease{
 			Name:         "rg",
 			Repo:         "BurntSushi/ripgrep",
-			Type:         TarGzDir,
+			IsArchive:    true,
 			Tag:          "13.0.0",
 			LinuxPattern: ".*unknown-linux-musl.*",
 			MacPattern:   ".*apple-darwin.*",
-			Path:         "rg",
 		}
 		g.Execute(UserConfig{
 			BinaryDir:  dir,
@@ -80,5 +79,30 @@ func TestGithubReleaseExecute(t *testing.T) {
 		}, SyncOpts{})
 
 		checkFiles(t, dir, []string{"rg", "rg-13.0.0"})
+	})
+
+	t.Run("tarball_regex_specified", func(t *testing.T) {
+		restore, noFatal := NoFatals(t)
+		defer noFatal(t)
+		defer restore()
+
+		dir := t.TempDir()
+
+		g := GithubRelease{
+			Name:         "gh",
+			Repo:         "cli/cli",
+			IsArchive:    true,
+			Tag:          "v2.12.1",
+			Regex:        ".*/bin/gh$",
+			LinuxPattern: ".*linux_amd64.tar.gz$",
+			MacPattern:   ".*macOS_amd64.tar.gz$",
+		}
+		g.Execute(UserConfig{
+			BinaryDir:  dir,
+			GithubUser: ghuser,
+			GithubAuth: BasicAuth(ghuser, ghpat),
+		}, SyncOpts{})
+
+		checkFiles(t, dir, []string{"gh", "gh-v2.12.1"})
 	})
 }
