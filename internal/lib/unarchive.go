@@ -4,9 +4,9 @@ import (
 	"github.com/mholt/archiver"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"path/filepath"
-	"os"
 	"io/fs"
+	"os"
+	"path/filepath"
 )
 
 var archiveExtensions = []string{

@@ -1,9 +1,9 @@
 package lib
 
 import (
-	"testing"
 	"github.com/stretchr/testify/require"
 	"path/filepath"
+	"testing"
 )
 
 func TestExtractBinary(t *testing.T) {

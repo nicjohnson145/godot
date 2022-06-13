@@ -14,9 +14,9 @@ import (
 	"strings"
 
 	"github.com/carlmjohnson/requests"
+	"github.com/flytam/filenamify"
 	"github.com/mholt/archiver"
 	log "github.com/sirupsen/logrus"
-	"github.com/flytam/filenamify"
 )
 
 type releaseResponse struct {

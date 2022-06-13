@@ -115,12 +115,12 @@ func TestTagNormalization(t *testing.T) {
 	}{
 		{
 			name: "kustomize",
-			tag: "kustomize/v4.5.4",
+			tag:  "kustomize/v4.5.4",
 			want: "kustomize-v4.5.4",
 		},
 		{
 			name: "regular",
-			tag: "v0.21.0",
+			tag:  "v0.21.0",
 			want: "v0.21.0",
 		},
 	}
