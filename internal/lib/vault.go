@@ -1,11 +1,11 @@
 package lib
 
 import (
-	log "github.com/sirupsen/logrus"
-	vault "github.com/hashicorp/vault/api"
-	"path/filepath"
 	"fmt"
+	vault "github.com/hashicorp/vault/api"
+	log "github.com/sirupsen/logrus"
 	"os"
+	"path/filepath"
 )
 
 func setVaultClient(userConf *UserConfig) {
@@ -49,11 +49,9 @@ type VaultClient struct {
 	Client *vault.Client
 }
 
-
 func (v VaultClient) Initialized() bool {
 	return v.Client != nil
 }
-
 
 func (v VaultClient) ReadKey(path string, key string) (string, error) {
 	secret, err := v.Client.Logical().Read(path)

@@ -5,8 +5,10 @@ go 1.18
 require (
 	github.com/carlmjohnson/requests v0.22.2
 	github.com/deckarep/golang-set/v2 v2.1.0
+	github.com/flytam/filenamify v1.1.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/hashicorp/vault/api v1.6.0
+	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/samber/lo v1.21.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.4.0
@@ -53,7 +55,6 @@ require (
 	github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 // indirect
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
-	github.com/mholt/archiver v3.1.1+incompatible // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
