@@ -4,6 +4,13 @@ import (
 	"github.com/nicjohnson145/godot/internal/lib"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"fmt"
+)
+
+// Version info set by goreleaser
+var (
+	version = "development"
+	date = "unknown"
 )
 
 func main() {
@@ -57,6 +64,17 @@ func buildCommand() *cobra.Command {
 		},
 	}
 	rootCmd.AddCommand(validateCmd)
+
+	versionCmd := &cobra.Command{
+		Use: "version",
+		Short: "Show version info",
+		Long: "Show version info and exit",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println("Build Version: ", version)
+			fmt.Println("Build Time: ", date)
+		},
+	}
+	rootCmd.AddCommand(versionCmd)
 
 	return rootCmd
 }
