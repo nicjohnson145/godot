@@ -28,6 +28,10 @@ type release struct {
 	DownloadUrl string `json:"browser_download_url"`
 }
 
+type githubTag struct {
+	Name string `json:"name"`
+}
+
 var _ Executor = (*GithubRelease)(nil)
 
 type GithubRelease struct {
@@ -106,6 +110,24 @@ func (g GithubRelease) getRelease(conf UserConfig) release {
 
 	log.Fatalf("No assets in %v:%v match the pattern %v", g.Tag, g.Repo, pattern)
 	return release{}
+}
+
+func (g GithubRelease) GetLatestTag(conf UserConfig) string {
+	var resp []githubTag
+	req := requests.
+		URL(fmt.Sprintf("https://api.github.com/repos/%v/tags", g.Repo)).
+		ToJSON(&resp)
+	if conf.GithubAuth != "" {
+		req = req.Header("Authorization", conf.GithubAuth)
+	}
+	err := req.Fetch(context.TODO())
+	if err != nil {
+		log.Fatalf("Error getting tag list for %v", g.Repo)
+	}
+
+	// Sort of assuming that the API returns things in cronological order? A better approach would
+	// be to get all tags fully, and then do a semver compare, :shrug:
+	return resp[0].Name
 }
 
 func (g GithubRelease) getDownloadPattern() *regexp.Regexp {
