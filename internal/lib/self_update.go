@@ -10,6 +10,9 @@ func SelfUpdate(currentVersion string) {
 
 
 func selfUpdateWithConfig(conf UserConfig, currentVersion string) {
+	// Always make the log output here visible
+	log.SetLevel(log.InfoLevel)
+
 	if currentVersion == "development" {
 		log.Warn("Running development build, assuming latest and will not self update")
 		return
@@ -26,11 +29,11 @@ func selfUpdateWithConfig(conf UserConfig, currentVersion string) {
 	latest := godot.GetLatestTag(conf)[1:]
 
 	if latest == currentVersion {
-		log.Infof("Current version of %v is latest tag. Nothing to do")
+		log.Infof("Current version of %v is latest tag. Nothing to do", currentVersion)
 		return
 	}
 
-	log.Info("Newer version found, updating to %v", latest)
+	log.Infof("Newer version found, updating to %v", latest)
 	godot.Tag = "v" + latest
 	godot.Execute(conf, SyncOpts{})
 }
