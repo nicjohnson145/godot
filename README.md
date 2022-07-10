@@ -6,8 +6,8 @@ dotfiles manager in Python, so rewriting in Go seemed feasible since I knew my p
 thus making it a "solved" problem for me.
 
 ## Installation
+
 Compiled binaries can be found on the releases page [here](https://github.com/nicjohnson145/godot/releases/latest).
-Optionally, clone this repository and run `go install`
 
 ## Setup/Usage
 
