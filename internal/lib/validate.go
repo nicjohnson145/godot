@@ -22,40 +22,20 @@ func validateConfig(targetConfig TargetConfig) {
 	names := mset.NewSet[string]()
 
 	hasDupes := false
-	for _, n := range targetConfig.ConfigFiles {
-		if names.Contains(n.GetName()) {
-			log.Errorf("Duplicate name %v found", n.GetName())
-			hasDupes = true
-		}
-		names.Add(n.GetName())
+	if dupes := checkNames(names, toPtrList(targetConfig.ConfigFiles)); dupes {
+		hasDupes = true
 	}
-	for _, n := range targetConfig.GithubReleases {
-		if names.Contains(n.GetName()) {
-			log.Errorf("Duplicate name %v found", n.GetName())
-			hasDupes = true
-		}
-		names.Add(n.GetName())
+	if dupes := checkNames(names, toPtrList(targetConfig.GithubReleases)); dupes {
+		hasDupes = true
 	}
-	for _, n := range targetConfig.GitRepos {
-		if names.Contains(n.GetName()) {
-			log.Errorf("Duplicate name %v found", n.GetName())
-			hasDupes = true
-		}
-		names.Add(n.GetName())
+	if dupes := checkNames(names, toPtrList(targetConfig.GitRepos)); dupes {
+		hasDupes = true
 	}
-	for _, n := range targetConfig.SystemPackages {
-		if names.Contains(n.GetName()) {
-			log.Errorf("Duplicate name %v found", n.GetName())
-			hasDupes = true
-		}
-		names.Add(n.GetName())
+	if dupes := checkNames(names, toPtrList(targetConfig.SystemPackages)); dupes {
+		hasDupes = true
 	}
-	for _, n := range targetConfig.Bundles {
-		if names.Contains(n.GetName()) {
-			log.Errorf("Duplicate name %v found", n.GetName())
-			hasDupes = true
-		}
-		names.Add(n.GetName())
+	if dupes := checkNames(names, targetConfig.Bundles); dupes {
+		hasDupes = true
 	}
 
 	if hasDupes {
@@ -63,3 +43,14 @@ func validateConfig(targetConfig TargetConfig) {
 	}
 }
 
+func checkNames[T Namer](names mset.Set[string], options []T) bool {
+	foundErr := false
+	for _, f := range options {
+		if names.Contains(f.GetName()) {
+			log.Errorf("Duplicate name %v found", f.GetName())
+			foundErr = true
+		}
+		names.Add(f.GetName())
+	}
+	return foundErr
+}

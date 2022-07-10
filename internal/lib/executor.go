@@ -2,7 +2,6 @@ package lib
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.com/samber/lo"
 )
 
 type Executor interface {
@@ -23,6 +22,26 @@ func getByName[T Namer](name string, objs []T) (int, bool) {
 	return -1, false
 }
 
+func collectNamedOptions[T Executor](selectedOptions []string, allOptions []T, str string) []Executor {
+	executors := []Executor{}
+	for _, name := range selectedOptions {
+		if idx, found := getByName(name, allOptions); !found {
+			log.Fatalf("Unknown %v %v", str, name)
+		} else {
+			executors = append(executors, allOptions[idx])
+		}
+	}
+	return executors
+}
+
+func toPtrList[T any](list []T) []*T {
+	ptrs := []*T{}
+	for _, i := range list {
+		x := i
+		ptrs = append(ptrs, &x)
+	}
+	return ptrs
+}
 
 func getExecutors(targetConf TargetConfig, userConf UserConfig) []Executor {
 	target, ok := targetConf.Targets[userConf.Target]
@@ -36,45 +55,22 @@ func getExecutors(targetConf TargetConfig, userConf UserConfig) []Executor {
 func getExecutorsFromTarget(target Target, targetConf TargetConfig) []Executor {
 	executors := []Executor{}
 
-	for _, name := range target.ConfigFiles {
-		conf, ok := lo.Find(targetConf.ConfigFiles, func(c ConfigFile) bool {
-			return c.GetName() == name
-		})
-		if !ok {
-			log.Fatalf("Unknown ConfigFile %v", name)
-		}
-		executors = append(executors, &conf)
-	}
-
-	for _, name := range target.GithubReleases {
-		conf, ok := lo.Find(targetConf.GithubReleases, func(c GithubRelease) bool {
-			return c.GetName() == name
-		})
-		if !ok {
-			log.Fatalf("Unknown GithubRelease %v", name)
-		}
-		executors = append(executors, &conf)
-	}
-
-	for _, name := range target.GitRepos {
-		conf, ok := lo.Find(targetConf.GitRepos, func(c GitRepo) bool {
-			return c.GetName() == name
-		})
-		if !ok {
-			log.Fatalf("Unknown GitRepo %v", name)
-		}
-		executors = append(executors, &conf)
-	}
-
-	for _, name := range target.SystemPackages {
-		conf, ok := lo.Find(targetConf.SystemPackages, func(c SystemPackage) bool {
-			return c.GetName() == name
-		})
-		if !ok {
-			log.Fatalf("Unknown SystemPackage %v", name)
-		}
-		executors = append(executors, &conf)
-	}
+	executors = append(
+		executors,
+		collectNamedOptions(target.ConfigFiles, toPtrList(targetConf.ConfigFiles), "config file")...,
+	)
+	executors = append(
+		executors,
+		collectNamedOptions(target.GithubReleases, toPtrList(targetConf.GithubReleases), "github release")...,
+	)
+	executors = append(
+		executors,
+		collectNamedOptions(target.GitRepos, toPtrList(targetConf.GitRepos), "git repository")...,
+	)
+	executors = append(
+		executors,
+		collectNamedOptions(target.SystemPackages, toPtrList(targetConf.SystemPackages), "system package")...,
+	)
 
 	for _, bundleName := range target.Bundles {
 		idx, found := getByName(bundleName, targetConf.Bundles)
