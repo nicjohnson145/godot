@@ -31,11 +31,11 @@ type ConfigFile struct {
 	Destination string `yaml:"destination"`
 }
 
-func (c ConfigFile) GetName() string {
+func (c *ConfigFile) GetName() string {
 	return c.Name
 }
 
-func (c ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
+func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
 	c.createVaultClosure(conf)
 
 	log.Infof("Executing config file %v", c.Name)
@@ -66,7 +66,7 @@ func (c ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
 	c.symlink(buildPath, dest)
 }
 
-func (c ConfigFile) createVaultClosure(conf UserConfig) {
+func (c *ConfigFile) createVaultClosure(conf UserConfig) {
 	if _, ok := funcs["VaultLookup"]; ok {
 		return
 	}
@@ -86,7 +86,7 @@ func (c ConfigFile) createVaultClosure(conf UserConfig) {
 	}
 }
 
-func (c ConfigFile) parseTemplate(dotfiles string) *template.Template {
+func (c *ConfigFile) parseTemplate(dotfiles string) *template.Template {
 	t := template.New(c.Name).Funcs(funcs)
 	t, err := t.ParseFiles(path.Join(dotfiles, "templates", c.Name))
 	if err != nil {
@@ -95,7 +95,7 @@ func (c ConfigFile) parseTemplate(dotfiles string) *template.Template {
 	return t
 }
 
-func (c ConfigFile) pathExists(path string) bool {
+func (c *ConfigFile) pathExists(path string) bool {
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			return false
@@ -106,13 +106,13 @@ func (c ConfigFile) pathExists(path string) bool {
 	return true
 }
 
-func (c ConfigFile) removePath(path string) {
+func (c *ConfigFile) removePath(path string) {
 	if err := os.Remove(path); err != nil {
 		log.Fatalf("Error deleting path %v: %v", path, err)
 	}
 }
 
-func (c ConfigFile) symlink(source string, dest string) {
+func (c *ConfigFile) symlink(source string, dest string) {
 	ensureContainingDir(dest)
 
 	err := os.Symlink(source, dest)

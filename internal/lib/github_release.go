@@ -62,11 +62,11 @@ type GithubRelease struct {
 	WindowsPattern string `yaml:"windows-pattern"`
 }
 
-func (g GithubRelease) GetName() string {
+func (g *GithubRelease) GetName() string {
 	return g.Name
 }
 
-func (g GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
+func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	// Check if the destination path is already there, if so don't redownload
 	exists, err := pathExists(g.getDestination(conf))
 	if err != nil {
@@ -104,7 +104,7 @@ func (g GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	g.createSymlink(g.getDestination(conf), g.getSymlinkName(conf))
 }
 
-func (g GithubRelease) getRelease(conf UserConfig) release {
+func (g *GithubRelease) getRelease(conf UserConfig) release {
 	var resp releaseResponse
 	req := requests.
 		URL(fmt.Sprintf("https://api.github.com/repos/%v/releases/tags/%v", g.Repo, g.Tag)).
@@ -126,7 +126,7 @@ func (g GithubRelease) getRelease(conf UserConfig) release {
 	//}
 }
 
-func (g GithubRelease) GetLatestTag(conf UserConfig) string {
+func (g *GithubRelease) GetLatestTag(conf UserConfig) string {
 	var resp []githubTag
 	req := requests.
 		URL(fmt.Sprintf("https://api.github.com/repos/%v/tags", g.Repo)).
@@ -144,7 +144,7 @@ func (g GithubRelease) GetLatestTag(conf UserConfig) string {
 	return resp[0].Name
 }
 
-func (g GithubRelease) getAsset(resp releaseResponse, userOs string, userArch string) release {
+func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch string) release {
 	var pat string
 	switch userOs {
 	case "windows":
@@ -221,7 +221,7 @@ func (g GithubRelease) getAsset(resp releaseResponse, userOs string, userArch st
 	return release{}
 }
 
-func (g GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match bool) []release {
+func (g *GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match bool) []release {
 	matches := []release{}
 	for _, r := range assets {
 		if pat.MatchString(r.Name) == match {
@@ -232,7 +232,7 @@ func (g GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match 
 	return matches
 }
 
-func (g GithubRelease) getDownloadPattern() *regexp.Regexp {
+func (g *GithubRelease) getDownloadPattern() *regexp.Regexp {
 	var pat string
 	switch runtime.GOOS {
 	case "windows":
@@ -255,7 +255,7 @@ func (g GithubRelease) getDownloadPattern() *regexp.Regexp {
 	return exp
 }
 
-func (g GithubRelease) copyToDestination(src string, dest string) {
+func (g *GithubRelease) copyToDestination(src string, dest string) {
 	sfile, err := os.Open(src)
 	if err != nil {
 		log.Fatal("Error opening binary file: ", err)
@@ -280,7 +280,7 @@ func (g GithubRelease) copyToDestination(src string, dest string) {
 	}
 }
 
-func (g GithubRelease) createSymlink(src string, dest string) {
+func (g *GithubRelease) createSymlink(src string, dest string) {
 	exists, err := pathExists(dest)
 	if err != nil {
 		log.Fatalf("Error checking path existance: %v", err)
@@ -297,11 +297,11 @@ func (g GithubRelease) createSymlink(src string, dest string) {
 	}
 }
 
-func (g GithubRelease) getDestination(conf UserConfig) string {
+func (g *GithubRelease) getDestination(conf UserConfig) string {
 	return path.Join(conf.BinaryDir, g.Name+"-"+g.normalizeTag())
 }
 
-func (g GithubRelease) normalizeTag() string {
+func (g *GithubRelease) normalizeTag() string {
 	out, err := filenamify.Filenamify(g.Tag, filenamify.Options{
 		Replacement: "-",
 	})
@@ -311,11 +311,11 @@ func (g GithubRelease) normalizeTag() string {
 	return out
 }
 
-func (g GithubRelease) getSymlinkName(conf UserConfig) string {
+func (g *GithubRelease) getSymlinkName(conf UserConfig) string {
 	return strings.TrimSuffix(g.getDestination(conf), "-"+g.normalizeTag())
 }
 
-func (g GithubRelease) isExecutableFile(path string) bool {
+func (g *GithubRelease) isExecutableFile(path string) bool {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		log.Fatalf("Error determining if file is executable: %v", err)
@@ -325,7 +325,7 @@ func (g GithubRelease) isExecutableFile(path string) bool {
 	return !fileInfo.IsDir() && filePerm&0111 != 0
 }
 
-func (g GithubRelease) extractBinary(downloadPath string, extractPath string) string {
+func (g *GithubRelease) extractBinary(downloadPath string, extractPath string) string {
 	if g.IsArchive {
 		err := archiver.Unarchive(downloadPath, extractPath)
 		if err != nil {
@@ -336,7 +336,7 @@ func (g GithubRelease) extractBinary(downloadPath string, extractPath string) st
 	return downloadPath
 }
 
-func (g GithubRelease) findExecutable(path string) string {
+func (g *GithubRelease) findExecutable(path string) string {
 	executables := []string{}
 
 	var validFile func(path string) bool

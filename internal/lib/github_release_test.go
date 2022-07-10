@@ -127,7 +127,8 @@ func TestTagNormalization(t *testing.T) {
 	}
 	for _, tc := range testData {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, GithubRelease{Tag: tc.tag}.normalizeTag())
+			g := GithubRelease{Tag: tc.tag}
+			require.Equal(t, tc.want, g.normalizeTag())
 		})
 	}
 }
