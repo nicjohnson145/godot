@@ -19,6 +19,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	regexMusl = regexp.MustCompile("(?i)musl")
+	regexLinuxPkg = regexp.MustCompile(`(?i)(\.deb|\.rpm)$`)
+
+	osRegexMap = map[string]*regexp.Regexp{
+		"windows": regexp.MustCompile(`(?i)(windows|win)`),
+		"linux":   regexp.MustCompile("(?i)linux"),
+		"darwin":  regexp.MustCompile(`(?i)(darwin|mac(os)?|apple|osx)`),
+	}
+
+	archRegexMap = map[string]*regexp.Regexp{
+		"386":   regexp.MustCompile(`(?i)(i?386|x86_32|amd32|x32)`),
+		"amd64": regexp.MustCompile(`(?i)(x86_64|amd64|x64)`),
+		"arm64": regexp.MustCompile(`(?i)(arm64|aarch64)`),
+	}
+)
+
 type releaseResponse struct {
 	Assets []release `json:"assets"`
 }
@@ -100,16 +117,13 @@ func (g GithubRelease) getRelease(conf UserConfig) release {
 		log.Fatalf("Error getting release %v for %v: %v", g.Tag, g.Repo, err)
 	}
 
-	pattern := g.getDownloadPattern()
+	return g.getAsset(resp, runtime.GOOS, runtime.GOARCH)
 
-	for _, r := range resp.Assets {
-		if pattern.MatchString(r.Name) {
-			return r
-		}
-	}
-
-	log.Fatalf("No assets in %v:%v match the pattern %v", g.Tag, g.Repo, pattern)
-	return release{}
+	//for _, r := range resp.Assets {
+	//    if pattern.MatchString(r.Name) {
+	//        return r
+	//    }
+	//}
 }
 
 func (g GithubRelease) GetLatestTag(conf UserConfig) string {
@@ -128,6 +142,94 @@ func (g GithubRelease) GetLatestTag(conf UserConfig) string {
 	// Sort of assuming that the API returns things in cronological order? A better approach would
 	// be to get all tags fully, and then do a semver compare, :shrug:
 	return resp[0].Name
+}
+
+func (g GithubRelease) getAsset(resp releaseResponse, userOs string, userArch string) release {
+	var pat string
+	switch userOs {
+	case "windows":
+		pat = g.WindowsPattern
+	case "linux":
+		pat = g.LinuxPattern
+	case "darwin":
+		pat = g.MacPattern
+	}
+
+	if pat != "" {
+		log.Debugf("Using user specified pattern of %v", pat)
+		userRegex, err := regexp.Compile(pat)
+		if err != nil {
+			log.Fatalf("Error compiling user specified regex: %v", err)
+		}
+		assets := g.filterAssets(resp.Assets, userRegex, true)
+		if len(assets) != 1 {
+			log.Fatalf("Expected 1 matching asset for pattern %v, got %v", pat, len(assets))
+		}
+
+		return assets[0]
+	}
+
+	checkNoMatches := func(assets []release, matchType string) {
+		if len(assets) == 0 {
+			log.Fatalf("Unable to auto detect release name, no assets match pre-defined patterns for %v", matchType)
+		}
+	}
+
+	// Otherwise, lets try to detect it
+	osPat, ok := osRegexMap[userOs]
+	if !ok {
+		log.Fatalf("Unsupported OS of %v", userOs)
+	}
+	assets := g.filterAssets(resp.Assets, osPat, true)
+	checkNoMatches(assets, "OS")
+	if len(assets) == 1 {
+		// If there's only one matching asset by OS, then we're done here
+		log.Debugf("Reached a single asset after OS matching, found %v", assets[0].Name)
+		return assets[0]
+	}
+
+	// If we're got more than 1, then lets try to narrow it down by architecture
+	archPat, ok := archRegexMap[userArch]
+	if !ok {
+		log.Fatalf("Unsupported architecture of %v", userArch)
+	}
+	assets = g.filterAssets(assets, archPat, true)
+	checkNoMatches(assets, "architecture")
+	if len(assets) == 1 {
+		// If there's only one, then we're done here
+		log.Debugf("Reached a single asset after architecture matching, found %v", assets[0].Name)
+		return assets[0]
+	}
+
+	// If we're not linux, then I don't have any more tricks up my sleeve
+	if userOs != "linux" {
+		log.Fatalf("Unable to auto-detect release asset, please specify a per-OS pattern")
+	}
+
+	// But if we are, lets filter off any non-MUSL or deb/rpm 
+	assets = g.filterAssets(assets, regexLinuxPkg, false)
+	assets = g.filterAssets(assets, regexMusl, true)
+	checkNoMatches(assets, "linux packages/musl")
+
+	if len(assets) == 1 {
+		// If there's only one, then we're done here
+		log.Debugf("Reached a single asset after linux package and musl filtering, found %v", assets[0].Name)
+		return assets[0]
+	}
+
+	log.Fatalf("Unable to auto-detect release asset, please specify a per-OS pattern")
+	return release{}
+}
+
+func (g GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match bool) []release {
+	matches := []release{}
+	for _, r := range assets {
+		if pat.MatchString(r.Name) == match {
+			matches = append(matches, r)
+		}
+	}
+
+	return matches
 }
 
 func (g GithubRelease) getDownloadPattern() *regexp.Regexp {

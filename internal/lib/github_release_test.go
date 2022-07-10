@@ -3,6 +3,7 @@ package lib
 import (
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
+	"encoding/json"
 	"os"
 	"sort"
 	"testing"
@@ -127,6 +128,63 @@ func TestTagNormalization(t *testing.T) {
 	for _, tc := range testData {
 		t.Run(tc.name, func(t *testing.T) {
 			require.Equal(t, tc.want, GithubRelease{Tag: tc.tag}.normalizeTag())
+		})
+	}
+}
+
+func TestGetAssetAutoDetection(t *testing.T) {
+
+	testData := []struct {
+		name string
+		path string
+		os   string
+		arch string
+		want string
+	}{
+		{
+			name: "rg-linux-amd64",
+			path: "rg-13.0.0.json",
+			os: "linux",
+			arch: "amd64",
+			want: "ripgrep-13.0.0-x86_64-unknown-linux-musl.tar.gz",
+		},
+		{
+			name: "zoxide-linux-amd64",
+			path: "zoxide-v0.8.2.json",
+			os: "linux",
+			arch: "amd64",
+			want: "zoxide-0.8.2-x86_64-unknown-linux-musl.tar.gz",
+		},
+		{
+			name: "rg-mac-amd64",
+			path: "rg-13.0.0.json",
+			os: "darwin",
+			arch: "amd64",
+			want: "ripgrep-13.0.0-x86_64-apple-darwin.tar.gz",
+		},
+		{
+			name: "zoxide-mac-amd64",
+			path: "zoxide-v0.8.2.json",
+			os: "darwin",
+			arch: "amd64",
+			want: "zoxide-0.8.2-x86_64-apple-darwin.tar.gz",
+		},
+	}
+	for _, tc := range testData {
+		t.Run(tc.name, func(t *testing.T) {
+			restore, noFatal := NoFatals(t)
+			defer noFatal(t)
+			defer restore()
+
+			data, err := os.ReadFile("testdata/asset-json/" + tc.path)
+			require.NoError(t, err)
+
+			var resp releaseResponse
+			err = json.Unmarshal(data, &resp)
+			require.NoError(t, err)
+			g := GithubRelease{}
+			got := g.getAsset(resp, tc.os, tc.arch).Name
+			require.Equal(t, tc.want, got)
 		})
 	}
 }
