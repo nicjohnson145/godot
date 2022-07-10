@@ -1,9 +1,9 @@
 package lib
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/require"
 	"io/ioutil"
-	"encoding/json"
 	"os"
 	"sort"
 	"testing"
@@ -136,39 +136,44 @@ func TestTagNormalization(t *testing.T) {
 func TestGetAssetAutoDetection(t *testing.T) {
 
 	testData := []struct {
-		name string
-		path string
-		os   string
-		arch string
-		want string
+		name      string
+		path      string
+		os        string
+		arch      string
+		want      string
+		IsArchive bool
 	}{
 		{
 			name: "rg-linux-amd64",
 			path: "rg-13.0.0.json",
-			os: "linux",
+			os:   "linux",
 			arch: "amd64",
 			want: "ripgrep-13.0.0-x86_64-unknown-linux-musl.tar.gz",
+			IsArchive: true,
 		},
 		{
 			name: "zoxide-linux-amd64",
 			path: "zoxide-v0.8.2.json",
-			os: "linux",
+			os:   "linux",
 			arch: "amd64",
 			want: "zoxide-0.8.2-x86_64-unknown-linux-musl.tar.gz",
+			IsArchive: true,
 		},
 		{
 			name: "rg-mac-amd64",
 			path: "rg-13.0.0.json",
-			os: "darwin",
+			os:   "darwin",
 			arch: "amd64",
 			want: "ripgrep-13.0.0-x86_64-apple-darwin.tar.gz",
+			IsArchive: true,
 		},
 		{
 			name: "zoxide-mac-amd64",
 			path: "zoxide-v0.8.2.json",
-			os: "darwin",
+			os:   "darwin",
 			arch: "amd64",
 			want: "zoxide-0.8.2-x86_64-apple-darwin.tar.gz",
+			IsArchive: true,
 		},
 	}
 	for _, tc := range testData {
@@ -186,6 +191,8 @@ func TestGetAssetAutoDetection(t *testing.T) {
 			g := GithubRelease{}
 			got := g.getAsset(resp, tc.os, tc.arch).Name
 			require.Equal(t, tc.want, got)
+			// Should also properly set that the release is an archive
+			require.Equal(t, tc.IsArchive, g.IsArchive)
 		})
 	}
 }

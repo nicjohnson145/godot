@@ -185,6 +185,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 	if len(assets) == 1 {
 		// If there's only one matching asset by OS, then we're done here
 		log.Debugf("Reached a single asset after OS matching, found %v", assets[0].Name)
+		g.setArchive(assets[0])
 		return assets[0]
 	}
 
@@ -198,6 +199,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 	if len(assets) == 1 {
 		// If there's only one, then we're done here
 		log.Debugf("Reached a single asset after architecture matching, found %v", assets[0].Name)
+		g.setArchive(assets[0])
 		return assets[0]
 	}
 
@@ -214,6 +216,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 	if len(assets) == 1 {
 		// If there's only one, then we're done here
 		log.Debugf("Reached a single asset after linux package and musl filtering, found %v", assets[0].Name)
+		g.setArchive(assets[0])
 		return assets[0]
 	}
 
@@ -232,27 +235,8 @@ func (g *GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match
 	return matches
 }
 
-func (g *GithubRelease) getDownloadPattern() *regexp.Regexp {
-	var pat string
-	switch runtime.GOOS {
-	case "windows":
-		pat = g.WindowsPattern
-	case "linux":
-		pat = g.LinuxPattern
-	case "darwin":
-		pat = g.MacPattern
-	}
-
-	if pat == "" {
-		log.Fatal(fmt.Sprintf("GithubRelease %v does not have configured download pattern for %v", g.Repo, runtime.GOOS))
-	}
-
-	exp, err := regexp.Compile(pat)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("GithubRelease %v pattern is not a valid regular expression: %v", runtime.GOOS, err))
-	}
-
-	return exp
+func (g *GithubRelease) setArchive(asset release) {
+	g.IsArchive = isArchiveFile(path.Base(asset.DownloadUrl))
 }
 
 func (g *GithubRelease) copyToDestination(src string, dest string) {
