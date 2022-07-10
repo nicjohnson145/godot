@@ -22,16 +22,16 @@ func validateConfig(targetConfig TargetConfig) {
 	names := mset.NewSet[string]()
 
 	hasDupes := false
-	if dupes := checkNames(names, targetConfig.ConfigFiles); dupes {
+	if dupes := checkNames(names, toPtrList(targetConfig.ConfigFiles)); dupes {
 		hasDupes = true
 	}
-	if dupes := checkNames(names, targetConfig.GithubReleases); dupes {
+	if dupes := checkNames(names, toPtrList(targetConfig.GithubReleases)); dupes {
 		hasDupes = true
 	}
-	if dupes := checkNames(names, targetConfig.GitRepos); dupes {
+	if dupes := checkNames(names, toPtrList(targetConfig.GitRepos)); dupes {
 		hasDupes = true
 	}
-	if dupes := checkNames(names, targetConfig.SystemPackages); dupes {
+	if dupes := checkNames(names, toPtrList(targetConfig.SystemPackages)); dupes {
 		hasDupes = true
 	}
 	if dupes := checkNames(names, targetConfig.Bundles); dupes {

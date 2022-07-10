@@ -28,7 +28,7 @@ type SystemPackage struct {
 	BrewName string `yaml:"brew"`
 }
 
-func (s SystemPackage) Execute(conf UserConfig, opts SyncOpts) {
+func (s *SystemPackage) Execute(conf UserConfig, opts SyncOpts) {
 	if opts.Quick {
 		log.Debugf("skipping system package %v due to quick flag", s.Name)
 		return
@@ -50,11 +50,11 @@ func (s SystemPackage) Execute(conf UserConfig, opts SyncOpts) {
 
 }
 
-func (s SystemPackage) GetName() string {
+func (s *SystemPackage) GetName() string {
 	return s.Name
 }
 
-func (s SystemPackage) executeApt(conf UserConfig) {
+func (s *SystemPackage) executeApt(conf UserConfig) {
 	if s.AptName == "" {
 		log.Fatal("No configured name for apt")
 	}
@@ -64,7 +64,7 @@ func (s SystemPackage) executeApt(conf UserConfig) {
 	}
 }
 
-func (s SystemPackage) executeBrew(conf UserConfig) {
+func (s *SystemPackage) executeBrew(conf UserConfig) {
 	if s.BrewName == "" {
 		log.Fatal("No configured name for brew")
 	}

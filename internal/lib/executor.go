@@ -34,6 +34,15 @@ func collectNamedOptions[T Executor](selectedOptions []string, allOptions []T, s
 	return executors
 }
 
+func toPtrList[T any](list []T) []*T {
+	ptrs := []*T{}
+	for _, i := range list {
+		x := i
+		ptrs = append(ptrs, &x)
+	}
+	return ptrs
+}
+
 func getExecutors(targetConf TargetConfig, userConf UserConfig) []Executor {
 	target, ok := targetConf.Targets[userConf.Target]
 	if !ok {
@@ -48,19 +57,19 @@ func getExecutorsFromTarget(target Target, targetConf TargetConfig) []Executor {
 
 	executors = append(
 		executors,
-		collectNamedOptions(target.ConfigFiles, targetConf.ConfigFiles, "config file")...,
+		collectNamedOptions(target.ConfigFiles, toPtrList(targetConf.ConfigFiles), "config file")...,
 	)
 	executors = append(
 		executors,
-		collectNamedOptions(target.GithubReleases, targetConf.GithubReleases, "github release")...,
+		collectNamedOptions(target.GithubReleases, toPtrList(targetConf.GithubReleases), "github release")...,
 	)
 	executors = append(
 		executors,
-		collectNamedOptions(target.GitRepos, targetConf.GitRepos, "git repository")...,
+		collectNamedOptions(target.GitRepos, toPtrList(targetConf.GitRepos), "git repository")...,
 	)
 	executors = append(
 		executors,
-		collectNamedOptions(target.SystemPackages, targetConf.SystemPackages, "system package")...,
+		collectNamedOptions(target.SystemPackages, toPtrList(targetConf.SystemPackages), "system package")...,
 	)
 
 	for _, bundleName := range target.Bundles {
