@@ -21,7 +21,7 @@ import (
 
 var (
 	regexMusl = regexp.MustCompile("(?i)musl")
-	regexLinuxPkg = regexp.MustCompile(`(?i)(\.deb|\.rpm)$`)
+	regexLinuxPkg = regexp.MustCompile(`(?i)(\.deb|\.rpm|\.apk)$`)
 
 	osRegexMap = map[string]*regexp.Regexp{
 		"windows": regexp.MustCompile(`(?i)(windows|win)`),
@@ -210,12 +210,19 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 
 	// But if we are, lets filter off any non-MUSL or deb/rpm 
 	assets = g.filterAssets(assets, regexLinuxPkg, false)
-	assets = g.filterAssets(assets, regexMusl, true)
-	checkNoMatches(assets, "linux packages/musl")
+	checkNoMatches(assets, "non linux packages")
+	if len(assets) == 1 {
+		log.Debugf("Reached a single asset after package filtering, found %v", assets[0].Name)
+		g.setArchive(assets[0])
+		return assets[0]
+	}
 
+	// If we've still got multiples, prefere statically linked binaries
+	assets = g.filterAssets(assets, regexMusl, true)
+	checkNoMatches(assets, "musl static linking")
 	if len(assets) == 1 {
 		// If there's only one, then we're done here
-		log.Debugf("Reached a single asset after linux package and musl filtering, found %v", assets[0].Name)
+		log.Debugf("Reached a single asset after musl filtering, found %v", assets[0].Name)
 		g.setArchive(assets[0])
 		return assets[0]
 	}
