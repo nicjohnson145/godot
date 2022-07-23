@@ -6,8 +6,9 @@ import (
 )
 
 type SyncOpts struct {
-	Quick  bool
-	Ignore []string
+	Quick   bool
+	Ignore  []string
+	NoVault bool
 }
 
 func Sync(opts SyncOpts) {

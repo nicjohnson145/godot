@@ -38,19 +38,35 @@ type UserConfig struct {
 
 type vaultFunc func(*UserConfig)
 
-func NewConfig() UserConfig {
+type ConfigOverrides struct {
+	IgnoreVault bool
+}
+
+func homeDirOrDie() string {
 	dir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("Error getting home directory: %v", err)
 	}
+	return dir
+}
 
+func NewConfig() UserConfig {
 	return NewConfigFromPath(
-		path.Join(dir, ".config", "godot", "config.yaml"),
+		path.Join(homeDirOrDie(), ".config", "godot", "config.yaml"),
 		setVaultClient,
+		ConfigOverrides{},
 	)
 }
 
-func NewConfigFromPath(confPath string, setClient vaultFunc) UserConfig {
+func NewOverrideableConfig(overrides ConfigOverrides) UserConfig {
+	return NewConfigFromPath(
+		path.Join(homeDirOrDie(), ".config", "godot", "config.yaml"),
+		setVaultClient,
+		overrides,
+	)
+}
+
+func NewConfigFromPath(confPath string, setClient vaultFunc, overrides ConfigOverrides) UserConfig {
 	data, err := os.ReadFile(confPath)
 	if err != nil {
 		log.Fatalf("Error reading config path %v: %v", confPath, err)
@@ -124,7 +140,7 @@ func NewConfigFromPath(confPath string, setClient vaultFunc) UserConfig {
 	setClient(&conf)
 
 	// Now setup the github auth
-	if conf.VaultConfig.GithubPatFromVault {
+	if conf.VaultConfig.GithubPatFromVault && !overrides.IgnoreVault {
 		if !conf.VaultConfig.Client.Initialized() {
 			log.Fatalf("Configured to read github PAT from vault, but vault client not properly initialized")
 		}

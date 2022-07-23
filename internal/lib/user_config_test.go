@@ -70,6 +70,7 @@ func TestAuthenticationSetup(t *testing.T) {
 				},
 			}
 		},
+		ConfigOverrides{},
 	)
 
 	require.Equal(t, "MY_GITHUB_PAT", c.GithubPAT)
