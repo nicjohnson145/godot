@@ -58,7 +58,7 @@ func (s *SystemPackage) executeApt(conf UserConfig) {
 	if s.AptName == "" {
 		log.Fatal("No configured name for apt")
 	}
-	_, stderr, err := runCmd("/bin/sh", "-c", fmt.Sprintf("sudo apt install -y %v", s.AptName))
+	_, stderr, err := runCmd("/bin/sh", "-c", fmt.Sprintf("sudo DEBIAN_FRONTEND=noninteractive apt install -y %v", s.AptName))
 	if err != nil {
 		log.Fatalf("Error during installation: %v\n%v", err, stderr)
 	}
