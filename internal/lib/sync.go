@@ -12,7 +12,12 @@ type SyncOpts struct {
 }
 
 func Sync(opts SyncOpts) {
-	syncFromConf(NewConfig(), opts)
+	syncFromConf(
+		NewOverrideableConfig(ConfigOverrides{
+			IgnoreVault: opts.NoVault,
+		}),
+		opts,
+	)
 }
 
 func syncFromConf(userConf UserConfig, opts SyncOpts) {
