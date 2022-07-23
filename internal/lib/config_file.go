@@ -36,7 +36,7 @@ func (c *ConfigFile) GetName() string {
 }
 
 func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
-	c.createVaultClosure(conf)
+	c.createVaultClosure(conf, opts)
 
 	log.Infof("Executing config file %v", c.Name)
 	tmpl := c.parseTemplate(conf.CloneLocation)
@@ -66,8 +66,16 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
 	c.symlink(buildPath, dest)
 }
 
-func (c *ConfigFile) createVaultClosure(conf UserConfig) {
+func (c *ConfigFile) createVaultClosure(conf UserConfig, opts SyncOpts) {
 	if _, ok := funcs["VaultLookup"]; ok {
+		return
+	}
+
+	if opts.NoVault {
+		log.Debug("Creating no-op vault template func")
+		funcs["VaultLookup"] = func(path string, key string) (string, error) {
+			return "NOT_USING_VAULT", nil
+		}
 		return
 	}
 

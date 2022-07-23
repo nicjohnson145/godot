@@ -6,12 +6,18 @@ import (
 )
 
 type SyncOpts struct {
-	Quick  bool
-	Ignore []string
+	Quick   bool
+	Ignore  []string
+	NoVault bool
 }
 
 func Sync(opts SyncOpts) {
-	syncFromConf(NewConfig(), opts)
+	syncFromConf(
+		NewOverrideableConfig(ConfigOverrides{
+			IgnoreVault: opts.NoVault,
+		}),
+		opts,
+	)
 }
 
 func syncFromConf(userConf UserConfig, opts SyncOpts) {
