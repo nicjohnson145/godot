@@ -137,7 +137,9 @@ func NewConfigFromPath(confPath string, setClient vaultFunc, overrides ConfigOve
 
 	// Initialize the vault client (if requested), since we may get the github pat from vault and
 	// not the environment
-	setClient(&conf)
+	if !overrides.IgnoreVault {
+		setClient(&conf)
+	}
 
 	// Now setup the github auth
 	if conf.VaultConfig.GithubPatFromVault && !overrides.IgnoreVault {
