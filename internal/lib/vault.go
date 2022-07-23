@@ -41,19 +41,25 @@ func setVaultClient(userConf *UserConfig) {
 	}
 
 	client.SetToken(string(b))
-	userConf.VaultConfig.Client = VaultClient{Client: client}
+	userConf.VaultConfig.Client = RealVaultClient{Client: client}
 	log.Debug("Initialized vault client")
 }
 
-type VaultClient struct {
+type VaultClient interface {
+	Initialized() bool
+	ReadKey(string, string) (string, error)
+	ReadKeyOrDie(string, string) string
+}
+
+type RealVaultClient struct {
 	Client *vault.Client
 }
 
-func (v VaultClient) Initialized() bool {
+func (v RealVaultClient) Initialized() bool {
 	return v.Client != nil
 }
 
-func (v VaultClient) ReadKey(path string, key string) (string, error) {
+func (v RealVaultClient) ReadKey(path string, key string) (string, error) {
 	secret, err := v.Client.Logical().Read(path)
 	if err != nil {
 		return "", fmt.Errorf("Error reading path %v from vault: %w", path, err)
@@ -73,7 +79,7 @@ func (v VaultClient) ReadKey(path string, key string) (string, error) {
 	return value, nil
 }
 
-func (v VaultClient) ReadKeyOrDie(path string, key string) string {
+func (v RealVaultClient) ReadKeyOrDie(path string, key string) string {
 	val, err := v.ReadKey(path, key)
 	if err != nil {
 		log.Fatal(err)
