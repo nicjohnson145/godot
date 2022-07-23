@@ -36,16 +36,21 @@ type UserConfig struct {
 	HomeDir        string
 }
 
+type vaultFunc func(*UserConfig)
+
 func NewConfig() UserConfig {
 	dir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("Error getting home directory: %v", err)
 	}
 
-	return NewConfigFromPath(path.Join(dir, ".config", "godot", "config.yaml"))
+	return NewConfigFromPath(
+		path.Join(dir, ".config", "godot", "config.yaml"),
+		setVaultClient,
+	)
 }
 
-func NewConfigFromPath(confPath string) UserConfig {
+func NewConfigFromPath(confPath string, setClient vaultFunc) UserConfig {
 	data, err := os.ReadFile(confPath)
 	if err != nil {
 		log.Fatalf("Error reading config path %v: %v", confPath, err)
@@ -116,7 +121,7 @@ func NewConfigFromPath(confPath string) UserConfig {
 
 	// Initialize the vault client (if requested), since we may get the github pat from vault and
 	// not the environment
-	setVaultClient(&conf)
+	setClient(&conf)
 
 	// Now setup the github auth
 	if conf.VaultConfig.GithubPatFromVault {
@@ -132,14 +137,15 @@ func NewConfigFromPath(confPath string) UserConfig {
 		if ok {
 			conf.GithubPAT = pat
 		}
-		if ok && conf.GithubUser != "" {
-			conf.GithubAuth = BasicAuth(conf.GithubUser, pat)
-		}
-
 		if !ok {
 			log.Warn("GITHUB_PAT not set, requests to the github API might be rate limited")
 		}
 	}
+
+	if conf.GithubPAT != "" && conf.GithubUser != "" {
+		conf.GithubAuth = BasicAuth(conf.GithubUser, conf.GithubPAT)
+	}
+
 
 	return conf
 }
