@@ -37,6 +37,7 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) {
 		}
 		if executorsSpecified && !lo.Contains(opts.Executors, ex.Type()) {
 			log.Infof("Skipping %v due to executors command line arg", ex.GetName())
+			continue
 		}
 
 		ex.Execute(userConf, opts)
