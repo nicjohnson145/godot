@@ -36,6 +36,10 @@ var (
 	}
 )
 
+const (
+	TypeGithubRelease = "github-release"
+)
+
 type releaseResponse struct {
 	Assets []release `json:"assets"`
 }
@@ -64,6 +68,10 @@ type GithubRelease struct {
 
 func (g *GithubRelease) GetName() string {
 	return g.Name
+}
+
+func (g *GithubRelease) Type() string {
+	return TypeGithubRelease
 }
 
 func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {

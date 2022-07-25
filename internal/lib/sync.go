@@ -6,9 +6,10 @@ import (
 )
 
 type SyncOpts struct {
-	Quick   bool
-	Ignore  []string
-	NoVault bool
+	Quick     bool
+	Ignore    []string
+	NoVault   bool
+	Executors []string
 }
 
 func Sync(opts SyncOpts) {
@@ -27,11 +28,17 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) {
 		userConf,
 	)
 
+	executorsSpecified := len(opts.Executors) != 0
+
 	for _, ex := range executors {
 		if lo.Contains(opts.Ignore, ex.GetName()) {
 			log.Infof("Ignoring %v due to command line arg", ex.GetName())
 			continue
 		}
+		if executorsSpecified && !lo.Contains(opts.Executors, ex.Type()) {
+			log.Infof("Skipping %v due to executors command line arg", ex.GetName())
+		}
+
 		ex.Execute(userConf, opts)
 	}
 }

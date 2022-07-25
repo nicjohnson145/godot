@@ -53,6 +53,7 @@ func buildCommand() *cobra.Command {
 	syncCmd.Flags().BoolVarP(&syncOpts.Quick, "quick", "q", false, "Run a quick sync, skipping some stages")
 	syncCmd.Flags().StringSliceVarP(&syncOpts.Ignore, "ignore", "i", []string{}, "Ignore these configs")
 	syncCmd.Flags().BoolVar(&syncOpts.NoVault, "no-vault", false, "Ignore vault lookup directives in templates")
+	syncCmd.Flags().StringSliceVarP(&syncOpts.Executors, "executors", "e", []string{}, "Limit run to only these executor types")
 	rootCmd.AddCommand(syncCmd)
 
 	validateCmd := &cobra.Command{

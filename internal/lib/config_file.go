@@ -18,6 +18,10 @@ var funcs = template.FuncMap{
 	},
 }
 
+const (
+	TypeConfigFile = "config-file"
+)
+
 type TemplateVars struct {
 	Target     string
 	Submodules string
@@ -33,6 +37,10 @@ type ConfigFile struct {
 
 func (c *ConfigFile) GetName() string {
 	return c.Name
+}
+
+func (c *ConfigFile) Type() string {
+	return TypeConfigFile
 }
 
 func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts) {

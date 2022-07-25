@@ -6,6 +6,7 @@ import (
 
 type Executor interface {
 	Execute(UserConfig, SyncOpts)
+	Type() string
 	Namer
 }
 

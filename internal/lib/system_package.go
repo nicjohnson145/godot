@@ -9,6 +9,7 @@ import (
 const (
 	PackageManagerApt  = "apt"
 	PackageManagerBrew = "brew"
+	TypeSystemPackage = "system-package"
 )
 
 var validPackageManagers = []string{
@@ -26,6 +27,10 @@ type SystemPackage struct {
 	Name     string `yaml:"name"`
 	AptName  string `yaml:"apt"`
 	BrewName string `yaml:"brew"`
+}
+
+func (s *SystemPackage) Type() string {
+	return TypeSystemPackage
 }
 
 func (s *SystemPackage) Execute(conf UserConfig, opts SyncOpts) {
