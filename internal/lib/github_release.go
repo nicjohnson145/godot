@@ -3,7 +3,6 @@ package lib
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/fs"
 	"io/ioutil"
 	"os"
@@ -11,10 +10,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strings"
 
 	"github.com/carlmjohnson/requests"
-	"github.com/flytam/filenamify"
 	"github.com/mholt/archiver"
 	log "github.com/sirupsen/logrus"
 )
@@ -76,9 +73,10 @@ func (g *GithubRelease) Type() string {
 
 func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	// Check if the destination path is already there, if so don't redownload
-	exists, err := pathExists(g.getDestination(conf))
+	destination := getDestination(conf, g.Name, g.Tag)
+	exists, err := pathExists(destination)
 	if err != nil {
-		log.Fatalf("Unable to check existance of %v: %v", g.getDestination(conf), err)
+		log.Fatalf("Unable to check existance of %v: %v", destination)
 	}
 	if exists {
 		log.Infof("%v already downloaded, skipping", g.Name)
@@ -108,8 +106,8 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 
 	extractDir := path.Join(dir, "extract")
 	binaryPath := g.extractBinary(filepath, extractDir)
-	g.copyToDestination(binaryPath, g.getDestination(conf))
-	g.createSymlink(g.getDestination(conf), g.getSymlinkName(conf))
+	copyToDestination(binaryPath, destination)
+	createSymlink(destination, getSymlinkName(conf, g.Name, g.Tag))
 }
 
 func (g *GithubRelease) getRelease(conf UserConfig) release {
@@ -126,12 +124,6 @@ func (g *GithubRelease) getRelease(conf UserConfig) release {
 	}
 
 	return g.getAsset(resp, runtime.GOOS, runtime.GOARCH)
-
-	//for _, r := range resp.Assets {
-	//    if pattern.MatchString(r.Name) {
-	//        return r
-	//    }
-	//}
 }
 
 func (g *GithubRelease) GetLatestTag(conf UserConfig) string {
@@ -252,66 +244,6 @@ func (g *GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match
 
 func (g *GithubRelease) setArchive(asset release) {
 	g.IsArchive = isArchiveFile(path.Base(asset.DownloadUrl))
-}
-
-func (g *GithubRelease) copyToDestination(src string, dest string) {
-	sfile, err := os.Open(src)
-	if err != nil {
-		log.Fatal("Error opening binary file: ", err)
-	}
-	defer sfile.Close()
-
-	ensureContainingDir(dest)
-
-	dfile, err := os.Create(dest)
-	if err != nil {
-		log.Fatalf("Error creating destination file: %v", err)
-	}
-	defer dfile.Close()
-
-	_, err = io.Copy(dfile, sfile)
-	if err != nil {
-		log.Fatalf("Error copying binary to destination: %v", err)
-	}
-
-	if err := os.Chmod(dest, 0755); err != nil {
-		log.Fatalf("Error chmoding destination file: %v", err)
-	}
-}
-
-func (g *GithubRelease) createSymlink(src string, dest string) {
-	exists, err := pathExists(dest)
-	if err != nil {
-		log.Fatalf("Error checking path existance: %v", err)
-	}
-	if exists {
-		err := os.Remove(dest)
-		if err != nil {
-			log.Fatalf("Error removing existing file: %v", err)
-		}
-	}
-	err = os.Symlink(src, dest)
-	if err != nil {
-		log.Fatalf("Error symlinking binary to tagged version: %v", err)
-	}
-}
-
-func (g *GithubRelease) getDestination(conf UserConfig) string {
-	return path.Join(conf.BinaryDir, g.Name+"-"+g.normalizeTag())
-}
-
-func (g *GithubRelease) normalizeTag() string {
-	out, err := filenamify.Filenamify(g.Tag, filenamify.Options{
-		Replacement: "-",
-	})
-	if err != nil {
-		log.Fatalf("Error converting tag to filesystem-safe name: %v", err)
-	}
-	return out
-}
-
-func (g *GithubRelease) getSymlinkName(conf UserConfig) string {
-	return strings.TrimSuffix(g.getDestination(conf), "-"+g.normalizeTag())
 }
 
 func (g *GithubRelease) isExecutableFile(path string) bool {
