@@ -12,6 +12,7 @@ type TargetConfig struct {
 	GithubReleases []GithubRelease   `yaml:"github-releases,flow"`
 	GitRepos       []GitRepo         `yaml:"git-repos,flow"`
 	SystemPackages []SystemPackage   `yaml:"system-packages,flow"`
+	UrlDownloads   []UrlDownload     `yaml:"url-downloads,flow"`
 	Bundles        []Bundle          `yaml:"bundles,flow"`
 	Targets        map[string]Target `yaml:"targets"`
 }
@@ -21,6 +22,7 @@ type Target struct {
 	GithubReleases []string `yaml:"github-releases,flow"`
 	GitRepos       []string `yaml:"git-repos,flow"`
 	SystemPackages []string `yaml:"system-packages,flow"`
+	UrlDownloads   []string `yaml:"url-downloads,flow"`
 	Bundles        []string `yaml:"bundles,flow"`
 }
 
@@ -35,6 +37,7 @@ func (b Bundle) ToTarget() Target {
 		GithubReleases: b.GithubReleases,
 		GitRepos:       b.GitRepos,
 		SystemPackages: b.SystemPackages,
+		UrlDownloads:   b.UrlDownloads,
 		Bundles:        b.Bundles,
 	}
 }

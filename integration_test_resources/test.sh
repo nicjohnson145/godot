@@ -2,7 +2,7 @@
 
 set -exuo pipefail
 
-godot sync
+godot sync -v
 
 HOMEDIR="/home/newuser"
 
@@ -22,3 +22,9 @@ fi
 # Tmux should be installed through apt, `tmux --help` has an exit code of 1, so just make sure it's
 # in the path
 which tmux
+
+# Kubectl should be installed
+$HOMEDIR/bin/kubectl -h
+
+# So should vault
+$HOMEDIR/bin/vault -h
