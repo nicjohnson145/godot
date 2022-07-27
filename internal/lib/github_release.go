@@ -102,9 +102,24 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	}
 
 	extractDir := path.Join(dir, "extract")
-	binaryPath := extractBinary(filepath, extractDir, "")
+	binaryPath := extractBinary(filepath, extractDir, "", g.regexFunc())
 	copyToDestination(binaryPath, destination)
 	createSymlink(destination, getSymlinkName(conf, g.Name, g.Tag))
+}
+
+func (g *GithubRelease) regexFunc() func(string) bool {
+	if g.Regex == "" {
+		return nil
+	}
+
+	regex, err := regexp.Compile(g.Regex)
+	if err != nil {
+		log.Fatalf("Unable to compile executable regex: %v", err)
+	}
+
+	return func(path string) bool {
+		return regex.MatchString(path)
+	}
 }
 
 func (g *GithubRelease) getRelease(conf UserConfig) release {

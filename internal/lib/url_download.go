@@ -69,7 +69,7 @@ func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts) {
 	}
 
 	extractDir := path.Join(dir, "extract")
-	binary := extractBinary(filepath, extractDir, "")
+	binary := extractBinary(filepath, extractDir, "", nil)
 	copyToDestination(binary, destination)
 	createSymlink(destination, getSymlinkName(conf, u.Name, u.Tag))
 }
