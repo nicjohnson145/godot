@@ -88,7 +88,7 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	defer os.RemoveAll(dir)
 
 	release := g.getRelease(conf)
-	filepath := path.Join(dir, release.Name)
+	filepath := path.Join(dir, path.Base(release.DownloadUrl))
 
 	req := requests.
 		URL(release.DownloadUrl).
