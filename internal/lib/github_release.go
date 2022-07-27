@@ -3,16 +3,13 @@ package lib
 import (
 	"context"
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"runtime"
 
 	"github.com/carlmjohnson/requests"
-	"github.com/mholt/archiver"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -76,7 +73,7 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	destination := getDestination(conf, g.Name, g.Tag)
 	exists, err := pathExists(destination)
 	if err != nil {
-		log.Fatalf("Unable to check existance of %v: %v", destination)
+		log.Fatalf("Unable to check existance of %v: %v", destination, err)
 	}
 	if exists {
 		log.Infof("%v already downloaded, skipping", g.Name)
@@ -105,7 +102,7 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	}
 
 	extractDir := path.Join(dir, "extract")
-	binaryPath := g.extractBinary(filepath, extractDir)
+	binaryPath := extractBinary(filepath, extractDir, "")
 	copyToDestination(binaryPath, destination)
 	createSymlink(destination, getSymlinkName(conf, g.Name, g.Tag))
 }
@@ -244,60 +241,4 @@ func (g *GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match
 
 func (g *GithubRelease) setArchive(asset release) {
 	g.IsArchive = isArchiveFile(path.Base(asset.DownloadUrl))
-}
-
-func (g *GithubRelease) isExecutableFile(path string) bool {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		log.Fatalf("Error determining if file is executable: %v", err)
-	}
-
-	filePerm := fileInfo.Mode()
-	return !fileInfo.IsDir() && filePerm&0111 != 0
-}
-
-func (g *GithubRelease) extractBinary(downloadPath string, extractPath string) string {
-	if g.IsArchive {
-		err := archiver.Unarchive(downloadPath, extractPath)
-		if err != nil {
-			log.Fatalf("Error extracting archive: %v", err)
-		}
-		return g.findExecutable(extractPath)
-	}
-	return downloadPath
-}
-
-func (g *GithubRelease) findExecutable(path string) string {
-	executables := []string{}
-
-	var validFile func(path string) bool
-	if g.Regex != "" {
-		regex, err := regexp.Compile(g.Regex)
-		if err != nil {
-			log.Fatalf("Unable to compile executable regex: %v", err)
-		}
-		validFile = func(path string) bool {
-			return regex.MatchString(path)
-		}
-	} else {
-		validFile = g.isExecutableFile
-	}
-	err := filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if validFile(path) {
-			executables = append(executables, path)
-		}
-		return nil
-	})
-	if err != nil {
-		log.Fatalf("Error walking extracted directory tree: %v", err)
-	}
-
-	if len(executables) != 1 {
-		log.Fatalf("Expected to find 1 executable, instead found %v, please specify a regex to the binary", len(executables))
-	}
-
-	return executables[0]
 }
