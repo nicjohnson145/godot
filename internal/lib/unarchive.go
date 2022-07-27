@@ -28,7 +28,7 @@ func isExecutableFile(path string) bool {
 	return !fileInfo.IsDir() && filePerm&0111 != 0
 }
 
-func extractBinary(downloadPath string, extractPath string, binaryPath string) string {
+func extractBinary(downloadPath string, extractPath string, binaryPath string, findFunc func(string) bool) string {
 	if isArchiveFile(downloadPath) {
 		err := archiver.Unarchive(downloadPath, extractPath)
 		if err != nil {
@@ -37,19 +37,23 @@ func extractBinary(downloadPath string, extractPath string, binaryPath string) s
 		if binaryPath != "" {
 			return filepath.Join(extractPath, binaryPath)
 		} else {
-			return findExecutable(extractPath)
+			return findExecutable(extractPath, findFunc)
 		}
 	}
 	return downloadPath
 }
 
-func findExecutable(path string) string {
+func findExecutable(path string, searchFunc func(string) bool) string {
+	search := isExecutableFile
+	if searchFunc != nil {
+		search = searchFunc
+	}
 	executables := []string{}
 	err := filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if isExecutableFile(path) {
+		if search(path) {
 			executables = append(executables, path)
 		}
 		return nil

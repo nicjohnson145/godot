@@ -3,19 +3,13 @@ package lib
 import (
 	"context"
 	"fmt"
-	"io"
-	"io/fs"
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"runtime"
-	"strings"
 
 	"github.com/carlmjohnson/requests"
-	"github.com/flytam/filenamify"
-	"github.com/mholt/archiver"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -76,9 +70,10 @@ func (g *GithubRelease) Type() string {
 
 func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	// Check if the destination path is already there, if so don't redownload
-	exists, err := pathExists(g.getDestination(conf))
+	destination := getDestination(conf, g.Name, g.Tag)
+	exists, err := pathExists(destination)
 	if err != nil {
-		log.Fatalf("Unable to check existance of %v: %v", g.getDestination(conf), err)
+		log.Fatalf("Unable to check existance of %v: %v", destination, err)
 	}
 	if exists {
 		log.Infof("%v already downloaded, skipping", g.Name)
@@ -93,7 +88,7 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	defer os.RemoveAll(dir)
 
 	release := g.getRelease(conf)
-	filepath := path.Join(dir, release.Name)
+	filepath := path.Join(dir, path.Base(release.DownloadUrl))
 
 	req := requests.
 		URL(release.DownloadUrl).
@@ -107,9 +102,24 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	}
 
 	extractDir := path.Join(dir, "extract")
-	binaryPath := g.extractBinary(filepath, extractDir)
-	g.copyToDestination(binaryPath, g.getDestination(conf))
-	g.createSymlink(g.getDestination(conf), g.getSymlinkName(conf))
+	binaryPath := extractBinary(filepath, extractDir, "", g.regexFunc())
+	copyToDestination(binaryPath, destination)
+	createSymlink(destination, getSymlinkName(conf, g.Name, g.Tag))
+}
+
+func (g *GithubRelease) regexFunc() func(string) bool {
+	if g.Regex == "" {
+		return nil
+	}
+
+	regex, err := regexp.Compile(g.Regex)
+	if err != nil {
+		log.Fatalf("Unable to compile executable regex: %v", err)
+	}
+
+	return func(path string) bool {
+		return regex.MatchString(path)
+	}
 }
 
 func (g *GithubRelease) getRelease(conf UserConfig) release {
@@ -126,12 +136,6 @@ func (g *GithubRelease) getRelease(conf UserConfig) release {
 	}
 
 	return g.getAsset(resp, runtime.GOOS, runtime.GOARCH)
-
-	//for _, r := range resp.Assets {
-	//    if pattern.MatchString(r.Name) {
-	//        return r
-	//    }
-	//}
 }
 
 func (g *GithubRelease) GetLatestTag(conf UserConfig) string {
@@ -252,120 +256,4 @@ func (g *GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match
 
 func (g *GithubRelease) setArchive(asset release) {
 	g.IsArchive = isArchiveFile(path.Base(asset.DownloadUrl))
-}
-
-func (g *GithubRelease) copyToDestination(src string, dest string) {
-	sfile, err := os.Open(src)
-	if err != nil {
-		log.Fatal("Error opening binary file: ", err)
-	}
-	defer sfile.Close()
-
-	ensureContainingDir(dest)
-
-	dfile, err := os.Create(dest)
-	if err != nil {
-		log.Fatalf("Error creating destination file: %v", err)
-	}
-	defer dfile.Close()
-
-	_, err = io.Copy(dfile, sfile)
-	if err != nil {
-		log.Fatalf("Error copying binary to destination: %v", err)
-	}
-
-	if err := os.Chmod(dest, 0755); err != nil {
-		log.Fatalf("Error chmoding destination file: %v", err)
-	}
-}
-
-func (g *GithubRelease) createSymlink(src string, dest string) {
-	exists, err := pathExists(dest)
-	if err != nil {
-		log.Fatalf("Error checking path existance: %v", err)
-	}
-	if exists {
-		err := os.Remove(dest)
-		if err != nil {
-			log.Fatalf("Error removing existing file: %v", err)
-		}
-	}
-	err = os.Symlink(src, dest)
-	if err != nil {
-		log.Fatalf("Error symlinking binary to tagged version: %v", err)
-	}
-}
-
-func (g *GithubRelease) getDestination(conf UserConfig) string {
-	return path.Join(conf.BinaryDir, g.Name+"-"+g.normalizeTag())
-}
-
-func (g *GithubRelease) normalizeTag() string {
-	out, err := filenamify.Filenamify(g.Tag, filenamify.Options{
-		Replacement: "-",
-	})
-	if err != nil {
-		log.Fatalf("Error converting tag to filesystem-safe name: %v", err)
-	}
-	return out
-}
-
-func (g *GithubRelease) getSymlinkName(conf UserConfig) string {
-	return strings.TrimSuffix(g.getDestination(conf), "-"+g.normalizeTag())
-}
-
-func (g *GithubRelease) isExecutableFile(path string) bool {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		log.Fatalf("Error determining if file is executable: %v", err)
-	}
-
-	filePerm := fileInfo.Mode()
-	return !fileInfo.IsDir() && filePerm&0111 != 0
-}
-
-func (g *GithubRelease) extractBinary(downloadPath string, extractPath string) string {
-	if g.IsArchive {
-		err := archiver.Unarchive(downloadPath, extractPath)
-		if err != nil {
-			log.Fatalf("Error extracting archive: %v", err)
-		}
-		return g.findExecutable(extractPath)
-	}
-	return downloadPath
-}
-
-func (g *GithubRelease) findExecutable(path string) string {
-	executables := []string{}
-
-	var validFile func(path string) bool
-	if g.Regex != "" {
-		regex, err := regexp.Compile(g.Regex)
-		if err != nil {
-			log.Fatalf("Unable to compile executable regex: %v", err)
-		}
-		validFile = func(path string) bool {
-			return regex.MatchString(path)
-		}
-	} else {
-		validFile = g.isExecutableFile
-	}
-	err := filepath.Walk(path, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if validFile(path) {
-			executables = append(executables, path)
-		}
-		return nil
-	})
-	if err != nil {
-		log.Fatalf("Error walking extracted directory tree: %v", err)
-	}
-
-	if len(executables) != 1 {
-		log.Fatalf("Expected to find 1 executable, instead found %v, please specify a regex to the binary", len(executables))
-	}
-
-	return executables[0]
 }

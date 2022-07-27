@@ -72,6 +72,10 @@ func getExecutorsFromTarget(target Target, targetConf TargetConfig) []Executor {
 		executors,
 		collectNamedOptions(target.SystemPackages, toPtrList(targetConf.SystemPackages), "system package")...,
 	)
+	executors = append(
+		executors,
+		collectNamedOptions(target.UrlDownloads, toPtrList(targetConf.UrlDownloads), "url download")...,
+	)
 
 	for _, bundleName := range target.Bundles {
 		idx, found := getByName(bundleName, targetConf.Bundles)
