@@ -30,6 +30,7 @@ var (
 
 const (
 	TypeGithubRelease = "github-release"
+	Latest = "LATEST"
 )
 
 type releaseResponse struct {
@@ -103,6 +104,9 @@ func (g *GithubRelease) regexFunc() searchFunc {
 }
 
 func (g *GithubRelease) getRelease(conf UserConfig) release {
+	if g.Tag ==  Latest {
+		g.Tag = g.GetLatestTag(conf)
+	}
 	var resp releaseResponse
 	req := requests.
 		URL(fmt.Sprintf("https://api.github.com/repos/%v/releases/tags/%v", g.Repo, g.Tag)).
