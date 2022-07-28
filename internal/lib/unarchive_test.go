@@ -14,7 +14,8 @@ func TestExtractBinary(t *testing.T) {
 
 		extractDir := t.TempDir()
 
-		got := extractBinary("testdata/fzf.tar.gz", extractDir, "", nil)
+		got, err := extractBinary("testdata/fzf.tar.gz", extractDir, "", nil)
+		require.NoError(t, err)
 		want := filepath.Join(extractDir, "fzf")
 		require.Equal(t, want, got)
 	})
@@ -26,7 +27,8 @@ func TestExtractBinary(t *testing.T) {
 
 		extractDir := t.TempDir()
 
-		got := extractBinary("testdata/fzf.zip", extractDir, "", nil)
+		got, err := extractBinary("testdata/fzf.zip", extractDir, "", nil)
+		require.NoError(t, err)
 		want := filepath.Join(extractDir, "fzf")
 		require.Equal(t, want, got)
 	})

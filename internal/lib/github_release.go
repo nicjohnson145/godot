@@ -3,8 +3,6 @@ package lib
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path"
 	"regexp"
 	"runtime"
@@ -69,45 +67,27 @@ func (g *GithubRelease) Type() string {
 }
 
 func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
-	// Check if the destination path is already there, if so don't redownload
-	destination := getDestination(conf, g.Name, g.Tag)
-	exists, err := pathExists(destination)
-	if err != nil {
-		log.Fatalf("Unable to check existance of %v: %v", destination, err)
-	}
-	if exists {
-		log.Infof("%v already downloaded, skipping", g.Name)
-		return
-	}
-	log.Info("Downloading ", g.Repo)
-
-	dir, err := ioutil.TempDir("", "godot-")
-	if err != nil {
-		log.Fatal("Unable to make temp directory")
-	}
-	defer os.RemoveAll(dir)
-
 	release := g.getRelease(conf)
-	filepath := path.Join(dir, path.Base(release.DownloadUrl))
 
-	req := requests.
-		URL(release.DownloadUrl).
-		ToFile(filepath)
-	if conf.GithubAuth != "" {
-		req = req.Header("Authorization", conf.GithubAuth)
-	}
-	err = req.Fetch(context.TODO())
+	err := downloadAndSymlinkBinary(downloadOpts{
+		Name: g.Name,
+		DownloadName: path.Base(release.DownloadUrl),
+		FinalDest: getDestination(conf, g.Name, g.Tag),
+		Url: release.DownloadUrl,
+		RequestFunc: func(req *requests.Builder) {
+			if conf.GithubAuth != "" {
+				req.Header("Authorization", conf.GithubAuth)
+			}
+		},
+		SearchFunc: g.regexFunc(),
+		SymlinkName: getSymlinkName(conf, g.Name, g.Tag),
+	})
 	if err != nil {
-		log.Fatalf("Error downloading release asset: %v", err)
+		log.Fatal(err)
 	}
-
-	extractDir := path.Join(dir, "extract")
-	binaryPath := extractBinary(filepath, extractDir, "", g.regexFunc())
-	copyToDestination(binaryPath, destination)
-	createSymlink(destination, getSymlinkName(conf, g.Name, g.Tag))
 }
 
-func (g *GithubRelease) regexFunc() func(string) bool {
+func (g *GithubRelease) regexFunc() searchFunc {
 	if g.Regex == "" {
 		return nil
 	}
@@ -117,8 +97,8 @@ func (g *GithubRelease) regexFunc() func(string) bool {
 		log.Fatalf("Unable to compile executable regex: %v", err)
 	}
 
-	return func(path string) bool {
-		return regex.MatchString(path)
+	return func(path string) (bool, error) {
+		return regex.MatchString(path), nil
 	}
 }
 
