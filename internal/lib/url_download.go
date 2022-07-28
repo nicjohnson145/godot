@@ -2,11 +2,7 @@ package lib
 
 import (
 	"bytes"
-	"context"
-	"github.com/carlmjohnson/requests"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
-	"os"
 	"path"
 	"runtime"
 	"text/template"
@@ -39,39 +35,17 @@ func (u *UrlDownload) Type() string {
 }
 
 func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts) {
-	destination := getDestination(conf, u.Name, u.Tag)
-	exists, err := pathExists(destination)
-	if err != nil {
-		log.Fatalf("Unable to check existance of %v: %v", destination, err)
-	}
-	if exists {
-		log.Infof("%v already downloaded, skipping", u.Name)
-		return
-	}
-
-	log.Infof("Downloading %v", u.Name)
-
 	url := u.getDownloadUrl()
-
-	dir, err := ioutil.TempDir("", "godot-")
+	err := downloadAndSymlinkBinary(downloadOpts{
+		Name: u.Name,
+		DownloadName: path.Base(url),
+		FinalDest: getDestination(conf, u.Name, u.Tag),
+		Url: url,
+		SymlinkName: getSymlinkName(conf, u.Name, u.Tag),
+	})
 	if err != nil {
-		log.Fatal("Unable to make temp directory")
+		log.Fatal(err)
 	}
-	defer os.RemoveAll(dir)
-
-	filepath := path.Join(dir, path.Base(url))
-	req := requests.
-		URL(url).
-		ToFile(filepath)
-	err = req.Fetch(context.TODO())
-	if err != nil {
-		log.Fatalf("Error downloading release asset: %v", err)
-	}
-
-	extractDir := path.Join(dir, "extract")
-	binary := extractBinary(filepath, extractDir, "", nil)
-	copyToDestination(binary, destination)
-	createSymlink(destination, getSymlinkName(conf, u.Name, u.Tag))
 }
 
 func (u *UrlDownload) getDownloadUrl() string {

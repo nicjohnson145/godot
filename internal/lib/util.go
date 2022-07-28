@@ -2,14 +2,18 @@ package lib
 
 import (
 	"bytes"
-	"io"
-	"path"
+	"context"
+	"fmt"
+	"github.com/carlmjohnson/requests"
+	"github.com/flytam/filenamify"
 	log "github.com/sirupsen/logrus"
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
-	"github.com/flytam/filenamify"
 )
 
 func replaceTilde(s string, replacement string) string {
@@ -54,10 +58,10 @@ func getSymlinkName(conf UserConfig, name string, tag string) string {
 	return strings.TrimSuffix(getDestination(conf, name, tag), "-"+normalizeTag(tag))
 }
 
-func copyToDestination(src string, dest string) {
+func copyToDestination(src string, dest string) error {
 	sfile, err := os.Open(src)
 	if err != nil {
-		log.Fatal("Error opening binary file: ", err)
+		return fmt.Errorf("error opening binary file: %w", err)
 	}
 	defer sfile.Close()
 
@@ -65,34 +69,91 @@ func copyToDestination(src string, dest string) {
 
 	dfile, err := os.Create(dest)
 	if err != nil {
-		log.Fatalf("Error creating destination file: %v", err)
+		return fmt.Errorf("error creating destination file: %w", err)
 	}
 	defer dfile.Close()
 
 	_, err = io.Copy(dfile, sfile)
 	if err != nil {
-		log.Fatalf("Error copying binary to destination: %v", err)
+		return fmt.Errorf("error copying binary to destination: %w", err)
 	}
 
 	if err := os.Chmod(dest, 0755); err != nil {
-		log.Fatalf("Error chmoding destination file: %v", err)
+		return fmt.Errorf("error chmoding destination file: %w", err)
 	}
+	return nil
 }
 
-func createSymlink(src string, dest string) {
+func createSymlink(src string, dest string) error {
 	exists, err := pathExists(dest)
 	if err != nil {
-		log.Fatalf("Error checking path existance: %v", err)
+		return fmt.Errorf("Error checking path existance: %w", err)
 	}
 	if exists {
 		err := os.Remove(dest)
 		if err != nil {
-			log.Fatalf("Error removing existing file: %v", err)
+			return fmt.Errorf("Error removing existing file: %w", err)
 		}
 	}
 	err = os.Symlink(src, dest)
 	if err != nil {
-		log.Fatalf("Error symlinking binary to tagged version: %v", err)
+		return fmt.Errorf("Error symlinking binary to tagged version: %w", err)
 	}
+	return nil
 }
 
+type downloadOpts struct {
+	Name         string
+	DownloadName string
+	FinalDest    string
+	Url          string
+	RequestFunc  func(*requests.Builder)
+	SearchFunc   searchFunc
+	SymlinkName  string
+}
+
+func downloadAndSymlinkBinary(opts downloadOpts) error {
+	exists, err := pathExists(opts.FinalDest)
+	if err != nil {
+		return fmt.Errorf("unable to check existance of %v: %w", opts.FinalDest, err)
+	}
+	if exists {
+		log.Infof("%v already downloaded, skipping", opts.Name)
+		return nil
+	}
+
+	log.Infof("Downloading %v", opts.Name)
+
+	dir, err := ioutil.TempDir("", "godot-")
+	if err != nil {
+		return fmt.Errorf("unable to make temp directory")
+	}
+	defer os.RemoveAll(dir)
+
+	filepath := path.Join(dir, opts.DownloadName)
+	req := requests.
+		URL(opts.Url).
+		ToFile(filepath)
+	
+	if opts.RequestFunc != nil {
+		opts.RequestFunc(req)
+	}
+	err = req.Fetch(context.TODO())
+	if err != nil {
+		return fmt.Errorf("error downloading from url: %w", err)
+	}
+
+	extractDir := path.Join(dir, "extract")
+	binary, err := extractBinary(filepath, extractDir, "", opts.SearchFunc)
+	if err != nil {
+		return err
+	}
+	if err := copyToDestination(binary, opts.FinalDest); err != nil {
+		return err
+	}
+	if err := createSymlink(opts.FinalDest, opts.SymlinkName); err != nil {
+		return err
+	}
+
+	return nil
+}

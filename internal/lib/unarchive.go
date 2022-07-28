@@ -3,11 +3,13 @@ package lib
 import (
 	"github.com/mholt/archiver"
 	"github.com/samber/lo"
-	log "github.com/sirupsen/logrus"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"fmt"
 )
+
+type searchFunc func(string) (bool, error)
 
 var archiveExtensions = []string{
 	".gz",
@@ -18,32 +20,32 @@ func isArchiveFile(path string) bool {
 	return lo.Contains(archiveExtensions, filepath.Ext(path))
 }
 
-func isExecutableFile(path string) bool {
+func isExecutableFile(path string) (bool, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		log.Fatalf("Error determining if file is executable: %v", err)
+		return false, fmt.Errorf("error determining if file is executable: %w", err)
 	}
 
 	filePerm := fileInfo.Mode()
-	return !fileInfo.IsDir() && filePerm&0111 != 0
+	return !fileInfo.IsDir() && filePerm&0111 != 0, nil
 }
 
-func extractBinary(downloadPath string, extractPath string, binaryPath string, findFunc func(string) bool) string {
+func extractBinary(downloadPath string, extractPath string, binaryPath string, findFunc searchFunc) (string, error) {
 	if isArchiveFile(downloadPath) {
 		err := archiver.Unarchive(downloadPath, extractPath)
 		if err != nil {
-			log.Fatalf("Error extracting archive: %v", err)
+			return "", fmt.Errorf("error extracting archive: %w", err)
 		}
 		if binaryPath != "" {
-			return filepath.Join(extractPath, binaryPath)
+			return filepath.Join(extractPath, binaryPath), nil
 		} else {
 			return findExecutable(extractPath, findFunc)
 		}
 	}
-	return downloadPath
+	return downloadPath, nil
 }
 
-func findExecutable(path string, searchFunc func(string) bool) string {
+func findExecutable(path string, searchFunc searchFunc) (string, error) {
 	search := isExecutableFile
 	if searchFunc != nil {
 		search = searchFunc
@@ -53,18 +55,22 @@ func findExecutable(path string, searchFunc func(string) bool) string {
 		if err != nil {
 			return err
 		}
-		if search(path) {
+		found, err := search(path)
+		if err != nil {
+			return err
+		}
+		if found {
 			executables = append(executables, path)
 		}
 		return nil
 	})
 	if err != nil {
-		log.Fatalf("Error walking extracted directory tree: %v", err)
+		return "", fmt.Errorf("error walking extracted directory tree: %w", err)
 	}
 
 	if len(executables) != 1 {
-		log.Fatalf("Expected to find 1 executable, instead found %v, please specify the binary path manually", len(executables))
+		return "", fmt.Errorf("expected to find 1 executable, instead found %v, please specify the binary path manually", len(executables))
 	}
 
-	return executables[0]
+	return executables[0], nil
 }
