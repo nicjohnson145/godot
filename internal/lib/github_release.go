@@ -68,6 +68,7 @@ func (g *GithubRelease) Type() string {
 }
 
 func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
+	log.Infof("Ensuring %v", g.Repo)
 	release := g.getRelease(conf)
 
 	err := downloadAndSymlinkBinary(downloadOpts{
