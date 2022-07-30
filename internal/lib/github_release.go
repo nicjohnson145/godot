@@ -124,7 +124,7 @@ func (g *GithubRelease) getRelease(conf UserConfig) release {
 }
 
 func (g *GithubRelease) GetLatestRelease(conf UserConfig) string {
-	var resp []githubTag
+	var resp githubTag
 	req := requests.
 		URL(fmt.Sprintf("https://api.github.com/repos/%v/releases/latest", g.Repo)).
 		ToJSON(&resp)
@@ -133,12 +133,12 @@ func (g *GithubRelease) GetLatestRelease(conf UserConfig) string {
 	}
 	err := req.Fetch(context.TODO())
 	if err != nil {
-		log.Fatalf("Error getting tag list for %v", g.Repo)
+		log.Fatalf("Error getting tag list for %v: %v", g.Repo, err)
 	}
 
 	// Sort of assuming that the API returns things in cronological order? A better approach would
 	// be to get all tags fully, and then do a semver compare, :shrug:
-	return resp[0].TagName
+	return resp.TagName
 }
 
 func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch string) release {
