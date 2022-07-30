@@ -26,7 +26,7 @@ func selfUpdateWithConfig(conf UserConfig, currentVersion string) {
 		LinuxPattern: "^godot_linux_amd64$",
 		WindowsPattern: "^godot_windows_amd64.exe$",
 	}
-	latest := godot.GetLatestTag(conf)[1:]
+	latest := godot.GetLatestRelease(conf)[1:]
 
 	if latest == currentVersion {
 		log.Infof("Current version of %v is latest tag. Nothing to do", currentVersion)
