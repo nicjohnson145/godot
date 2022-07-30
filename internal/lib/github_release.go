@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	regexMusl = regexp.MustCompile("(?i)musl")
+	regexMusl     = regexp.MustCompile("(?i)musl")
 	regexLinuxPkg = regexp.MustCompile(`(?i)(\.deb|\.rpm|\.apk)$`)
 
 	osRegexMap = map[string]*regexp.Regexp{
@@ -30,7 +30,7 @@ var (
 
 const (
 	TypeGithubRelease = "github-release"
-	Latest = "LATEST"
+	Latest            = "LATEST"
 )
 
 type releaseResponse struct {
@@ -43,7 +43,7 @@ type release struct {
 }
 
 type githubTag struct {
-	Name string `json:"name"`
+	TagName string `json:"tag_name"`
 }
 
 var _ Executor = (*GithubRelease)(nil)
@@ -72,16 +72,16 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts) {
 	release := g.getRelease(conf)
 
 	err := downloadAndSymlinkBinary(downloadOpts{
-		Name: g.Name,
+		Name:         g.Name,
 		DownloadName: path.Base(release.DownloadUrl),
-		FinalDest: getDestination(conf, g.Name, g.Tag),
-		Url: release.DownloadUrl,
+		FinalDest:    getDestination(conf, g.Name, g.Tag),
+		Url:          release.DownloadUrl,
 		RequestFunc: func(req *requests.Builder) {
 			if conf.GithubAuth != "" {
 				req.Header("Authorization", conf.GithubAuth)
 			}
 		},
-		SearchFunc: g.regexFunc(),
+		SearchFunc:  g.regexFunc(),
 		SymlinkName: getSymlinkName(conf, g.Name, g.Tag),
 	})
 	if err != nil {
@@ -105,8 +105,8 @@ func (g *GithubRelease) regexFunc() searchFunc {
 }
 
 func (g *GithubRelease) getRelease(conf UserConfig) release {
-	if g.Tag ==  Latest {
-		g.Tag = g.GetLatestTag(conf)
+	if g.Tag == Latest {
+		g.Tag = g.GetLatestRelease(conf)
 	}
 	var resp releaseResponse
 	req := requests.
@@ -123,10 +123,10 @@ func (g *GithubRelease) getRelease(conf UserConfig) release {
 	return g.getAsset(resp, runtime.GOOS, runtime.GOARCH)
 }
 
-func (g *GithubRelease) GetLatestTag(conf UserConfig) string {
+func (g *GithubRelease) GetLatestRelease(conf UserConfig) string {
 	var resp []githubTag
 	req := requests.
-		URL(fmt.Sprintf("https://api.github.com/repos/%v/tags", g.Repo)).
+		URL(fmt.Sprintf("https://api.github.com/repos/%v/releases/latest", g.Repo)).
 		ToJSON(&resp)
 	if conf.GithubAuth != "" {
 		req = req.Header("Authorization", conf.GithubAuth)
@@ -138,7 +138,7 @@ func (g *GithubRelease) GetLatestTag(conf UserConfig) string {
 
 	// Sort of assuming that the API returns things in cronological order? A better approach would
 	// be to get all tags fully, and then do a semver compare, :shrug:
-	return resp[0].Name
+	return resp[0].TagName
 }
 
 func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch string) release {
@@ -205,7 +205,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 		log.Fatalf("Unable to auto-detect release asset, please specify a per-OS pattern")
 	}
 
-	// But if we are, lets filter off any non-MUSL or deb/rpm 
+	// But if we are, lets filter off any non-MUSL or deb/rpm
 	assets = g.filterAssets(assets, regexLinuxPkg, false)
 	checkNoMatches(assets, "non linux packages")
 	if len(assets) == 1 {

@@ -1,16 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"github.com/nicjohnson145/godot/internal/lib"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"fmt"
 )
 
 // Version info set by goreleaser
 var (
 	version = "development"
-	date = "unknown"
+	date    = "unknown"
 )
 
 func main() {
@@ -68,10 +68,10 @@ func buildCommand() *cobra.Command {
 	rootCmd.AddCommand(validateCmd)
 
 	versionCmd := &cobra.Command{
-		Use: "version",
+		Use:   "version",
 		Short: "Show version info",
-		Args: cobra.NoArgs,
-		Long: "Show version info and exit",
+		Args:  cobra.NoArgs,
+		Long:  "Show version info and exit",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println("Build Version: ", version)
 			fmt.Println("Build Time: ", date)
@@ -80,10 +80,10 @@ func buildCommand() *cobra.Command {
 	rootCmd.AddCommand(versionCmd)
 
 	updateCmd := &cobra.Command{
-		Use: "update",
+		Use:   "update",
 		Short: "Self update",
-		Args: cobra.NoArgs,
-		Long: "Check for newer version and install if found",
+		Args:  cobra.NoArgs,
+		Long:  "Check for newer version and install if found",
 		Run: func(cmd *cobra.Command, args []string) {
 			lib.SelfUpdate(version)
 		},

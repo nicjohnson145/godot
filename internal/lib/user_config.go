@@ -164,6 +164,5 @@ func NewConfigFromPath(confPath string, setClient vaultFunc, overrides ConfigOve
 		conf.GithubAuth = BasicAuth(conf.GithubUser, conf.GithubPAT)
 	}
 
-
 	return conf
 }

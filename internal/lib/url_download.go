@@ -38,11 +38,11 @@ func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts) {
 	log.Infof("Ensuring %v", u.Name)
 	url := u.getDownloadUrl()
 	err := downloadAndSymlinkBinary(downloadOpts{
-		Name: u.Name,
+		Name:         u.Name,
 		DownloadName: path.Base(url),
-		FinalDest: getDestination(conf, u.Name, u.Tag),
-		Url: url,
-		SymlinkName: getSymlinkName(conf, u.Name, u.Tag),
+		FinalDest:    getDestination(conf, u.Name, u.Tag),
+		Url:          url,
+		SymlinkName:  getSymlinkName(conf, u.Name, u.Tag),
 	})
 	if err != nil {
 		log.Fatal(err)
