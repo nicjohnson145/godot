@@ -9,7 +9,7 @@ import (
 const (
 	PackageManagerApt  = "apt"
 	PackageManagerBrew = "brew"
-	TypeSystemPackage = "system-package"
+	TypeSystemPackage  = "system-package"
 )
 
 var validPackageManagers = []string{

@@ -134,7 +134,7 @@ func downloadAndSymlinkBinary(opts downloadOpts) error {
 	req := requests.
 		URL(opts.Url).
 		ToFile(filepath)
-	
+
 	if opts.RequestFunc != nil {
 		opts.RequestFunc(req)
 	}

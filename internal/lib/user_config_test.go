@@ -1,18 +1,18 @@
 package lib
 
 import (
-	"testing"
+	"fmt"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 	"os"
 	"path"
-	"fmt"
-	"gopkg.in/yaml.v2"
+	"testing"
 )
 
 var _ VaultClient = (*MockVaultClient)(nil)
 
 type MockVaultClient struct {
-	ReadKeyFunc func(string, string) (string, error)
+	ReadKeyFunc     func(string, string) (string, error)
 	InitializedFunc func() bool
 }
 
@@ -30,14 +30,13 @@ func (m *MockVaultClient) ReadKey(s string, s1 string) (string, error) {
 	return "", fmt.Errorf("No find")
 }
 
-func (m *MockVaultClient) ReadKeyOrDie(s string, s1 string) (string) {
+func (m *MockVaultClient) ReadKeyOrDie(s string, s1 string) string {
 	s, err := m.ReadKey(s, s1)
 	if err != nil {
 		panic(err)
 	}
 	return s
 }
-
 
 func TestAuthenticationSetup(t *testing.T) {
 	dir := t.TempDir()
@@ -48,7 +47,7 @@ func TestAuthenticationSetup(t *testing.T) {
 			GithubPatFromVault: true,
 			GithubPatConfig: VaultPatConfig{
 				Path: "path/to/key",
-				Key: "key1",
+				Key:  "key1",
 			},
 		},
 	}
