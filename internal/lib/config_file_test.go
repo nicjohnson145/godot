@@ -1,8 +1,8 @@
 package lib
 
 import (
-	"github.com/stretchr/testify/require"
 	"github.com/lithammer/dedent"
+	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"os"
 	"path"
@@ -34,7 +34,7 @@ func setupForConfigFile(t *testing.T, name string, content string) UserConfig {
 
 	return UserConfig{
 		CloneLocation: dir,
-		HomeDir: home,
+		HomeDir:       home,
 		BuildLocation: output,
 	}
 }
@@ -71,7 +71,6 @@ func TestConfigFileExecute(t *testing.T) {
 	requireContents(t, path.Join(conf.HomeDir, ".config", "conf"), "Hello from foobar")
 }
 
-
 func TestIsInstalled(t *testing.T) {
 	restore, noFatal := NoFatals(t)
 	defer noFatal(t)
@@ -84,10 +83,10 @@ func TestIsInstalled(t *testing.T) {
 		blarg not installed
 		{{- end}}
 		`)
-	
+
 	conf := setupForConfigFile(t, "install_conf", content)
 	f := ConfigFile{
-		Name: "install_conf",
+		Name:        "install_conf",
 		Destination: "~/.config/install_conf",
 	}
 	outPath := path.Join(conf.HomeDir, ".config", "install_conf")

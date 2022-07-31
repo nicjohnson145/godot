@@ -19,7 +19,7 @@ var funcs = template.FuncMap{
 }
 
 const (
-	TypeConfigFile = "config-file"
+	TypeConfigFile      = "config-file"
 	funcNameVaultLookup = "VaultLookup"
 	funcNameIsInstalled = "IsInstalled"
 )
