@@ -33,7 +33,7 @@ func (s *SystemPackage) Type() string {
 	return TypeSystemPackage
 }
 
-func (s *SystemPackage) Execute(conf UserConfig, opts SyncOpts) {
+func (s *SystemPackage) Execute(conf UserConfig, opts SyncOpts, _ Target) {
 	if opts.Quick {
 		log.Debugf("skipping system package %v due to quick flag", s.Name)
 		return

@@ -43,7 +43,7 @@ func (c *ConfigFile) Type() string {
 	return TypeConfigFile
 }
 
-func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
+func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, target Target) {
 	c.createVaultClosure(conf, opts)
 
 	log.Infof("Executing config file %v", c.Name)

@@ -5,7 +5,7 @@ import (
 )
 
 type Executor interface {
-	Execute(UserConfig, SyncOpts)
+	Execute(UserConfig, SyncOpts, Target)
 	Type() string
 	Namer
 }
@@ -44,12 +44,16 @@ func toPtrList[T any](list []T) []*T {
 	return ptrs
 }
 
-func getExecutors(targetConf TargetConfig, userConf UserConfig) []Executor {
+func getTarget(targetConf TargetConfig, userConf UserConfig) Target {
 	target, ok := targetConf.Targets[userConf.Target]
 	if !ok {
 		log.Fatalf("Target %v has no configuration", userConf.Target)
 	}
+	return target
+}
 
+func getExecutors(targetConf TargetConfig, userConf UserConfig) []Executor {
+	target := getTarget(targetConf, userConf)
 	return getExecutorsFromTarget(target, targetConf)
 }
 
