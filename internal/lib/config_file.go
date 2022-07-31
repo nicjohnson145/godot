@@ -46,7 +46,6 @@ func (c *ConfigFile) Type() string {
 }
 
 func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, target Target) {
-	log.Info(target.GithubReleases)
 	c.createVaultClosure(conf, opts)
 	c.createIsInstalledClosure(target)
 
