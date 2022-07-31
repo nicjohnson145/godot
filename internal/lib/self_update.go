@@ -34,5 +34,5 @@ func selfUpdateWithConfig(conf UserConfig, currentVersion string) {
 
 	log.Infof("Newer version found, updating to %v", latest)
 	godot.Tag = "v" + latest
-	godot.Execute(conf, SyncOpts{})
+	godot.Execute(conf, SyncOpts{}, Target{})
 }

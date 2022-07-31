@@ -181,4 +181,16 @@ export FOO="bar"
             </pre>
         </td>
     </tr>
+    <tr>
+        <td>IsInstalled</td>
+        <td>function</td>
+        <td>Check if another piece of configuration is installed</td>
+        <td>
+            <pre>
+                {{ if IsInstalled "some-tool" }}
+                some-tool -init-env
+                {{ end }}
+            </pre>
+        </td>
+    </tr>
 </table

@@ -27,7 +27,7 @@ func (g *GitRepo) Type() string {
 	return TypeGitRepo
 }
 
-func (g *GitRepo) Execute(conf UserConfig, opts SyncOpts) {
+func (g *GitRepo) Execute(conf UserConfig, opts SyncOpts, _ Target) {
 	log.Infof("Ensuring %v cloned", g.URL)
 
 	location := replaceTilde(g.Location, conf.HomeDir)

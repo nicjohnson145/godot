@@ -23,11 +23,9 @@ func Sync(opts SyncOpts) {
 
 func syncFromConf(userConf UserConfig, opts SyncOpts) {
 	EnsureDotfilesRepo(userConf)
-	executors := getExecutors(
-		NewTargetConfig(userConf),
-		userConf,
-	)
-
+	tConf := NewTargetConfig(userConf)
+	executors := getExecutors(tConf, userConf)
+	target := getTarget(tConf, userConf)
 	executorsSpecified := len(opts.Executors) != 0
 
 	for _, ex := range executors {
@@ -40,6 +38,6 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) {
 			continue
 		}
 
-		ex.Execute(userConf, opts)
+		ex.Execute(userConf, opts, target)
 	}
 }

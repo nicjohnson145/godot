@@ -19,7 +19,9 @@ var funcs = template.FuncMap{
 }
 
 const (
-	TypeConfigFile = "config-file"
+	TypeConfigFile      = "config-file"
+	funcNameVaultLookup = "VaultLookup"
+	funcNameIsInstalled = "IsInstalled"
 )
 
 type TemplateVars struct {
@@ -43,8 +45,9 @@ func (c *ConfigFile) Type() string {
 	return TypeConfigFile
 }
 
-func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
+func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, target Target) {
 	c.createVaultClosure(conf, opts)
+	c.createIsInstalledClosure(target)
 
 	log.Infof("Executing config file %v", c.Name)
 	tmpl := c.parseTemplate(conf.CloneLocation)
@@ -75,20 +78,20 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts) {
 }
 
 func (c *ConfigFile) createVaultClosure(conf UserConfig, opts SyncOpts) {
-	if _, ok := funcs["VaultLookup"]; ok {
+	if _, ok := funcs[funcNameVaultLookup]; ok {
 		return
 	}
 
 	if opts.NoVault {
 		log.Debug("Creating no-op vault template func")
-		funcs["VaultLookup"] = func(path string, key string) (string, error) {
+		funcs[funcNameVaultLookup] = func(path string, key string) (string, error) {
 			return "NOT_USING_VAULT", nil
 		}
 		return
 	}
 
 	log.Debug("Creating vault client template func")
-	funcs["VaultLookup"] = func(path string, key string) (string, error) {
+	funcs[funcNameVaultLookup] = func(path string, key string) (string, error) {
 		if !conf.VaultConfig.Client.Initialized() {
 			return "", fmt.Errorf("Template requires Valut to be set up")
 		}
@@ -99,6 +102,35 @@ func (c *ConfigFile) createVaultClosure(conf UserConfig, opts SyncOpts) {
 		}
 
 		return val, nil
+	}
+}
+
+func (c *ConfigFile) createIsInstalledClosure(target Target) {
+	if _, ok := funcs[funcNameIsInstalled]; ok {
+		return
+	}
+
+	log.Debug("Creating IsInstalled template func")
+	funcs[funcNameIsInstalled] = func(item string) bool {
+		if lo.Contains(target.Bundles, item) {
+			return true
+		}
+		if lo.Contains(target.ConfigFiles, item) {
+			return true
+		}
+		if lo.Contains(target.GitRepos, item) {
+			return true
+		}
+		if lo.Contains(target.GithubReleases, item) {
+			return true
+		}
+		if lo.Contains(target.SystemPackages, item) {
+			return true
+		}
+		if lo.Contains(target.UrlDownloads, item) {
+			return true
+		}
+		return false
 	}
 }
 

@@ -8,6 +8,7 @@ require (
 	github.com/flytam/filenamify v1.1.0
 	github.com/go-git/go-git/v5 v5.4.2
 	github.com/hashicorp/vault/api v1.6.0
+	github.com/lithammer/dedent v1.1.0
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/samber/lo v1.21.0
 	github.com/sirupsen/logrus v1.8.1
