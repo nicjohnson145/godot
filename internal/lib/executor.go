@@ -5,7 +5,7 @@ import (
 )
 
 type Executor interface {
-	Execute(UserConfig, SyncOpts, Target)
+	Execute(UserConfig, SyncOpts, TargetConfig)
 	Type() string
 	Namer
 }

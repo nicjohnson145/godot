@@ -53,7 +53,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 			BinaryDir:  dir,
 			GithubUser: ghuser,
 			GithubAuth: BasicAuth(ghuser, ghpat),
-		}, SyncOpts{}, Target{})
+		}, SyncOpts{}, TargetConfig{})
 
 		checkFiles(t, dir, []string{"godot", "godot-v2.4.1"})
 	})
@@ -77,7 +77,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 			BinaryDir:  dir,
 			GithubUser: ghuser,
 			GithubAuth: BasicAuth(ghuser, ghpat),
-		}, SyncOpts{}, Target{})
+		}, SyncOpts{}, TargetConfig{})
 
 		checkFiles(t, dir, []string{"rg", "rg-13.0.0"})
 	})
@@ -102,7 +102,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 			BinaryDir:  dir,
 			GithubUser: ghuser,
 			GithubAuth: BasicAuth(ghuser, ghpat),
-		}, SyncOpts{}, Target{})
+		}, SyncOpts{}, TargetConfig{})
 
 		checkFiles(t, dir, []string{"gh", "gh-v2.12.1"})
 	})
