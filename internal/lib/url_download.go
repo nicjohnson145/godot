@@ -34,7 +34,7 @@ func (u *UrlDownload) Type() string {
 	return TypeUrlDownload
 }
 
-func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts, _ Target) {
+func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {
 	log.Infof("Ensuring %v", u.Name)
 	url := u.getDownloadUrl()
 	err := downloadAndSymlinkBinary(downloadOpts{

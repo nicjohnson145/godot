@@ -3,10 +3,15 @@ package lib
 import (
 	"github.com/lithammer/dedent"
 	"github.com/stretchr/testify/require"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"testing"
+)
+
+const (
+	targetName = "my-target"
 )
 
 func makeSubDir(t *testing.T, dir string, d string) string {
@@ -36,6 +41,7 @@ func setupForConfigFile(t *testing.T, name string, content string) UserConfig {
 		CloneLocation: dir,
 		HomeDir:       home,
 		BuildLocation: output,
+		Target:        targetName,
 	}
 }
 
@@ -60,15 +66,14 @@ func TestConfigFileExecute(t *testing.T) {
 	defer cleanFuncsMap(t)
 
 	conf := setupForConfigFile(t, "dot_conf", "Hello from {{ .Target }}")
-	conf.Target = "foobar"
 
 	f := ConfigFile{
 		Name:        "dot_conf",
 		Destination: "~/.config/conf",
 	}
-	f.Execute(conf, SyncOpts{}, Target{})
+	f.Execute(conf, SyncOpts{}, TargetConfig{Targets: map[string]Target{targetName: {}}})
 
-	requireContents(t, path.Join(conf.HomeDir, ".config", "conf"), "Hello from foobar")
+	requireContents(t, path.Join(conf.HomeDir, ".config", "conf"), fmt.Sprintf("Hello from %v", targetName))
 }
 
 func TestIsInstalled(t *testing.T) {
@@ -93,13 +98,26 @@ func TestIsInstalled(t *testing.T) {
 
 	t.Run("installed", func(t *testing.T) {
 		defer cleanFuncsMap(t)
-		f.Execute(conf, SyncOpts{}, Target{GithubReleases: []string{"blarg"}})
+		f.Execute(
+			conf,
+			SyncOpts{},
+			TargetConfig{Targets: map[string]Target{
+				targetName: {GithubReleases: []string{"blarg"}},
+			}},
+		)
 		requireContents(t, outPath, "blarg installed\n")
 	})
 
 	t.Run("not_installed", func(t *testing.T) {
 		defer cleanFuncsMap(t)
-		f.Execute(conf, SyncOpts{}, Target{GithubReleases: []string{"blarg2"}})
+		f.Execute(
+			conf,
+			SyncOpts{},
+			TargetConfig{Targets: map[string]Target{
+				targetName: {GithubReleases: []string{"blarg2"}},
+			}},
+		)
 		requireContents(t, outPath, "blarg not installed\n")
 	})
+
 }

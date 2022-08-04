@@ -67,7 +67,7 @@ func (g *GithubRelease) Type() string {
 	return TypeGithubRelease
 }
 
-func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ Target) {
+func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {
 	log.Infof("Ensuring %v", g.Repo)
 	release := g.getRelease(conf)
 

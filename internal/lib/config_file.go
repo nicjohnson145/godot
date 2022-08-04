@@ -45,9 +45,9 @@ func (c *ConfigFile) Type() string {
 	return TypeConfigFile
 }
 
-func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, target Target) {
+func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, targetConf TargetConfig) {
 	c.createVaultClosure(conf, opts)
-	c.createIsInstalledClosure(target)
+	c.createIsInstalledClosure(conf, targetConf)
 
 	log.Infof("Executing config file %v", c.Name)
 	tmpl := c.parseTemplate(conf.CloneLocation)
@@ -105,10 +105,12 @@ func (c *ConfigFile) createVaultClosure(conf UserConfig, opts SyncOpts) {
 	}
 }
 
-func (c *ConfigFile) createIsInstalledClosure(target Target) {
+func (c *ConfigFile) createIsInstalledClosure(userConf UserConfig, targetConf TargetConfig) {
 	if _, ok := funcs[funcNameIsInstalled]; ok {
 		return
 	}
+
+	target := getTarget(targetConf, userConf)
 
 	log.Debug("Creating IsInstalled template func")
 	funcs[funcNameIsInstalled] = func(item string) bool {
