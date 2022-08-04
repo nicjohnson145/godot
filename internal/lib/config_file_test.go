@@ -77,10 +77,6 @@ func TestConfigFileExecute(t *testing.T) {
 }
 
 func TestIsInstalled(t *testing.T) {
-	restore, noFatal := NoFatals(t)
-	defer noFatal(t)
-	defer restore()
-
 	content := dedent.Dedent(`
 		{{- if IsInstalled "blarg" -}}
 		blarg installed
@@ -97,27 +93,70 @@ func TestIsInstalled(t *testing.T) {
 	outPath := path.Join(conf.HomeDir, ".config", "install_conf")
 
 	t.Run("installed", func(t *testing.T) {
+		restore, noFatal := NoFatals(t)
+		defer noFatal(t)
 		defer cleanFuncsMap(t)
+		defer restore()
+
 		f.Execute(
 			conf,
 			SyncOpts{},
-			TargetConfig{Targets: map[string]Target{
-				targetName: {GithubReleases: []string{"blarg"}},
-			}},
+			TargetConfig{
+				GithubReleases: []GithubRelease{
+					{Name: "blarg"},
+					{Name: "blarg2"},
+				},
+				Targets: map[string]Target{targetName: {GithubReleases: []string{"blarg"}}, },
+			},
 		)
 		requireContents(t, outPath, "blarg installed\n")
 	})
 
 	t.Run("not_installed", func(t *testing.T) {
+		restore, noFatal := NoFatals(t)
+		defer noFatal(t)
 		defer cleanFuncsMap(t)
+		defer restore()
+
 		f.Execute(
 			conf,
 			SyncOpts{},
-			TargetConfig{Targets: map[string]Target{
-				targetName: {GithubReleases: []string{"blarg2"}},
-			}},
+			TargetConfig{
+				GithubReleases: []GithubRelease{
+					{Name: "blarg"},
+					{Name: "blarg2"},
+				},
+				Targets: map[string]Target{targetName: {GithubReleases: []string{"blarg2"}}, },
+			},
 		)
 		requireContents(t, outPath, "blarg not installed\n")
+	})
+
+	t.Run("installed_via_bundle", func(t *testing.T) {
+		restore, noFatal := NoFatals(t)
+		defer noFatal(t)
+		defer cleanFuncsMap(t)
+		defer restore()
+
+		f.Execute(
+			conf,
+			SyncOpts{},
+			TargetConfig{
+				GithubReleases: []GithubRelease{
+					{Name: "blarg"},
+				},
+				Bundles: []Bundle{
+					{
+						Name: "blarg-bundle",
+						Target: Target{
+							GithubReleases: []string{"blarg"},
+						},
+					},
+				},
+				Targets: map[string]Target{targetName: {Bundles: []string{"blarg-bundle"}}},
+			},
+		)
+		requireContents(t, outPath, "blarg installed\n")
 	})
 
 }

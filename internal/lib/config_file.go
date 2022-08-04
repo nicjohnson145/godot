@@ -111,28 +111,13 @@ func (c *ConfigFile) createIsInstalledClosure(userConf UserConfig, targetConf Ta
 	}
 
 	target := getTarget(targetConf, userConf)
+	executors := getExecutorsFromTarget(target, targetConf)
 
 	log.Debug("Creating IsInstalled template func")
 	funcs[funcNameIsInstalled] = func(item string) bool {
-		if lo.Contains(target.Bundles, item) {
-			return true
-		}
-		if lo.Contains(target.ConfigFiles, item) {
-			return true
-		}
-		if lo.Contains(target.GitRepos, item) {
-			return true
-		}
-		if lo.Contains(target.GithubReleases, item) {
-			return true
-		}
-		if lo.Contains(target.SystemPackages, item) {
-			return true
-		}
-		if lo.Contains(target.UrlDownloads, item) {
-			return true
-		}
-		return false
+		return lo.ContainsBy(executors, func(t Executor) bool {
+			return t.GetName() == item
+		})
 	}
 }
 
