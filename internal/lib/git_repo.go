@@ -16,7 +16,24 @@ type GitRepo struct {
 	URL      string `yaml:"url"`
 	Location string `yaml:"location"`
 	Private  bool   `yaml:"private"`
-	Commit   string `yaml:"commit"`
+	Ref      Ref    `yaml:"ref"`
+}
+
+type Ref struct {
+	Commit string `yaml:"commit"`
+	Tag    string `yaml:"tag"`
+}
+
+func (r *Ref) IsZero() bool {
+	return r.Commit == "" && r.Tag == ""
+}
+
+func (r *Ref) String() string {
+	if r.Commit != "" {
+		return r.Commit
+	} else {
+		return r.Tag
+	}
 }
 
 func (g *GitRepo) GetName() string {
@@ -43,12 +60,14 @@ func (g *GitRepo) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {
 		repo = openGitRepo(location)
 	}
 
-	if g.Commit != "" {
-		log.Infof("Ensuring %v at commit %v", g.URL, g.Commit)
-		if g.Private {
-			ensurePrivateRepoCommitCheckedOut(repo, g.Commit, conf)
-		} else {
-			ensurePublicRepoCommitCheckedOut(repo, g.Commit)
-		}
+	if g.Private {
+		fetchPrivateRepo(repo, conf)
+	} else {
+		fetchPublicRepo(repo)
+	}
+
+	if !g.Ref.IsZero() {
+		log.Infof("Ensuring %v at commit %v", g.URL, g.Ref.String())
+		ensureCommitCheckedOut(repo, g.Ref)
 	}
 }

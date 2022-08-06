@@ -101,31 +101,43 @@ func pathExists(loc string) (bool, error) {
 	return true, nil
 }
 
-func ensurePrivateRepoCommitCheckedOut(repo *git.Repository, commit string, conf UserConfig) {
-	ensureCommitCheckedOut(repo, commit, authFromConfig(conf))
+func fetchPrivateRepo(repo *git.Repository, conf UserConfig) {
+	fetchRepo(repo, authFromConfig(conf))
 }
 
-func ensurePublicRepoCommitCheckedOut(repo *git.Repository, commit string) {
-	ensureCommitCheckedOut(repo, commit, nil)
+func fetchPublicRepo(repo *git.Repository) {
+	fetchRepo(repo, nil)
 }
 
-func ensureCommitCheckedOut(repo *git.Repository, commit string, auth http.AuthMethod) {
+func fetchRepo(repo *git.Repository, auth http.AuthMethod) {
 	err := repo.Fetch(&git.FetchOptions{
 		Auth: auth,
 	})
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		log.Fatalf("Error fetching new commits: %v", err)
 	}
+}
 
+func ensureCommitCheckedOut(repo *git.Repository, ref Ref) {
 	w, err := repo.Worktree()
 	if err != nil {
 		log.Fatalf("Error getting worktree: %v", err)
 	}
 
-	err = w.Checkout(&git.CheckoutOptions{
-		Hash: plumbing.NewHash(commit),
-	})
+	err = w.Checkout(getCheckoutOptions(ref))
 	if err != nil {
-		log.Fatalf("Error checking out commit %v: %v", commit, err)
+		log.Fatalf("Error checking out commit %v: %v", ref.String(), err)
+	}
+}
+
+func getCheckoutOptions(r Ref)  *git.CheckoutOptions {
+	if r.Commit != "" {
+		return &git.CheckoutOptions{
+			Hash: plumbing.NewHash(r.Commit),
+		}
+	} else {
+		return &git.CheckoutOptions{
+			Branch: plumbing.ReferenceName("refs/tags/" + r.Tag),
+		}
 	}
 }
