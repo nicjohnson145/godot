@@ -54,7 +54,8 @@ git-repos:
 - name: diff-so-fancy
   url: https://github.com/so-fancy/diff-so-fancy
   location: ~/github/diff-so-fancy
-  commit: a673cb4d2707f64d92b86498a2f5f71c8e2643d5
+  ref:
+    commit: a673cb4d2707f64d92b86498a2f5f71c8e2643d5
 
 config-files:
 - name: dot_fdignore 
