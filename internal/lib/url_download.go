@@ -10,10 +10,6 @@ import (
 
 var _ Executor = (*UrlDownload)(nil)
 
-const (
-	TypeUrlDownload = "url-download"
-)
-
 type UrlDownload struct {
 	Name       string `yaml:"name"`
 	Tag        string `yaml:"tag"`
@@ -30,8 +26,8 @@ func (u *UrlDownload) GetName() string {
 	return u.Name
 }
 
-func (u *UrlDownload) Type() string {
-	return TypeUrlDownload
+func (u *UrlDownload) Type() ExecutorType {
+	return ExecutorTypeUrlDownloads
 }
 
 func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {

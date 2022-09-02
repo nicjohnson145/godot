@@ -4,9 +4,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+//go:generate go-enum -f $GOFILE -marshal -names -flag
+
+/*
+ENUM(
+config-files
+github-releases
+git-repos
+sys-packages
+url-downloads
+)
+*/
+type ExecutorType string
+
 type Executor interface {
 	Execute(UserConfig, SyncOpts, TargetConfig)
-	Type() string
+	Type() ExecutorType
 	Namer
 }
 

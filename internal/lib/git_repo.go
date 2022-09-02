@@ -7,10 +7,6 @@ import (
 
 var _ Executor = (*GitRepo)(nil)
 
-const (
-	TypeGitRepo = "git-repo"
-)
-
 type GitRepo struct {
 	Name     string `yaml:"name"`
 	URL      string `yaml:"url"`
@@ -40,8 +36,8 @@ func (g *GitRepo) GetName() string {
 	return g.Name
 }
 
-func (g *GitRepo) Type() string {
-	return TypeGitRepo
+func (g *GitRepo) Type() ExecutorType {
+	return ExecutorTypeGitRepos
 }
 
 func (g *GitRepo) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {

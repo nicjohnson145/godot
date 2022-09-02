@@ -9,7 +9,6 @@ import (
 const (
 	PackageManagerApt  = "apt"
 	PackageManagerBrew = "brew"
-	TypeSystemPackage  = "system-package"
 )
 
 var validPackageManagers = []string{
@@ -29,16 +28,11 @@ type SystemPackage struct {
 	BrewName string `yaml:"brew"`
 }
 
-func (s *SystemPackage) Type() string {
-	return TypeSystemPackage
+func (s *SystemPackage) Type() ExecutorType {
+	return ExecutorTypeSysPackages
 }
 
 func (s *SystemPackage) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {
-	if opts.Quick {
-		log.Debugf("skipping system package %v due to quick flag", s.Name)
-		return
-	}
-
 	if conf.PackageManager == "" {
 		log.Fatal("Package manager not configured, cannot install system packages")
 	}

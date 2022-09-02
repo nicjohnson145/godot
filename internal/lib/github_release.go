@@ -29,7 +29,6 @@ var (
 )
 
 const (
-	TypeGithubRelease = "github-release"
 	Latest            = "LATEST"
 )
 
@@ -63,8 +62,8 @@ func (g *GithubRelease) GetName() string {
 	return g.Name
 }
 
-func (g *GithubRelease) Type() string {
-	return TypeGithubRelease
+func (g *GithubRelease) Type() ExecutorType {
+	return ExecutorTypeGithubReleases
 }
 
 func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {
