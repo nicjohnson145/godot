@@ -1,0 +1,22 @@
+name: Tag
+
+on:
+  push:
+    branches:
+    - main
+    tags-ignore:
+    - '**'
+
+jobs:
+  build-tag:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: TagBot
+      uses: nicjohnson145/tagbot@v0.4.0
+      id: tagbot
+      env:
+        TAGBOT_TOKEN: ${{ secrets.ACTUAL_PAT }}
