@@ -21,31 +21,38 @@ func Sync(opts SyncOpts) {
 	)
 }
 
-func syncFromConf(userConf UserConfig, opts SyncOpts) {
-	EnsureDotfilesRepo(userConf)
-	tConf := NewTargetConfig(userConf)
-	executors := getExecutors(tConf, userConf)
+func executorsFromOpts(opts SyncOpts) []ExecutorType {
+	var executorStrings []string
+	if len(opts.Executors) > 0 {
+		executorStrings = opts.Executors
+	} else {
+		executorStrings = ExecutorTypeNames()
+	}
+	if opts.Quick {
+		executorStrings = lo.Filter(executorStrings, func(s string, _ int) bool { return s != ExecutorTypeSysPackages.String() })
+	}
 
-	shouldFilter := len(opts.Executors) != 0 || opts.Quick
-	executorsTypes := lo.Map(opts.Executors, func(t string, _ int) ExecutorType {
-		val, err := ParseExecutorType(t)
+	return lo.Map(executorStrings, func(s string, _ int) ExecutorType {
+		val, err := ParseExecutorType(s)
 		if err != nil {
 			log.Fatal(err)
 		}
 		return val
 	})
-	if opts.Quick {
-		if !lo.Contains(executorsTypes, ExecutorTypeSysPackages) {
-			executorsTypes = append(executorsTypes, ExecutorTypeSysPackages)
-		}
-	}
+}
+
+func syncFromConf(userConf UserConfig, opts SyncOpts) {
+	EnsureDotfilesRepo(userConf)
+	tConf := NewTargetConfig(userConf)
+	executors := getExecutors(tConf, userConf)
+	executorTypes := executorsFromOpts(opts)
 
 	for _, ex := range executors {
 		if lo.Contains(opts.Ignore, ex.GetName()) {
 			log.Infof("Ignoring %v due to command line arg", ex.GetName())
 			continue
 		}
-		if shouldFilter && !lo.Contains(executorsTypes, ex.Type()) {
+		if !lo.Contains(executorTypes, ex.Type()) {
 			log.Infof("Skipping %v due to command line arg", ex.GetName())
 			continue
 		}
