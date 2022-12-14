@@ -29,7 +29,7 @@ var (
 )
 
 const (
-	Latest            = "LATEST"
+	Latest = "LATEST"
 )
 
 type releaseResponse struct {
@@ -48,64 +48,91 @@ type githubTag struct {
 var _ Executor = (*GithubRelease)(nil)
 
 type GithubRelease struct {
-	Name           string `yaml:"name"`
-	Repo           string `yaml:"repo"`
-	Tag            string `yaml:"tag"`
-	IsArchive      bool   `yaml:"is-archive"`
-	Regex          string `yaml:"regex"`
-	MacPattern     string `yaml:"mac-pattern"`
-	LinuxPattern   string `yaml:"linux-pattern"`
-	WindowsPattern string `yaml:"windows-pattern"`
+	Name           string `yaml:"-"`
+	Repo           string `yaml:"repo" mapstructure:"repo"`
+	Tag            string `yaml:"tag" mapstructure:"tag"`
+	IsArchive      bool   `yaml:"is-archive" mapstructure:"is-archive"`
+	Regex          string `yaml:"regex" mapstructure:"regex"`
+	MacPattern     string `yaml:"mac-pattern" mapstructure:"mac-pattern"`
+	LinuxPattern   string `yaml:"linux-pattern" mapstructure:"linux-pattern"`
+	WindowsPattern string `yaml:"windows-pattern" mapstructure:"windows-pattern"`
 }
 
 func (g *GithubRelease) GetName() string {
 	return g.Name
 }
 
-func (g *GithubRelease) Type() ExecutorType {
-	return ExecutorTypeGithubReleases
+func (g *GithubRelease) SetName(n string) {
+	g.Name = n
 }
 
-func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {
-	log.Infof("Ensuring %v", g.Repo)
-	release := g.getRelease(conf)
+func (g *GithubRelease) Type() ExecutorType {
+	return ExecutorTypeGithubRelease
+}
 
-	err := downloadAndSymlinkBinary(downloadOpts{
+func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) error {
+	log.Infof("Ensuring %v", g.Repo)
+	release, err := g.getRelease(conf)
+	if err != nil {
+		return fmt.Errorf("error determining release: %w", err)
+	}
+
+	searchFunc, err := g.regexFunc()
+	if err != nil {
+		return err
+	}
+
+	dest, err := getDestination(conf, g.Name, g.Tag)
+	if err != nil {
+		return err
+	}
+
+	symlink, err := getSymlinkName(conf, g.Name, g.Tag)
+	if err != nil {
+		return err
+	}
+
+	err = downloadAndSymlinkBinary(downloadOpts{
 		Name:         g.Name,
 		DownloadName: path.Base(release.DownloadUrl),
-		FinalDest:    getDestination(conf, g.Name, g.Tag),
+		FinalDest:    dest,
 		Url:          release.DownloadUrl,
 		RequestFunc: func(req *requests.Builder) {
 			if conf.GithubAuth != "" {
 				req.Header("Authorization", conf.GithubAuth)
 			}
 		},
-		SearchFunc:  g.regexFunc(),
-		SymlinkName: getSymlinkName(conf, g.Name, g.Tag),
+		SearchFunc:  searchFunc,
+		SymlinkName: symlink,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("error during download/symlink: %w", err)
 	}
+	return nil
 }
 
-func (g *GithubRelease) regexFunc() searchFunc {
+func (g *GithubRelease) regexFunc() (searchFunc, error) {
 	if g.Regex == "" {
-		return nil
+		return nil, nil
 	}
 
 	regex, err := regexp.Compile(g.Regex)
 	if err != nil {
-		log.Fatalf("Unable to compile executable regex: %v", err)
+		return nil, fmt.Errorf("unable to compile executable regex: %v", err)
 	}
 
 	return func(path string) (bool, error) {
 		return regex.MatchString(path), nil
-	}
+	}, nil
 }
 
-func (g *GithubRelease) getRelease(conf UserConfig) release {
+func (g *GithubRelease) getRelease(conf UserConfig) (release, error) {
 	if g.Tag == Latest {
-		g.Tag = g.GetLatestRelease(conf)
+		tag, err := g.GetLatestRelease(conf)
+		if err != nil {
+			return release{}, fmt.Errorf("error determining latest release: %w", err)
+		}
+		g.Tag = tag
 	}
 	var resp releaseResponse
 	req := requests.
@@ -116,13 +143,17 @@ func (g *GithubRelease) getRelease(conf UserConfig) release {
 	}
 	err := req.Fetch(context.TODO())
 	if err != nil {
-		log.Fatalf("Error getting release %v for %v: %v", g.Tag, g.Repo, err)
+		return release{}, fmt.Errorf("error getting release %v for %v: %v", g.Tag, g.Repo, err)
 	}
 
-	return g.getAsset(resp, runtime.GOOS, runtime.GOARCH)
+	asset, err := g.getAsset(resp, runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		return release{}, fmt.Errorf("error determing asset: %w", err)
+	}
+	return asset, nil
 }
 
-func (g *GithubRelease) GetLatestRelease(conf UserConfig) string {
+func (g *GithubRelease) GetLatestRelease(conf UserConfig) (string, error) {
 	var resp githubTag
 	req := requests.
 		URL(fmt.Sprintf("https://api.github.com/repos/%v/releases/latest", g.Repo)).
@@ -132,15 +163,18 @@ func (g *GithubRelease) GetLatestRelease(conf UserConfig) string {
 	}
 	err := req.Fetch(context.TODO())
 	if err != nil {
-		log.Fatalf("Error getting tag list for %v: %v", g.Repo, err)
+		return "", fmt.Errorf("error getting tag list for %v: %v", g.Repo, err)
 	}
 
 	// Sort of assuming that the API returns things in cronological order? A better approach would
 	// be to get all tags fully, and then do a semver compare, :shrug:
-	return resp.TagName
+	return resp.TagName, nil
 }
 
-func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch string) release {
+// TODO: reduce the complexity of this function
+//
+//nolint:gocyclo
+func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch string) (release, error) {
 	var pat string
 	switch userOs {
 	case "windows":
@@ -155,76 +189,81 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 		log.Debugf("Using user specified pattern of %v", pat)
 		userRegex, err := regexp.Compile(pat)
 		if err != nil {
-			log.Fatalf("Error compiling user specified regex: %v", err)
+			return release{}, fmt.Errorf("error compiling user specified regex: %v", err)
 		}
 		assets := g.filterAssets(resp.Assets, userRegex, true)
 		if len(assets) != 1 {
-			log.Fatalf("Expected 1 matching asset for pattern %v, got %v", pat, len(assets))
+			return release{}, fmt.Errorf("expected 1 matching asset for pattern %v, got %v", pat, len(assets))
 		}
 
-		return assets[0]
+		return assets[0], nil
 	}
 
-	checkNoMatches := func(assets []release, matchType string) {
-		if len(assets) == 0 {
-			log.Fatalf("Unable to auto detect release name, no assets match pre-defined patterns for %v", matchType)
-		}
+	noMatchErr := func(matchType string) (release, error) {
+		return release{}, fmt.Errorf("enable to auto detect release name, no assets match pre-defined patterns for %v", matchType)
 	}
 
 	// Otherwise, lets try to detect it
 	osPat, ok := osRegexMap[userOs]
 	if !ok {
-		log.Fatalf("Unsupported OS of %v", userOs)
+		return release{}, fmt.Errorf("unsupported OS of %v", userOs)
 	}
 	assets := g.filterAssets(resp.Assets, osPat, true)
-	checkNoMatches(assets, "OS")
+	if len(assets) == 0 {
+		return noMatchErr("OS")
+	}
 	if len(assets) == 1 {
 		// If there's only one matching asset by OS, then we're done here
 		log.Debugf("Reached a single asset after OS matching, found %v", assets[0].Name)
 		g.setArchive(assets[0])
-		return assets[0]
+		return assets[0], nil
 	}
 
 	// If we're got more than 1, then lets try to narrow it down by architecture
 	archPat, ok := archRegexMap[userArch]
 	if !ok {
-		log.Fatalf("Unsupported architecture of %v", userArch)
+		return release{}, fmt.Errorf("unsupported architecture of %v", userArch)
 	}
 	assets = g.filterAssets(assets, archPat, true)
-	checkNoMatches(assets, "architecture")
+	if len(assets) == 0 {
+		return noMatchErr("architecture")
+	}
 	if len(assets) == 1 {
 		// If there's only one, then we're done here
 		log.Debugf("Reached a single asset after architecture matching, found %v", assets[0].Name)
 		g.setArchive(assets[0])
-		return assets[0]
+		return assets[0], nil
 	}
 
 	// If we're not linux, then I don't have any more tricks up my sleeve
 	if userOs != "linux" {
-		log.Fatalf("Unable to auto-detect release asset, please specify a per-OS pattern")
+		return release{}, fmt.Errorf("unable to auto-detect release asset, please specify a per-OS pattern")
 	}
 
 	// But if we are, lets filter off any non-MUSL or deb/rpm
 	assets = g.filterAssets(assets, regexLinuxPkg, false)
-	checkNoMatches(assets, "non linux packages")
+	if len(assets) == 0 {
+		return noMatchErr("non linux packages")
+	}
 	if len(assets) == 1 {
 		log.Debugf("Reached a single asset after package filtering, found %v", assets[0].Name)
 		g.setArchive(assets[0])
-		return assets[0]
+		return assets[0], nil
 	}
 
-	// If we've still got multiples, prefere statically linked binaries
+	// If we've still got multiples, prefer statically linked binaries
 	assets = g.filterAssets(assets, regexMusl, true)
-	checkNoMatches(assets, "musl static linking")
+	if len(assets) == 0 {
+		return noMatchErr("musl static linking")
+	}
 	if len(assets) == 1 {
 		// If there's only one, then we're done here
 		log.Debugf("Reached a single asset after musl filtering, found %v", assets[0].Name)
 		g.setArchive(assets[0])
-		return assets[0]
+		return assets[0], nil
 	}
 
-	log.Fatalf("Unable to auto-detect release asset, please specify a per-OS pattern")
-	return release{}
+	return release{}, fmt.Errorf("enable to auto-detect release asset, please specify a per-OS pattern")
 }
 
 func (g *GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match bool) []release {

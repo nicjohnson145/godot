@@ -1,0 +1,13 @@
+executors:
+  conf1:
+    type: config-file
+    spec:
+      name: foo
+      destination: "~/.config/foo"
+  bad-ex:
+    type: some-bad-type
+    spec:
+      foo: bar
+targets:
+  target1:
+  - conf1

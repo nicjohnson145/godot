@@ -2,11 +2,12 @@ package lib
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 var _ VaultClient = (*MockVaultClient)(nil)
@@ -57,9 +58,9 @@ func TestAuthenticationSetup(t *testing.T) {
 	err = os.WriteFile(confPath, b, 0777)
 	require.NoError(t, err)
 
-	c := NewConfigFromPath(
+	c, err := NewConfigFromPath(
 		confPath,
-		func(uc *UserConfig) {
+		func(uc *UserConfig) error {
 			uc.VaultConfig.Client = &MockVaultClient{
 				ReadKeyFunc: func(s1, s2 string) (string, error) {
 					if s1 == "path/to/key" && s2 == "key1" {
@@ -68,9 +69,11 @@ func TestAuthenticationSetup(t *testing.T) {
 					return "", fmt.Errorf("%v and %v not known", s1, s2)
 				},
 			}
+			return nil
 		},
 		ConfigOverrides{},
 	)
+	require.NoError(t, err)
 
 	require.Equal(t, "MY_GITHUB_PAT", c.GithubPAT)
 	require.NotEqual(t, "", c.GithubAuth)

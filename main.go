@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/nicjohnson145/godot/internal/lib"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -14,8 +15,7 @@ var (
 )
 
 func main() {
-	cmd := buildCommand()
-	if err := cmd.Execute(); err != nil {
+	if err := buildCommand().Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -46,8 +46,8 @@ func buildCommand() *cobra.Command {
 		Use:   "sync",
 		Short: "Sync configuration",
 		Long:  "Sync local filesystem with configuration",
-		Run: func(cmd *cobra.Command, args []string) {
-			lib.Sync(syncOpts)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return lib.Sync(syncOpts)
 		},
 	}
 	syncCmd.Flags().BoolVarP(&syncOpts.Quick, "quick", "q", false, "Run a quick sync, skipping some stages")
@@ -61,8 +61,8 @@ func buildCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Validate configuration",
 		Long:  "Validate a configuration file on disk",
-		Run: func(cmd *cobra.Command, args []string) {
-			lib.Validate(args[0])
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return lib.Validate(args[0])
 		},
 	}
 	rootCmd.AddCommand(validateCmd)
@@ -84,8 +84,8 @@ func buildCommand() *cobra.Command {
 		Short: "Self update",
 		Args:  cobra.NoArgs,
 		Long:  "Check for newer version and install if found",
-		Run: func(cmd *cobra.Command, args []string) {
-			lib.SelfUpdate(version)
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return lib.SelfUpdate(version)
 		},
 	}
 	rootCmd.AddCommand(updateCmd)

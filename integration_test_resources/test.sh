@@ -6,25 +6,34 @@ godot sync -v
 
 HOMEDIR="/home/newuser"
 
+# Bat should exist
 $HOMEDIR/bin/bat -h
-$HOMEDIR/bin/kustomize -h
+# Kubectl should be installed
+$HOMEDIR/bin/kubectl -h
+# Fd should not be installed
+if [[ -f $HOMEDIR/bin/fd ]]; then
+    echo "fd should not be installed"
+    exit 1
+fi
+# zsh should be installed from apt
+which zsh
 
-[ -d $HOMEDIR/new-bin/neovim ] || exit 1
-
-[ -f $HOMEDIR/new-bin/conf-dir/test.config ] || exit 1
-ACTUAL_CONF=$(cat $HOMEDIR/new-bin/conf-dir/test.config)
-if [[ "$ACTUAL_CONF" != "Hello from test" ]]; then
-    echo "Got bad config"
-    echo $ACTUAL_CONF
+# pyenv should be check out to a specific commit
+PYENV_SHA="304515f2cdd11db151b7a5733d11934d3990a67e"
+if [[ "$(git -C $HOMEDIR/.pyenv rev-parse HEAD)" != "$PYENV_SHA" ]]; then
+    echo "pyenv should be checked out to $PYENV_SHA"
     exit 1
 fi
 
-# Tmux should be installed through apt, `tmux --help` has an exit code of 1, so just make sure it's
-# in the path
-which tmux
+# Foo config should be rendered with this content
+FOO_CONFIG_PATH="$HOMEDIR/.config/foo_config/config.txt"
+[ -f $FOO_CONFIG_PATH ] || exit 1
+grep "bundle-o-things installed" $FOO_CONFIG_PATH
+grep "kubectl installed" $FOO_CONFIG_PATH
+if grep "fd installed" $FOO_CONFIG_PATH; then
+        echo "fd should not show as installed"
+        exit 1
+fi
 
-# Kubectl should be installed
-$HOMEDIR/bin/kubectl -h
 
-# So should vault
-$HOMEDIR/bin/vault -h
+exit 0

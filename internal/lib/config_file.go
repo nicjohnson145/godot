@@ -2,11 +2,12 @@ package lib
 
 import (
 	"fmt"
-	"github.com/samber/lo"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"path"
 	"text/template"
+
+	"github.com/samber/lo"
+	log "github.com/sirupsen/logrus"
 )
 
 var funcs = template.FuncMap{
@@ -32,30 +33,42 @@ type TemplateVars struct {
 var _ Executor = (*ConfigFile)(nil)
 
 type ConfigFile struct {
-	Name        string `yaml:"name"`
-	Destination string `yaml:"destination"`
+	Name         string `yaml:"-"`
+	TemplateName string `yaml:"template-name" mapstructure:"template-name"`
+	Destination  string `yaml:"destination" mapstructure:"destination"`
 }
 
 func (c *ConfigFile) GetName() string {
 	return c.Name
 }
 
-func (c *ConfigFile) Type() ExecutorType {
-	return ExecutorTypeConfigFiles
+func (c *ConfigFile) SetName(n string) {
+	c.Name = n
 }
 
-func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, targetConf TargetConfig) {
+func (c *ConfigFile) Type() ExecutorType {
+	return ExecutorTypeConfigFile
+}
+
+func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConfig) error {
 	c.createVaultClosure(conf, opts)
-	c.createIsInstalledClosure(conf, targetConf)
+	if err := c.createIsInstalledClosure(conf, godotConf); err != nil {
+		return fmt.Errorf("error creating IsInstalled closure: %w", err)
+	}
 
-	log.Infof("Executing config file %v", c.Name)
-	tmpl := c.parseTemplate(conf.CloneLocation)
+	log.Infof("Executing config file %v", c.TemplateName)
+	tmpl, err := c.parseTemplate(conf.CloneLocation)
+	if err != nil {
+		return err
+	}
 
-	buildPath := path.Join(conf.BuildLocation, c.Name)
-	ensureContainingDir(buildPath)
+	buildPath := path.Join(conf.BuildLocation, c.TemplateName)
+	if err := ensureContainingDir(buildPath); err != nil {
+		return err
+	}
 	f, err := os.OpenFile(buildPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0744)
 	if err != nil {
-		log.Fatalf("Error opening destination file %v: %v", buildPath, err)
+		return fmt.Errorf("error opening destination file %v: %v", buildPath, err)
 	}
 	defer f.Close()
 
@@ -65,15 +78,25 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, targetConf TargetCo
 		Home:       conf.HomeDir,
 	})
 	if err != nil {
-		log.Fatalf("Error rendering template: %v", err)
+		return fmt.Errorf("error rendering template: %v", err)
 	}
 
 	dest := replaceTilde(c.Destination, conf.HomeDir)
-	if c.pathExists(dest) {
-		c.removePath(dest)
+	exists, err := c.pathExists(dest)
+	if err != nil {
+		return err
+	}
+	if exists {
+		if err := c.removePath(dest); err != nil {
+			return fmt.Errorf("error removing path: %w", err)
+		}
 	}
 
-	c.symlink(buildPath, dest)
+	if err := c.symlink(buildPath, dest); err != nil {
+		return fmt.Errorf("error symlinking: %w", err)
+	}
+
+	return nil
 }
 
 func (c *ConfigFile) createVaultClosure(conf UserConfig, opts SyncOpts) {
@@ -104,13 +127,15 @@ func (c *ConfigFile) createVaultClosure(conf UserConfig, opts SyncOpts) {
 	}
 }
 
-func (c *ConfigFile) createIsInstalledClosure(userConf UserConfig, targetConf TargetConfig) {
+func (c *ConfigFile) createIsInstalledClosure(userConf UserConfig, godotConf GodotConfig) error {
 	if _, ok := funcs[funcNameIsInstalled]; ok {
-		return
+		return nil
 	}
 
-	target := getTarget(targetConf, userConf)
-	executors := getExecutorsFromTarget(target, targetConf)
+	executors, err := godotConf.ExecutorsForTarget(userConf.Target)
+	if err != nil {
+		return fmt.Errorf("error getting executors list: %w", err)
+	}
 
 	log.Debug("Creating IsInstalled template func")
 	funcs[funcNameIsInstalled] = func(item string) bool {
@@ -118,39 +143,45 @@ func (c *ConfigFile) createIsInstalledClosure(userConf UserConfig, targetConf Ta
 			return t.GetName() == item
 		})
 	}
+
+	return nil
 }
 
-func (c *ConfigFile) parseTemplate(dotfiles string) *template.Template {
-	t := template.New(c.Name).Funcs(funcs)
-	t, err := t.ParseFiles(path.Join(dotfiles, "templates", c.Name))
+func (c *ConfigFile) parseTemplate(dotfiles string) (*template.Template, error) {
+	t := template.New(c.TemplateName).Funcs(funcs)
+	t, err := t.ParseFiles(path.Join(dotfiles, "templates", c.TemplateName))
 	if err != nil {
-		log.Fatalf("Error parsing template file: %v", err)
+		return nil, fmt.Errorf("error parsing template file: %w", err)
 	}
-	return t
+	return t, nil
 }
 
-func (c *ConfigFile) pathExists(path string) bool {
+func (c *ConfigFile) pathExists(path string) (bool, error) {
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
-			return false
+			return false, nil
 		} else {
-			log.Fatalf("Error checking existance of %v: %v", path, err)
+			return false, fmt.Errorf("error checking existance of %v: %v", path, err)
 		}
 	}
-	return true
+	return true, nil
 }
 
-func (c *ConfigFile) removePath(path string) {
+func (c *ConfigFile) removePath(path string) error {
 	if err := os.Remove(path); err != nil {
-		log.Fatalf("Error deleting path %v: %v", path, err)
+		return fmt.Errorf("error deleting path %v: %v", path, err)
 	}
+	return nil
 }
 
-func (c *ConfigFile) symlink(source string, dest string) {
-	ensureContainingDir(dest)
+func (c *ConfigFile) symlink(source string, dest string) error {
+	if err := ensureContainingDir(dest); err != nil {
+		return err
+	}
 
 	err := os.Symlink(source, dest)
 	if err != nil {
-		log.Fatalf("Error creating symlink: %v", err)
+		return fmt.Errorf("error creating symlink: %v", err)
 	}
+	return nil
 }

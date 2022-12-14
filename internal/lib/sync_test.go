@@ -1,8 +1,9 @@
 package lib
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestExecutorsFromOpts(t *testing.T) {
@@ -15,24 +16,25 @@ func TestExecutorsFromOpts(t *testing.T) {
 			name: "nothing_given",
 			opts: SyncOpts{},
 			want: []ExecutorType{
-				ExecutorTypeConfigFiles,
-				ExecutorTypeGithubReleases,
-				ExecutorTypeGitRepos,
-				ExecutorTypeSysPackages,
-				ExecutorTypeUrlDownloads,
+				ExecutorTypeConfigFile,
+				ExecutorTypeGithubRelease,
+				ExecutorTypeGitRepo,
+				ExecutorTypeSysPackage,
+				ExecutorTypeUrlDownload,
+				ExecutorTypeBundle,
 			},
 		},
 		{
 			name: "executors_given",
 			opts: SyncOpts{
 				Executors: []string{
-					ExecutorTypeGitRepos.String(),
-					ExecutorTypeConfigFiles.String(),
+					ExecutorTypeGitRepo.String(),
+					ExecutorTypeConfigFile.String(),
 				},
 			},
 			want: []ExecutorType{
-				ExecutorTypeGitRepos,
-				ExecutorTypeConfigFiles,
+				ExecutorTypeGitRepo,
+				ExecutorTypeConfigFile,
 			},
 		},
 		{
@@ -41,10 +43,11 @@ func TestExecutorsFromOpts(t *testing.T) {
 				Quick: true,
 			},
 			want: []ExecutorType{
-				ExecutorTypeConfigFiles,
-				ExecutorTypeGithubReleases,
-				ExecutorTypeGitRepos,
-				ExecutorTypeUrlDownloads,
+				ExecutorTypeConfigFile,
+				ExecutorTypeGithubRelease,
+				ExecutorTypeGitRepo,
+				ExecutorTypeUrlDownload,
+				ExecutorTypeBundle,
 			},
 		},
 	}

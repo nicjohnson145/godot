@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"fmt"
+
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 )
@@ -12,11 +14,15 @@ type SyncOpts struct {
 	Executors []string
 }
 
-func Sync(opts SyncOpts) {
-	syncFromConf(
-		NewOverrideableConfig(ConfigOverrides{
-			IgnoreVault: opts.NoVault,
-		}),
+func Sync(opts SyncOpts) error {
+	conf, err := NewOverrideableConfig(ConfigOverrides{
+		IgnoreVault: opts.NoVault,
+	})
+	if err != nil {
+		return fmt.Errorf("error getting config: %w", err)
+	}
+	return syncFromConf(
+		conf,
 		opts,
 	)
 }
@@ -29,7 +35,7 @@ func executorsFromOpts(opts SyncOpts) []ExecutorType {
 		executorStrings = ExecutorTypeNames()
 	}
 	if opts.Quick {
-		executorStrings = lo.Filter(executorStrings, func(s string, _ int) bool { return s != ExecutorTypeSysPackages.String() })
+		executorStrings = lo.Filter(executorStrings, func(s string, _ int) bool { return s != ExecutorTypeSysPackage.String() })
 	}
 
 	return lo.Map(executorStrings, func(s string, _ int) ExecutorType {
@@ -41,10 +47,18 @@ func executorsFromOpts(opts SyncOpts) []ExecutorType {
 	})
 }
 
-func syncFromConf(userConf UserConfig, opts SyncOpts) {
-	EnsureDotfilesRepo(userConf)
-	tConf := NewTargetConfig(userConf)
-	executors := getExecutors(tConf, userConf)
+func syncFromConf(userConf UserConfig, opts SyncOpts) error {
+	if err := EnsureDotfilesRepo(userConf); err != nil {
+		return fmt.Errorf("error ensuring dotfiles repo: %w", err)
+	}
+	godotConf, err := NewGodotConfigFromUserConfig(userConf)
+	if err != nil {
+		return fmt.Errorf("error loading godot config; %w", err)
+	}
+	executors, err := godotConf.ExecutorsForTarget(userConf.Target)
+	if err != nil {
+		return fmt.Errorf("error fetching target configuration: %w", err)
+	}
 	executorTypes := executorsFromOpts(opts)
 
 	for _, ex := range executors {
@@ -57,6 +71,10 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) {
 			continue
 		}
 
-		ex.Execute(userConf, opts, tConf)
+		if err := ex.Execute(userConf, opts, godotConf); err != nil {
+			return fmt.Errorf("error during execution of %v: %w", ex.GetName(), err)
+		}
 	}
+
+	return nil
 }

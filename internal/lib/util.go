@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/carlmjohnson/requests"
-	"github.com/flytam/filenamify"
-	log "github.com/sirupsen/logrus"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/carlmjohnson/requests"
+	"github.com/flytam/filenamify"
+	log "github.com/sirupsen/logrus"
 )
 
 func replaceTilde(s string, replacement string) string {
@@ -23,12 +23,13 @@ func replaceTilde(s string, replacement string) string {
 	return strings.ReplaceAll(s, "~", replacement)
 }
 
-func ensureContainingDir(destpath string) {
+func ensureContainingDir(destpath string) error {
 	dir := filepath.Dir(destpath)
 	err := os.MkdirAll(dir, 0744)
 	if err != nil {
-		log.Fatalf("Error creating containing directories: %v", err)
+		return fmt.Errorf("error creating containing directories: %w", err)
 	}
+	return nil
 }
 
 func runCmd(bin string, args ...string) (string, string, error) {
@@ -40,22 +41,34 @@ func runCmd(bin string, args ...string) (string, string, error) {
 	return stdout.String(), stderr.String(), err
 }
 
-func normalizeTag(tag string) string {
+func normalizeTag(tag string) (string, error) {
 	out, err := filenamify.Filenamify(tag, filenamify.Options{
 		Replacement: "-",
 	})
 	if err != nil {
-		log.Fatalf("Error converting tag to filesystem-safe name: %v", err)
+		return "", fmt.Errorf("error converting tag to filesystem-safe name: %v", err)
 	}
-	return out
+	return out, nil
 }
 
-func getDestination(conf UserConfig, name string, tag string) string {
-	return path.Join(conf.BinaryDir, name+"-"+normalizeTag(tag))
+func getDestination(conf UserConfig, name string, tag string) (string, error) {
+	normTag, err := normalizeTag(tag)
+	if err != nil {
+		return "", err
+	}
+	return path.Join(conf.BinaryDir, name+"-"+normTag), nil
 }
 
-func getSymlinkName(conf UserConfig, name string, tag string) string {
-	return strings.TrimSuffix(getDestination(conf, name, tag), "-"+normalizeTag(tag))
+func getSymlinkName(conf UserConfig, name string, tag string) (string, error) {
+	normTag, err := normalizeTag(tag)
+	if err != nil {
+		return "", err
+	}
+	dest, err := getDestination(conf, name, tag)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSuffix(dest, "-"+normTag), nil
 }
 
 func copyToDestination(src string, dest string) error {
@@ -65,7 +78,9 @@ func copyToDestination(src string, dest string) error {
 	}
 	defer sfile.Close()
 
-	ensureContainingDir(dest)
+	if err := ensureContainingDir(dest); err != nil {
+		return err
+	}
 
 	dfile, err := os.Create(dest)
 	if err != nil {
@@ -124,7 +139,7 @@ func downloadAndSymlinkBinary(opts downloadOpts) error {
 
 	log.Infof("Downloading %v", opts.Name)
 
-	dir, err := ioutil.TempDir("", "godot-")
+	dir, err := os.MkdirTemp("", "godot-")
 	if err != nil {
 		return fmt.Errorf("unable to make temp directory")
 	}

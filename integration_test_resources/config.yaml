@@ -1,3 +1,4 @@
 github-user: nicjohnson145
 binary-dir: ~/bin
 target: test
+dotfiles-url: https://github.com/nicjohnson145/test-dotfiles

@@ -2,20 +2,22 @@ package lib
 
 import (
 	"bytes"
-	log "github.com/sirupsen/logrus"
+	"fmt"
 	"path"
 	"runtime"
 	"text/template"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var _ Executor = (*UrlDownload)(nil)
 
 type UrlDownload struct {
-	Name       string `yaml:"name"`
-	Tag        string `yaml:"tag"`
-	MacUrl     string `yaml:"mac-url"`
-	LinuxUrl   string `yaml:"linux-url"`
-	WindowsUrl string `yaml:"windows-url"`
+	Name       string `yaml:"-"`
+	Tag        string `yaml:"tag" mapstructure:"tag"`
+	MacUrl     string `yaml:"mac-url" mapstructure:"mac-url"`
+	LinuxUrl   string `yaml:"linux-url" mapstructure:"linux-url"`
+	WindowsUrl string `yaml:"windows-url" mapstructure:"windows-url"`
 }
 
 type urlVars struct {
@@ -26,26 +28,45 @@ func (u *UrlDownload) GetName() string {
 	return u.Name
 }
 
-func (u *UrlDownload) Type() ExecutorType {
-	return ExecutorTypeUrlDownloads
+func (u *UrlDownload) SetName(n string) {
+	u.Name = n
 }
 
-func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {
+func (u *UrlDownload) Type() ExecutorType {
+	return ExecutorTypeUrlDownload
+}
+
+func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) error {
 	log.Infof("Ensuring %v", u.Name)
-	url := u.getDownloadUrl()
-	err := downloadAndSymlinkBinary(downloadOpts{
+	url, err := u.getDownloadUrl()
+	if err != nil {
+		return fmt.Errorf("error getting url: %w", err)
+	}
+
+	dest, err := getDestination(conf, u.Name, u.Tag)
+	if err != nil {
+		return err
+	}
+
+	symlink, err := getSymlinkName(conf, u.Name, u.Tag)
+	if err != nil {
+		return err
+	}
+
+	err = downloadAndSymlinkBinary(downloadOpts{
 		Name:         u.Name,
 		DownloadName: path.Base(url),
-		FinalDest:    getDestination(conf, u.Name, u.Tag),
+		FinalDest:    dest,
 		Url:          url,
-		SymlinkName:  getSymlinkName(conf, u.Name, u.Tag),
+		SymlinkName:  symlink,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("error during download/symlink: %w", err)
 	}
+	return nil
 }
 
-func (u *UrlDownload) getDownloadUrl() string {
+func (u *UrlDownload) getDownloadUrl() (string, error) {
 	var url string
 	switch runtime.GOOS {
 	case "linux":
@@ -57,21 +78,21 @@ func (u *UrlDownload) getDownloadUrl() string {
 	}
 
 	if url == "" {
-		log.Fatalf("No download url specified for %v", runtime.GOOS)
+		return "", fmt.Errorf("eo download url specified for %v", runtime.GOOS)
 	}
 
 	// It could be a template, so parse it as such
 	tmpl, err := template.New(u.Name).Parse(url)
 	if err != nil {
-		log.Fatalf("Error parsing download url as template: %v", err)
+		return "", fmt.Errorf("error parsing download url as template: %v", err)
 	}
 	value := new(bytes.Buffer)
 	err = tmpl.Execute(value, urlVars{
 		Tag: u.Tag,
 	})
 	if err != nil {
-		log.Fatalf("Error rendering URL template: %v", err)
+		return "", fmt.Errorf("error rendering URL template: %v", err)
 	}
 
-	return value.String()
+	return value.String(), nil
 }

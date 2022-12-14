@@ -1,10 +1,11 @@
 package lib
 
 import (
-	"github.com/stretchr/testify/require"
 	"path"
-	"testing"
 	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGitRepo(t *testing.T) {
@@ -36,7 +37,7 @@ func TestGitRepo(t *testing.T) {
 				Tag: "v1.4.2",
 			},
 		}
-		gr.Execute(UserConfig{}, SyncOpts{}, TargetConfig{})
+		require.NoError(t, gr.Execute(UserConfig{}, SyncOpts{}, GodotConfig{}))
 		checkMsg(t, loc)
 	})
 
@@ -52,7 +53,7 @@ func TestGitRepo(t *testing.T) {
 				Commit: "02c8c0085385f7d65ba35556edfc58e0f48257eb",
 			},
 		}
-		gr.Execute(UserConfig{}, SyncOpts{}, TargetConfig{})
+		require.NoError(t, gr.Execute(UserConfig{}, SyncOpts{}, GodotConfig{}))
 		checkMsg(t, loc)
 	})
 }

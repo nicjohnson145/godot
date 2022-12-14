@@ -2,11 +2,11 @@ package lib
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/require"
-	"io/ioutil"
 	"os"
 	"sort"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // Best tests are real tests? question mark?
@@ -14,7 +14,7 @@ func TestGithubReleaseExecute(t *testing.T) {
 	checkFiles := func(t *testing.T, dir string, want []string) {
 		t.Helper()
 
-		ioFiles, err := ioutil.ReadDir(dir)
+		ioFiles, err := os.ReadDir(dir)
 		require.NoError(t, err)
 
 		files := []string{}
@@ -35,10 +35,6 @@ func TestGithubReleaseExecute(t *testing.T) {
 	}
 
 	t.Run("single_binary", func(t *testing.T) {
-		restore, noFatal := NoFatals(t)
-		defer noFatal(t)
-		defer restore()
-
 		dir := t.TempDir()
 
 		g := GithubRelease{
@@ -49,20 +45,16 @@ func TestGithubReleaseExecute(t *testing.T) {
 			LinuxPattern: "godot_linux_amd64",
 			MacPattern:   "godot_darwin_amd64",
 		}
-		g.Execute(UserConfig{
+		require.NoError(t, g.Execute(UserConfig{
 			BinaryDir:  dir,
 			GithubUser: ghuser,
 			GithubAuth: BasicAuth(ghuser, ghpat),
-		}, SyncOpts{}, TargetConfig{})
+		}, SyncOpts{}, GodotConfig{}))
 
 		checkFiles(t, dir, []string{"godot", "godot-v2.4.1"})
 	})
 
 	t.Run("tarball", func(t *testing.T) {
-		restore, noFatal := NoFatals(t)
-		defer noFatal(t)
-		defer restore()
-
 		dir := t.TempDir()
 
 		g := GithubRelease{
@@ -73,20 +65,16 @@ func TestGithubReleaseExecute(t *testing.T) {
 			LinuxPattern: ".*unknown-linux-musl.*",
 			MacPattern:   ".*apple-darwin.*",
 		}
-		g.Execute(UserConfig{
+		require.NoError(t, g.Execute(UserConfig{
 			BinaryDir:  dir,
 			GithubUser: ghuser,
 			GithubAuth: BasicAuth(ghuser, ghpat),
-		}, SyncOpts{}, TargetConfig{})
+		}, SyncOpts{}, GodotConfig{}))
 
 		checkFiles(t, dir, []string{"rg", "rg-13.0.0"})
 	})
 
 	t.Run("tarball_regex_specified", func(t *testing.T) {
-		restore, noFatal := NoFatals(t)
-		defer noFatal(t)
-		defer restore()
-
 		dir := t.TempDir()
 
 		g := GithubRelease{
@@ -98,11 +86,11 @@ func TestGithubReleaseExecute(t *testing.T) {
 			LinuxPattern: ".*linux_amd64.tar.gz$",
 			MacPattern:   ".*macOS_amd64.tar.gz$",
 		}
-		g.Execute(UserConfig{
+		require.NoError(t, g.Execute(UserConfig{
 			BinaryDir:  dir,
 			GithubUser: ghuser,
 			GithubAuth: BasicAuth(ghuser, ghpat),
-		}, SyncOpts{}, TargetConfig{})
+		}, SyncOpts{}, GodotConfig{}))
 
 		checkFiles(t, dir, []string{"gh", "gh-v2.12.1"})
 	})
@@ -153,10 +141,6 @@ func TestGetAssetAutoDetection(t *testing.T) {
 	}
 	for _, tc := range testData {
 		t.Run(tc.name, func(t *testing.T) {
-			restore, noFatal := NoFatals(t)
-			defer noFatal(t)
-			defer restore()
-
 			data, err := os.ReadFile("testdata/asset-json/" + tc.path)
 			require.NoError(t, err)
 
@@ -164,8 +148,9 @@ func TestGetAssetAutoDetection(t *testing.T) {
 			err = json.Unmarshal(data, &resp)
 			require.NoError(t, err)
 			g := GithubRelease{}
-			got := g.getAsset(resp, tc.os, tc.arch).Name
-			require.Equal(t, tc.want, got)
+			got, err := g.getAsset(resp, tc.os, tc.arch)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got.Name)
 			// Should also properly set that the release is an archive
 			require.Equal(t, tc.IsArchive, g.IsArchive)
 		})
