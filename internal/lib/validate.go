@@ -1,56 +1,22 @@
 package lib
 
 import (
-	mset "github.com/deckarep/golang-set/v2"
-	log "github.com/sirupsen/logrus"
+	"fmt"
 )
 
-func Validate(filepath string) {
+func Validate(filepath string) error {
 	exists, err := pathExists(filepath)
 	if err != nil {
-		log.Fatalf("Error checking existance of file: %v", err)
+		return fmt.Errorf("error checking existance of file: %w", err)
 	}
 
 	if !exists {
-		log.Fatalf("Path %v does not exist", filepath)
+		return fmt.Errorf("path %v does not exist", filepath)
 	}
 
-	validateConfig(NewTargetConfigFromPath(filepath))
-}
-
-func validateConfig(targetConfig TargetConfig) {
-	names := mset.NewSet[string]()
-
-	hasDupes := false
-	if dupes := checkNames(names, toPtrList(targetConfig.ConfigFiles)); dupes {
-		hasDupes = true
+	_, err = NewGodotConfig(filepath)
+	if err != nil {
+		return err
 	}
-	if dupes := checkNames(names, toPtrList(targetConfig.GithubReleases)); dupes {
-		hasDupes = true
-	}
-	if dupes := checkNames(names, toPtrList(targetConfig.GitRepos)); dupes {
-		hasDupes = true
-	}
-	if dupes := checkNames(names, toPtrList(targetConfig.SystemPackages)); dupes {
-		hasDupes = true
-	}
-	if dupes := checkNames(names, targetConfig.Bundles); dupes {
-		hasDupes = true
-	}
-
-	if hasDupes {
-		log.Fatal("Duplicate names are not allowed")
-	}
-}
-
-func checkNames[T Namer](names mset.Set[string], options []T) bool {
-	foundErr := false
-	for _, f := range options {
-		if names.Contains(f.GetName()) {
-			log.Errorf("Duplicate name %v found", f.GetName())
-			foundErr = true
-		}
-		names.Add(f.GetName())
-	}
-	return foundErr
+	return nil
 }

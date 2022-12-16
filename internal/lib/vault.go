@@ -2,23 +2,24 @@ package lib
 
 import (
 	"fmt"
-	vault "github.com/hashicorp/vault/api"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
+
+	vault "github.com/hashicorp/vault/api"
+	log "github.com/sirupsen/logrus"
 )
 
-func setVaultClient(userConf *UserConfig) {
+func setVaultClient(userConf *UserConfig) error {
 	if userConf.VaultConfig.Address == "" {
 		log.Debug("No vault address set, not setting vault client")
-		return
+		return nil
 	}
 
 	config := vault.DefaultConfig()
 	config.Address = userConf.VaultConfig.Address
 	client, err := vault.NewClient(config)
 	if err != nil {
-		log.Fatalf("Unabled to initialize Vault client: %v", err)
+		return fmt.Errorf("unable to initialize Vault client: %v", err)
 	}
 
 	tokenPath := filepath.Join(userConf.HomeDir, ".vault-token")
@@ -28,27 +29,27 @@ func setVaultClient(userConf *UserConfig) {
 
 	exists, err := pathExists(replaceTilde(tokenPath, userConf.HomeDir))
 	if err != nil {
-		log.Fatalf("Unable to check path existance: %v", err)
+		return fmt.Errorf("unable to check path existance: %v", err)
 	}
 
 	if !exists {
-		log.Fatalf("Vault token path %v does not exist", tokenPath)
+		return fmt.Errorf("vault token path %v does not exist", tokenPath)
 	}
 
 	b, err := os.ReadFile(tokenPath)
 	if err != nil {
-		log.Fatalf("Error reading vault token file: %v", err)
+		return fmt.Errorf("error reading vault token file: %v", err)
 	}
 
 	client.SetToken(string(b))
 	userConf.VaultConfig.Client = RealVaultClient{Client: client}
 	log.Debug("Initialized vault client")
+	return nil
 }
 
 type VaultClient interface {
 	Initialized() bool
 	ReadKey(string, string) (string, error)
-	ReadKeyOrDie(string, string) string
 }
 
 type RealVaultClient struct {
@@ -77,13 +78,4 @@ func (v RealVaultClient) ReadKey(path string, key string) (string, error) {
 	}
 
 	return value, nil
-}
-
-func (v RealVaultClient) ReadKeyOrDie(path string, key string) string {
-	val, err := v.ReadKey(path, key)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return val
 }

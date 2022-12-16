@@ -1,13 +1,13 @@
 package lib
 
 import (
-	"github.com/lithammer/dedent"
-	"github.com/stretchr/testify/require"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
+
+	"github.com/lithammer/dedent"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -30,7 +30,7 @@ func setupForConfigFile(t *testing.T, name string, content string) UserConfig {
 	output := makeSubDir(t, dir, "output")
 	home := makeSubDir(t, dir, "home")
 
-	err := ioutil.WriteFile(
+	err := os.WriteFile(
 		path.Join(templates, name),
 		[]byte(content),
 		0744,
@@ -47,7 +47,7 @@ func setupForConfigFile(t *testing.T, name string, content string) UserConfig {
 
 func requireContents(t *testing.T, path string, expected string) {
 	t.Helper()
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	require.NoError(t, err)
 	require.Equal(t, expected, string(b))
 }
@@ -60,18 +60,15 @@ func cleanFuncsMap(t *testing.T) {
 }
 
 func TestConfigFileExecute(t *testing.T) {
-	restore, noFatal := NoFatals(t)
-	defer noFatal(t)
-	defer restore()
 	defer cleanFuncsMap(t)
 
 	conf := setupForConfigFile(t, "dot_conf", "Hello from {{ .Target }}")
 
 	f := ConfigFile{
-		Name:        "dot_conf",
-		Destination: "~/.config/conf",
+		TemplateName: "dot_conf",
+		Destination:  "~/.config/conf",
 	}
-	f.Execute(conf, SyncOpts{}, TargetConfig{Targets: map[string]Target{targetName: {}}})
+	require.NoError(t, f.Execute(conf, SyncOpts{}, GodotConfig{}))
 
 	requireContents(t, path.Join(conf.HomeDir, ".config", "conf"), fmt.Sprintf("Hello from %v", targetName))
 }
@@ -87,75 +84,106 @@ func TestIsInstalled(t *testing.T) {
 
 	conf := setupForConfigFile(t, "install_conf", content)
 	f := ConfigFile{
-		Name:        "install_conf",
-		Destination: "~/.config/install_conf",
+		TemplateName: "install_conf",
+		Destination:  "~/.config/install_conf",
 	}
 	outPath := path.Join(conf.HomeDir, ".config", "install_conf")
 
 	t.Run("installed", func(t *testing.T) {
-		restore, noFatal := NoFatals(t)
-		defer noFatal(t)
 		defer cleanFuncsMap(t)
-		defer restore()
 
-		f.Execute(
+		require.NoError(t, f.Execute(
 			conf,
 			SyncOpts{},
-			TargetConfig{
-				GithubReleases: []GithubRelease{
-					{Name: "blarg"},
-					{Name: "blarg2"},
+			GodotConfig{
+				Executors: map[string]GodotExecutor{
+					"blarg": {
+						Name: "blarg",
+						Type: ExecutorTypeConfigFile,
+						Spec: map[string]any{
+							"name":        "blarg",
+							"destination": "~/.config/blarg",
+						},
+					},
+					"blarg2": {
+						Name: "blarg2",
+						Type: ExecutorTypeConfigFile,
+						Spec: map[string]any{
+							"name":        "blarg2",
+							"destination": "~/.config/blarg",
+						},
+					},
 				},
-				Targets: map[string]Target{targetName: {GithubReleases: []string{"blarg"}}, },
+				Targets: map[string][]string{
+					targetName: []string{"blarg"},
+				},
 			},
-		)
+		))
 		requireContents(t, outPath, "blarg installed\n")
 	})
 
 	t.Run("not_installed", func(t *testing.T) {
-		restore, noFatal := NoFatals(t)
-		defer noFatal(t)
 		defer cleanFuncsMap(t)
-		defer restore()
 
-		f.Execute(
+		require.NoError(t, f.Execute(
 			conf,
 			SyncOpts{},
-			TargetConfig{
-				GithubReleases: []GithubRelease{
-					{Name: "blarg"},
-					{Name: "blarg2"},
+			GodotConfig{
+				Executors: map[string]GodotExecutor{
+					"blarg": {
+						Name: "blarg",
+						Type: ExecutorTypeConfigFile,
+						Spec: map[string]any{
+							"name":        "blarg",
+							"destination": "~/.config/blarg",
+						},
+					},
+					"blarg2": {
+						Name: "blarg2",
+						Type: ExecutorTypeConfigFile,
+						Spec: map[string]any{
+							"name":        "blarg2",
+							"destination": "~/.config/blarg",
+						},
+					},
 				},
-				Targets: map[string]Target{targetName: {GithubReleases: []string{"blarg2"}}, },
+				Targets: map[string][]string{
+					targetName: []string{"blarg2"},
+				},
 			},
-		)
+		))
 		requireContents(t, outPath, "blarg not installed\n")
 	})
 
 	t.Run("installed_via_bundle", func(t *testing.T) {
-		restore, noFatal := NoFatals(t)
-		defer noFatal(t)
 		defer cleanFuncsMap(t)
-		defer restore()
 
-		f.Execute(
+		require.NoError(t, f.Execute(
 			conf,
 			SyncOpts{},
-			TargetConfig{
-				GithubReleases: []GithubRelease{
-					{Name: "blarg"},
-				},
-				Bundles: []Bundle{
-					{
+			GodotConfig{
+				Executors: map[string]GodotExecutor{
+					"blarg": {
+						Name: "blarg",
+						Type: ExecutorTypeConfigFile,
+						Spec: map[string]any{
+							"name":        "blarg",
+							"destination": "~/.config/blarg",
+						},
+					},
+					"blarg-bundle": {
 						Name: "blarg-bundle",
-						Target: Target{
-							GithubReleases: []string{"blarg"},
+						Type: ExecutorTypeBundle,
+						Spec: map[string]any{
+							"items": []string{"blarg"},
 						},
 					},
 				},
-				Targets: map[string]Target{targetName: {Bundles: []string{"blarg-bundle"}}},
+				Targets: map[string][]string{
+					targetName: []string{"blarg-bundle"},
+				},
 			},
-		)
+		))
 		requireContents(t, outPath, "blarg installed\n")
 	})
 

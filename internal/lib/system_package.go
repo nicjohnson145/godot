@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,52 +24,63 @@ func isValidPackageManager(s string) bool {
 var _ Executor = (*SystemPackage)(nil)
 
 type SystemPackage struct {
-	Name     string `yaml:"name"`
-	AptName  string `yaml:"apt"`
-	BrewName string `yaml:"brew"`
+	Name     string `yaml:"-"`
+	AptName  string `yaml:"apt" mapstructure:"apt"`
+	BrewName string `yaml:"brew" mapstructure:"brew"`
 }
 
 func (s *SystemPackage) Type() ExecutorType {
-	return ExecutorTypeSysPackages
+	return ExecutorTypeSysPackage
 }
 
-func (s *SystemPackage) Execute(conf UserConfig, opts SyncOpts, _ TargetConfig) {
+func (s *SystemPackage) Execute(conf UserConfig, _ SyncOpts, _ GodotConfig) error {
 	if conf.PackageManager == "" {
-		log.Fatal("Package manager not configured, cannot install system packages")
+		return fmt.Errorf("eackage manager not configured, cannot install system packages")
 	}
 
 	log.Infof("Installing %v\n", s.Name)
+	var err error
 	switch conf.PackageManager {
 	case PackageManagerApt:
-		s.executeApt(conf)
+		err = s.executeApt()
 	case PackageManagerBrew:
-		s.executeBrew(conf)
+		err = s.executeBrew()
 	default:
-		log.Fatalf("Unknown package manager %v", conf.PackageManager)
+		err = fmt.Errorf("enknown package manager %v", conf.PackageManager)
+	}
+	if err != nil {
+		return fmt.Errorf("error during execution: %w", err)
 	}
 
+	return nil
 }
 
 func (s *SystemPackage) GetName() string {
 	return s.Name
 }
 
-func (s *SystemPackage) executeApt(conf UserConfig) {
+func (s *SystemPackage) SetName(n string) {
+	s.Name = n
+}
+
+func (s *SystemPackage) executeApt() error {
 	if s.AptName == "" {
-		log.Fatal("No configured name for apt")
+		return fmt.Errorf("eo configured name for apt")
 	}
 	_, stderr, err := runCmd("/bin/sh", "-c", fmt.Sprintf("sudo DEBIAN_FRONTEND=noninteractive apt install -y %v", s.AptName))
 	if err != nil {
-		log.Fatalf("Error during installation: %v\n%v", err, stderr)
+		return fmt.Errorf("error during installation: %v\n%v", err, stderr)
 	}
+	return nil
 }
 
-func (s *SystemPackage) executeBrew(conf UserConfig) {
+func (s *SystemPackage) executeBrew() error {
 	if s.BrewName == "" {
-		log.Fatal("No configured name for brew")
+		return fmt.Errorf("eo configured name for brew")
 	}
 	_, _, err := runCmd("brew", "install", s.BrewName)
 	if err != nil {
-		log.Fatalf("Error during installation: %v", err)
+		return fmt.Errorf("error during installation: %v", err)
 	}
+	return nil
 }

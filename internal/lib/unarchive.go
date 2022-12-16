@@ -2,11 +2,12 @@ package lib
 
 import (
 	"fmt"
-	"github.com/mholt/archiver"
-	"github.com/samber/lo"
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/mholt/archiver"
+	"github.com/samber/lo"
 )
 
 type searchFunc func(string) (bool, error)

@@ -1,8 +1,9 @@
 package lib
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestReplaceTilde(t *testing.T) {
@@ -49,7 +50,9 @@ func TestTagNormalization(t *testing.T) {
 	}
 	for _, tc := range testData {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, tc.want, normalizeTag(tc.tag))
+			got, err := normalizeTag(tc.tag)
+			require.NoError(t, err)
+			require.Equal(t, tc.want, got)
 		})
 	}
 }
