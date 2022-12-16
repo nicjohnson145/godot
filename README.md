@@ -34,7 +34,7 @@ The user config file (`~/.config/godot/config.yaml`) has the following options:
 The `config.yaml` is the actual configuration of what packages, config files, etc you want
 installed. An example configuration is given below to get you started
 
-```
+```yaml
 executors:
   bat:
     type: github-release
