@@ -35,60 +35,58 @@ The `config.yaml` is the actual configuration of what packages, config files, et
 installed. An example configuration is given below to get you started
 
 ```
-github-releases:
-- name: bat
-  repo: sharkdp/bat
-  is-archive: true
-  tag: v0.20.0
-  mac-pattern: '.*x86_64-apple-darwin.*'
-  linux-pattern: '.*x86_64-unknown-linux-musl.*'
-
-- name: fd
-  repo: sharkdp/fd
-  is-archive: true
-  tag: v8.3.2
-  mac-pattern: '.*x86_64-apple-darwin.*'
-  linux-pattern: '.*x86_64-unknown-linux-musl.*'
-
-git-repos:
-- name: diff-so-fancy
-  url: https://github.com/so-fancy/diff-so-fancy
-  location: ~/github/diff-so-fancy
-  ref:
-    commit: a673cb4d2707f64d92b86498a2f5f71c8e2643d5
-
-config-files:
-- name: dot_fdignore 
-  destination: ~/.config/fd/ignore
-
-- name: dot_gitconfig 
-  destination: ~/.gitconfig
-
-system-packages:
-- name: tmux
-  apt: tmux
-  brew: tmux
-- name: git
-  apt: git
-  brew: git
-
-bundles:
-- name: fd-bundle
-  github-releases:
-  - fd
-  config-files:
-  - dot_fdignore
+executors:
+  bat:
+    type: github-release
+    spec:
+      repo: sharkdp/bat
+      is-archive: true
+      tag: v0.20.0
+      mac-pattern: '.*x86_64-apple-darwin.*'
+      linux-pattern: '.*x86_64-unknown-linux-musl.*'
+  fd:
+    type: github-release
+    spec:
+      repo: sharkdp/fd
+      is-archive: true
+      tag: v8.3.2
+      mac-pattern: '.*x86_64-apple-darwin.*'
+      linux-pattern: '.*x86_64-unknown-linux-musl.*'
+  diff-so-fancy:
+    type: git-repo
+    spec:
+      url: https://github.com/so-fancy/diff-so-fancy
+      location: ~/github/diff-so-fancy
+      ref:
+        commit: a673cb4d2707f64d92b86498a2f5f71c8e2643d5
+  dot_fdignore:
+    type: config-file
+    spec:
+      template-name: dot_fdignore
+      destination: ~/.config/fd/ignore
+  dot_gitconfig:
+    type: config-file
+    spec:
+      template-name: dot_gitconfig
+      destination: ~/.gitconfig
+  tmux:
+    type: sys-package
+    spec:
+      apt: tmux
+      brew: tmux
+  fd-bundle:
+    type: bundle
+    spec:
+      items:
+      - fd
+      - dot_fdignore
 targets:
-  wsl:
-    bundles:
-    - fd-bundle
-    system-packages:
-    - tmux
-    - git
-    github-releases:
-    - bat
-    config-files:
-    - dot_gitconfig
+  work:
+  - fd-bundle
+  - tmux
+  - git
+  - bat
+  - diff-so-fancy
 ```
 
 #### A note about apt
