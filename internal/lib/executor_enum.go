@@ -24,6 +24,8 @@ const (
 	ExecutorTypeUrlDownload ExecutorType = "url-download"
 	// ExecutorTypeBundle is a ExecutorType of type bundle.
 	ExecutorTypeBundle ExecutorType = "bundle"
+	// ExecutorTypeGolang is a ExecutorType of type golang.
+	ExecutorTypeGolang ExecutorType = "golang"
 )
 
 var ErrInvalidExecutorType = fmt.Errorf("not a valid ExecutorType, try [%s]", strings.Join(_ExecutorTypeNames, ", "))
@@ -35,6 +37,7 @@ var _ExecutorTypeNames = []string{
 	string(ExecutorTypeSysPackage),
 	string(ExecutorTypeUrlDownload),
 	string(ExecutorTypeBundle),
+	string(ExecutorTypeGolang),
 }
 
 // ExecutorTypeNames returns a list of possible string values of ExecutorType.
@@ -62,6 +65,7 @@ var _ExecutorTypeValue = map[string]ExecutorType{
 	"sys-package":    ExecutorTypeSysPackage,
 	"url-download":   ExecutorTypeUrlDownload,
 	"bundle":         ExecutorTypeBundle,
+	"golang":         ExecutorTypeGolang,
 }
 
 // ParseExecutorType attempts to convert a string to a ExecutorType.

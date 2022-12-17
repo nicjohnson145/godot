@@ -10,6 +10,7 @@ git-repo
 sys-package
 url-download
 bundle
+golang
 )
 */
 type ExecutorType string
