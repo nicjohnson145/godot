@@ -2,8 +2,10 @@ package lib
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"runtime"
+
+	"github.com/hashicorp/go-multierror"
+	log "github.com/sirupsen/logrus"
 )
 
 var _ Executor = (*GoInstall)(nil)
@@ -24,6 +26,16 @@ func (g *GoInstall) GetName() string {
 
 func (g *GoInstall) SetName(s string) {
 	g.Name = s
+}
+
+func (g *GoInstall) Validate() error {
+	var errs *multierror.Error
+
+	if g.Package == "" {
+		errs = multierror.Append(errs, fmt.Errorf("package is required"))
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (g *GoInstall) Execute(_ UserConfig, _ SyncOpts, _ GodotConfig) error {

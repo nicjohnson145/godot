@@ -107,8 +107,12 @@ func (r *GodotConfig) Validate() error {
 	}
 
 	for name, rawEx := range r.Executors {
-		if _, err := rawEx.AsExecutor(); err != nil {
+		ex, err := rawEx.AsExecutor()
+		if err != nil {
 			errors = multierror.Append(errors, fmt.Errorf("error with executor %v: %w", name, err))
+		}
+		if err := ex.Validate(); err != nil {
+			errors = multierror.Append(errors, fmt.Errorf("executor %v is invalid: %w", name, err))
 		}
 	}
 

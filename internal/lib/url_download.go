@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"text/template"
 
+	"github.com/hashicorp/go-multierror"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -34,6 +35,16 @@ func (u *UrlDownload) SetName(n string) {
 
 func (u *UrlDownload) Type() ExecutorType {
 	return ExecutorTypeUrlDownload
+}
+
+func (u *UrlDownload) Validate() error {
+	var errs *multierror.Error
+
+	if u.MacUrl == "" && u.LinuxUrl == "" && u.WindowsUrl == "" {
+		errs = multierror.Append(errs, fmt.Errorf("one of mac-url, linux-url, or windows-url is required"))
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) error {

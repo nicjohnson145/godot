@@ -2,27 +2,27 @@ executors:
   conf1:
     type: config-file
     spec:
-      name: conf1
+      template-name: conf1
       destination: "~/.config/conf1"
   conf2:
     type: config-file
     spec:
-      name: conf2
+      template-name: conf2
       destination: "~/.config/conf2"
   conf3:
     type: config-file
     spec:
-      name: conf3
+      template-name: conf3
       destination: "~/.config/conf3"
   conf4:
     type: config-file
     spec:
-      name: conf4
+      template-name: conf4
       destination: "~/.config/conf4"
   conf5:
     type: config-file
     spec:
-      name: conf5
+      template-name: conf5
       destination: "~/.config/conf5"
   bundle1:
     type: bundle

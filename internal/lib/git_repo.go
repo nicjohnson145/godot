@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-git/go-git/v5"
+	"github.com/hashicorp/go-multierror"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -44,6 +45,20 @@ func (g *GitRepo) SetName(n string) {
 
 func (g *GitRepo) Type() ExecutorType {
 	return ExecutorTypeGitRepo
+}
+
+func (g *GitRepo) Validate() error {
+	var errs *multierror.Error
+
+	if g.URL == "" {
+		errs = multierror.Append(errs, fmt.Errorf("url is required"))
+	}
+
+	if g.Location == "" {
+		errs = multierror.Append(errs, fmt.Errorf("location is required"))
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (g *GitRepo) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) error {
