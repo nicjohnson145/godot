@@ -30,7 +30,7 @@ func (g *Golang) SetName(s string) {
 	g.Name = s
 }
 
-func (g *Golang) Execute(u UserConfig, o SyncOpts, c GodotConfig) error {
+func (g *Golang) Execute(_ UserConfig, _ SyncOpts, _ GodotConfig) error {
 	if runtime.GOOS != "linux" {
 		return fmt.Errorf("golang installations only supported on linux")
 	}
@@ -40,7 +40,7 @@ func (g *Golang) Execute(u UserConfig, o SyncOpts, c GodotConfig) error {
 	log.Debug("checking installed version")
 	out, _, err := runCmd("go", "version")
 	if err == nil && g.getVersionFromOutput(out) == g.Version {
-		log.Info("go version %v already installed, skipping", g.Version)
+		log.Infof("go version %v already installed, skipping", g.Version)
 		return nil
 	}
 

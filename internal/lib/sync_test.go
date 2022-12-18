@@ -22,6 +22,8 @@ func TestExecutorsFromOpts(t *testing.T) {
 				ExecutorTypeSysPackage,
 				ExecutorTypeUrlDownload,
 				ExecutorTypeBundle,
+				ExecutorTypeGolang,
+				ExecutorTypeGoInstall,
 			},
 		},
 		{
@@ -48,6 +50,8 @@ func TestExecutorsFromOpts(t *testing.T) {
 				ExecutorTypeGitRepo,
 				ExecutorTypeUrlDownload,
 				ExecutorTypeBundle,
+				ExecutorTypeGolang,
+				ExecutorTypeGoInstall,
 			},
 		},
 	}

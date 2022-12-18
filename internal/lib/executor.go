@@ -11,6 +11,7 @@ sys-package
 url-download
 bundle
 golang
+go-install
 )
 */
 type ExecutorType string
@@ -39,4 +40,23 @@ func deduplicate(executors []Executor) []Executor {
 	}
 
 	return ret
+}
+
+func applyOrdering(executors []Executor) []Executor {
+	// We cant do a go install until we've installed go, so if we didn't sort these properly then
+	// the first configuration run would fail
+	installs := []Executor{}
+	sortedExecutors := []Executor{}
+
+	for _, e := range executors {
+		if e.Type() == ExecutorTypeGoInstall {
+			installs = append(installs, e)
+		} else {
+			sortedExecutors = append(sortedExecutors, e)
+		}
+	}
+
+	sortedExecutors = append(sortedExecutors, installs...)
+	
+	return sortedExecutors
 }

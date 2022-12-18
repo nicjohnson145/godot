@@ -74,6 +74,9 @@ func (r *GodotExecutor) AsExecutor() (Executor, error) {
 	case ExecutorTypeGolang:
 		var x Golang
 		executor, err = decodeStructure(&x, r.Spec, r.Type.String())
+	case ExecutorTypeGoInstall:
+		var x GoInstall
+		executor, err = decodeStructure(&x, r.Spec, r.Type.String())
 	default:
 		return nil, fmt.Errorf("programming error: unhandled executor type of %v", r.Type)
 	}
@@ -142,5 +145,5 @@ func (r *GodotConfig) fetchExecutorsForSlice(selection []string) ([]Executor, er
 			executors = append(executors, subExecs...)
 		}
 	}
-	return deduplicate(executors), nil
+	return applyOrdering(deduplicate(executors)), nil
 }

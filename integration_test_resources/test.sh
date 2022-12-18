@@ -42,5 +42,8 @@ if [[ "$(go version)" != "go version go1.19.3 linux/amd64" ]]; then
     exit 1
 fi
 
+# Gopls should be installed
+$HOMEDIR/go/bin/gopls -h
+
 
 exit 0
