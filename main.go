@@ -37,6 +37,8 @@ func buildCommand() *cobra.Command {
 			if debug {
 				log.SetLevel(log.DebugLevel)
 			}
+			// So we don't print usage messages on execution errors
+			cmd.SilenceUsage = true
 		},
 	}
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging")

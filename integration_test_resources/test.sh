@@ -35,5 +35,15 @@ if grep "fd installed" $FOO_CONFIG_PATH; then
         exit 1
 fi
 
+# Golang should be installed at 1.19.3
+export PATH=$PATH:/usr/local/go/bin
+if [[ "$(go version)" != "go version go1.19.3 linux/amd64" ]]; then
+    echo "correct go version not installed"
+    exit 1
+fi
+
+# Gopls should be installed
+$HOMEDIR/go/bin/gopls -h
+
 
 exit 0
