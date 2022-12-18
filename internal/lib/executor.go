@@ -19,6 +19,7 @@ type ExecutorType string
 type Executor interface {
 	Execute(UserConfig, SyncOpts, GodotConfig) error
 	Type() ExecutorType
+	Validate() error
 	Namer
 }
 

@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/carlmjohnson/requests"
+	"github.com/hashicorp/go-multierror"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -68,6 +69,19 @@ func (g *GithubRelease) SetName(n string) {
 
 func (g *GithubRelease) Type() ExecutorType {
 	return ExecutorTypeGithubRelease
+}
+
+func (g *GithubRelease) Validate() error {
+	var errs *multierror.Error
+
+	if g.Repo == "" {
+		errs = multierror.Append(errs, fmt.Errorf("repo is required"))
+	}
+	if g.Tag == "" {
+		errs = multierror.Append(errs, fmt.Errorf("tag is required"))
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) error {

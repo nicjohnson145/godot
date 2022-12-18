@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
 )
@@ -31,6 +32,16 @@ type SystemPackage struct {
 
 func (s *SystemPackage) Type() ExecutorType {
 	return ExecutorTypeSysPackage
+}
+
+func (s *SystemPackage) Validate() error {
+	var errs *multierror.Error
+
+	if s.AptName == "" && s.BrewName == "" {
+		errs = multierror.Append(errs, fmt.Errorf("one of apt or brew is required"))
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (s *SystemPackage) Execute(conf UserConfig, _ SyncOpts, _ GodotConfig) error {

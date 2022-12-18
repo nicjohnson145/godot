@@ -1,14 +1,16 @@
 package lib
 
 import (
-	"fmt"
-	"runtime"
-	"os"
-	"strings"
-	"path"
-	log "github.com/sirupsen/logrus"
-	"github.com/carlmjohnson/requests"
 	"context"
+	"fmt"
+	"os"
+	"path"
+	"runtime"
+	"strings"
+
+	"github.com/carlmjohnson/requests"
+	"github.com/hashicorp/go-multierror"
+	log "github.com/sirupsen/logrus"
 )
 
 var _ Executor = (*Golang)(nil)
@@ -28,6 +30,16 @@ func (g *Golang) GetName() string {
 
 func (g *Golang) SetName(s string) {
 	g.Name = s
+}
+
+func (g *Golang) Validate() error {
+	var errs *multierror.Error
+
+	if g.Version == "" {
+		errs = multierror.Append(errs, fmt.Errorf("version is required"))
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (g *Golang) Execute(_ UserConfig, _ SyncOpts, _ GodotConfig) error {

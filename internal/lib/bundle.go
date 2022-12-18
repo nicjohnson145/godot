@@ -23,3 +23,8 @@ func (b *Bundle) SetName(n string) {
 func (b *Bundle) Type() ExecutorType {
 	return ExecutorTypeBundle
 }
+
+func (b *Bundle) Validate() error {
+	// TODO: should validate contents here
+	return nil
+}

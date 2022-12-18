@@ -8,6 +8,7 @@ import (
 
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
+	"github.com/hashicorp/go-multierror"
 )
 
 var funcs = template.FuncMap{
@@ -48,6 +49,19 @@ func (c *ConfigFile) SetName(n string) {
 
 func (c *ConfigFile) Type() ExecutorType {
 	return ExecutorTypeConfigFile
+}
+
+func (c *ConfigFile) Validate() error {
+	var errs *multierror.Error
+
+	if c.TemplateName == "" {
+		errs = multierror.Append(errs, fmt.Errorf("template-name is required"))
+	}
+	if c.Destination == "" {
+		errs = multierror.Append(errs, fmt.Errorf("destination is required"))
+	}
+
+	return errs.ErrorOrNil()
 }
 
 func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConfig) error {

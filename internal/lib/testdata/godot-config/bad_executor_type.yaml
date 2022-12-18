@@ -2,7 +2,7 @@ executors:
   conf1:
     type: config-file
     spec:
-      name: foo
+      template-name: foo
       destination: "~/.config/foo"
   bad-ex:
     type: some-bad-type
