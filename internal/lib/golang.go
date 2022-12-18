@@ -47,7 +47,7 @@ func (g *Golang) Execute(_ UserConfig, _ SyncOpts, _ GodotConfig) error {
 	log.Debug("removing existing installation")
 	// If we either don't have it, or it's the wrong version, make sure to clean out the old version
 	// first per the golang docs. Run this command through the shell so we can elivate privileges
-	_, _, err = runCmd("rm", "-rf", "/usr/local/go")
+	_, _, err = runCmd("/bin/sh", "-c", "sudo rm -rf /usr/local/go")
 	if err != nil {
 		return fmt.Errorf("error removing old golang installation: %w", err)
 	}
