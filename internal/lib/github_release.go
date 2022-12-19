@@ -80,6 +80,12 @@ func (g *GithubRelease) Validate() error {
 	if g.Tag == "" {
 		errs = multierror.Append(errs, fmt.Errorf("tag is required"))
 	}
+	if g.Regex != "" {
+		_, err := regexp.Compile(g.Regex)
+		if err != nil {
+			errs = multierror.Append(errs, fmt.Errorf("unable to compile regex: %w", err))
+		}
+	}
 
 	return errs.ErrorOrNil()
 }

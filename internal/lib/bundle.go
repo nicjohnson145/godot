@@ -3,8 +3,8 @@ package lib
 var _ Executor = (*Bundle)(nil)
 
 type Bundle struct {
-	Name  string
-	Items []string `json:"items"`
+	Name  string `yaml:"-"`
+	Items []string `yaml:"items"`
 }
 
 func (b *Bundle) Execute(_ UserConfig, _ SyncOpts, _ GodotConfig) error {

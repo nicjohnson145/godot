@@ -89,11 +89,159 @@ targets:
   - diff-so-fancy
 ```
 
+## Executors
+
+There are several types of configuration that godot can manage, they are as follows:
+
+### Config Files
+
+```go
+type ConfigFile struct {
+	Name         string `yaml:"-"`
+	TemplateName string `yaml:"template-name" mapstructure:"template-name"`
+	Destination  string `yaml:"destination" mapstructure:"destination"`
+}
+```
+
+| Field | Description | Required |
+| ------| ----------- | -------- |
+| template-name | the name of the template in the templates folder of the dotfiles repo | Yes |
+| destination | where the symlink to the rendered config file should be created | Yes |
+
+### Git Repo
+
+```go
+type GitRepo struct {
+	Name        string `yaml:"-"`
+	URL         string `yaml:"url" mapstructure:"url"`
+	Location    string `yaml:"location" mapstructure:"location"`
+	Private     bool   `yaml:"private" mapstructure:"private"`
+	TrackLatest bool   `yaml:"track-latest" mapstructure:"track-latest"`
+	Ref         Ref    `yaml:"ref" mapstructure:"ref"`
+}
+
+type Ref struct {
+	Commit string `yaml:"commit" mapstructure:"commit"`
+	Tag    string `yaml:"tag" mapstructure:"tag"`
+}
+```
+
+| Field | Description | Required |
+| ------| ----------- | -------- |
+| url | the url of the git repository | Yes |
+| location | where to clone the repository | Yes |
+| private | is this a private repo | No |
+| track-latest | should this repo be kept up to date with the latest changes | No |
+| ref.commit | ensure that this commit SHA is checked out when the repo is cloned | No |
+| ref.tag | ensure that this tag is checked out when the repo is cloned | No |
+
+### Github Release
+
+```go
+type GithubRelease struct {
+	Name           string `yaml:"-"`
+	Repo           string `yaml:"repo" mapstructure:"repo"`
+	Tag            string `yaml:"tag" mapstructure:"tag"`
+	IsArchive      bool   `yaml:"is-archive" mapstructure:"is-archive"`
+	Regex          string `yaml:"regex" mapstructure:"regex"`
+	MacPattern     string `yaml:"mac-pattern" mapstructure:"mac-pattern"`
+	LinuxPattern   string `yaml:"linux-pattern" mapstructure:"linux-pattern"`
+	WindowsPattern string `yaml:"windows-pattern" mapstructure:"windows-pattern"`
+}
+```
+
+| Field | Description | Required |
+| ------| ----------- | -------- |
+| repo | which repository hosts the binary | Yes |
+| tag | what release to download (can be "LATEST") | Yes |
+| is-archive | indicate if the binary is packaged as an archive. Normally this can be auto detected | No |
+| regex | a regex to find the binary when unpacking an archive release. Only required if multiple files in the archive are executable | No |
+| mac-pattern | a regex of which asset link to download when running on mac | No |
+| linux-pattern | a regex of which asset link to download when running on linux | No |
+| windows-pattern | a regex of which asset link to download when running on windows | No |
+
+### System Package
+
+```go
+type SystemPackage struct {
+	Name     string `yaml:"-"`
+	AptName  string `yaml:"apt" mapstructure:"apt"`
+	BrewName string `yaml:"brew" mapstructure:"brew"`
+}
+```
+
+| Field | Description | Required |
+| ------| ----------- | -------- |
+| apt | the name of the package when running `apt install` | No |
+| brew | the name of the package when running `brew install` | No |
+
 #### A note about apt
 
 Since `apt get install <blarg>` requires elevated permissions, godot requires that the user can run
-at minimum `sudo apt install` without a password prompt
+at minimum `sudo apt install` without a password prompt, otherwise the tool will prompt you during
+execution
 
+### Url Download
+
+```go
+type UrlDownload struct {
+	Name       string `yaml:"-"`
+	Tag        string `yaml:"tag" mapstructure:"tag"`
+	MacUrl     string `yaml:"mac-url" mapstructure:"mac-url"`
+	LinuxUrl   string `yaml:"linux-url" mapstructure:"linux-url"`
+	WindowsUrl string `yaml:"windows-url" mapstructure:"windows-url"`
+}
+```
+
+| Field | Description | Required |
+| ------| ----------- | -------- |
+| tag | the tag to download, will be available as a template var for the urls. Al | No |
+| mac-url | the url to download from when running on mac | No |
+| linux-url | the url to download from when running on linux | No |
+| windows-url | the url to download from when running on windows | No |
+
+### Bundle
+
+```go
+type Bundle struct {
+	Name  string `yaml:"-"`
+	Items []string `yaml:"items"`
+}
+```
+
+| Field | Description | Required |
+| ------| ----------- | -------- |
+| items | the names of any executors that should be installed as part of this bundle | Yes |
+
+### Golang
+
+*Note:* this executor is currently only available when running on linux
+
+```go
+type Golang struct {
+	Name string `yaml:"-"`
+	Version string `yaml:"version" mapstructure:"version"`
+}
+```
+
+| Field | Description | Required |
+| ------| ----------- | -------- |
+| version | the version of go to install | Yes |
+
+### Go Install
+
+```go
+type GoInstall struct {
+	Name string `yaml:"-"`
+	Package string `yaml:"package" mapstructure:"package"`
+	Version string `yaml:"version" mapstructure:"version"`
+}
+```
+
+| Field | Description | Required |
+| ------| ----------- | -------- |
+| package | the `go get` path of the module | Yes |
+| version | the version of the module to install, defaults to latest | No |
 
 ### Hashicorp Vault Integrations
 
