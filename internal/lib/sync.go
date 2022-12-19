@@ -48,7 +48,7 @@ func executorsFromOpts(opts SyncOpts) []ExecutorType {
 }
 
 func syncFromConf(userConf UserConfig, opts SyncOpts) error {
-	if err := EnsureDotfilesRepo(userConf); err != nil {
+	if err := ensureDotfilesRepo(userConf); err != nil {
 		return fmt.Errorf("error ensuring dotfiles repo: %w", err)
 	}
 	godotConf, err := NewGodotConfigFromUserConfig(userConf)
@@ -76,5 +76,18 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) error {
 		}
 	}
 
+	return nil
+}
+
+func ensureDotfilesRepo(conf UserConfig) error {
+	dotfiles := GitRepo{
+		URL: conf.DotfilesURL,
+		Location: conf.CloneLocation,
+		Private: true,
+		TrackLatest: true,
+	}
+	if err := dotfiles.Execute(conf, SyncOpts{}, GodotConfig{}); err != nil {
+		return fmt.Errorf("error ensuring dotfiles repo: %w", err)
+	}
 	return nil
 }
