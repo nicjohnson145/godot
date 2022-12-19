@@ -63,11 +63,11 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) error {
 
 	for _, ex := range executors {
 		if lo.Contains(opts.Ignore, ex.GetName()) {
-			log.Infof("Ignoring %v due to command line arg", ex.GetName())
+			log.Debugf("Ignoring %v due to command line arg", ex.GetName())
 			continue
 		}
 		if !lo.Contains(executorTypes, ex.Type()) {
-			log.Infof("Skipping %v due to command line arg", ex.GetName())
+			log.Debugf("Skipping %v due to command line arg", ex.GetName())
 			continue
 		}
 
