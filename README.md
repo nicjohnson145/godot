@@ -243,7 +243,7 @@ type GoInstall struct {
 | package | the `go get` path of the module | Yes |
 | version | the version of the module to install, defaults to latest | No |
 
-### Hashicorp Vault Integrations
+## Hashicorp Vault Integrations
 
 Godot has limited ability to pull values from Hashicorp Vault. These features are gated through the
 `vault-config` section in `~/.config/godot/config.yaml`.
