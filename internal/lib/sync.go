@@ -48,7 +48,7 @@ func executorsFromOpts(opts SyncOpts) []ExecutorType {
 }
 
 func syncFromConf(userConf UserConfig, opts SyncOpts) error {
-	if err := EnsureDotfilesRepo(userConf); err != nil {
+	if err := ensureDotfilesRepo(userConf); err != nil {
 		return fmt.Errorf("error ensuring dotfiles repo: %w", err)
 	}
 	godotConf, err := NewGodotConfigFromUserConfig(userConf)
@@ -63,11 +63,11 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) error {
 
 	for _, ex := range executors {
 		if lo.Contains(opts.Ignore, ex.GetName()) {
-			log.Infof("Ignoring %v due to command line arg", ex.GetName())
+			log.Debugf("Ignoring %v due to command line arg", ex.GetName())
 			continue
 		}
 		if !lo.Contains(executorTypes, ex.Type()) {
-			log.Infof("Skipping %v due to command line arg", ex.GetName())
+			log.Debugf("Skipping %v due to command line arg", ex.GetName())
 			continue
 		}
 
@@ -76,5 +76,18 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) error {
 		}
 	}
 
+	return nil
+}
+
+func ensureDotfilesRepo(conf UserConfig) error {
+	dotfiles := GitRepo{
+		URL: conf.DotfilesURL,
+		Location: conf.CloneLocation,
+		Private: true,
+		TrackLatest: true,
+	}
+	if err := dotfiles.Execute(conf, SyncOpts{}, GodotConfig{}); err != nil {
+		return fmt.Errorf("error ensuring dotfiles repo: %w", err)
+	}
 	return nil
 }
