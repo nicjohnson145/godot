@@ -11,9 +11,13 @@ Compiled binaries can be found on the releases page [here](https://github.com/ni
 
 ## Setup/Usage
 
+### Access Tokens
+
 Godot requires a Personal Access Token exported as `GITHUB_PAT`. instructions on generating a PAT
 can be found [here](https://docs.github.com/en/github/authenticating-to-github/keeping-your-account-and-data-secure/creating-a-personal-access-token).
 Optionally, if using the Hashicorp Vault integrations, the PAT can be pulled from Vault instead.
+
+### User Config
 
 Godot requires 2 config files, `~/.config/godot/config.yaml` and a separate `config.yaml` at the
 root of your dotfiles repo
@@ -30,6 +34,13 @@ The user config file (`~/.config/godot/config.yaml`) has the following options:
 | build-location | Where to place the rendered config files to symlink against | No | `~/.config/godot/rendered` |
 | package-manager | The package manager to use when installing system packages (currently only supports `apt` & `brew`) | No | OS specific |
 | vault-config | All Hashicorp Vault related configurations. See the section on Vault for details | No | - |
+
+### Godot Config / Dotfiles Layout
+
+Godot expects a certain layout in your dotfiles repo, namely:
+
+* A `config.yaml` file at the root of the repo
+* A folder named `templates` containing any `type: config-file` templates required
 
 The `config.yaml` is the actual configuration of what packages, config files, etc you want
 installed. An example configuration is given below to get you started
