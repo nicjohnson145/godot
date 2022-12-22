@@ -241,6 +241,7 @@ type Golang struct {
 
 ### Go Install
 
+*Note:* this executor is currently only available when running on linux
 ```go
 type GoInstall struct {
 	Name string `yaml:"-"`
