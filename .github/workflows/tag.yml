@@ -19,4 +19,5 @@ jobs:
       uses: nicjohnson145/tagbot@latest
       id: tagbot
       env:
-        TAGBOT_TOKEN: ${{ secrets.ACTUAL_PAT }}
+        AUTH_TOKEN: ${{ secrets.ACTUAL_PAT }}
+        LATEST: "true"
