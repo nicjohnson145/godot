@@ -60,17 +60,32 @@ func cleanFuncsMap(t *testing.T) {
 }
 
 func TestConfigFileExecute(t *testing.T) {
-	defer cleanFuncsMap(t)
+	t.Run("with templates", func(t *testing.T) {
+		defer cleanFuncsMap(t)
+		conf := setupForConfigFile(t, "dot_conf", "Hello from {{ .Target }}")
 
-	conf := setupForConfigFile(t, "dot_conf", "Hello from {{ .Target }}")
+		f := ConfigFile{
+			TemplateName: "dot_conf",
+			Destination:  "~/.config/conf",
+		}
+		require.NoError(t, f.Execute(conf, SyncOpts{}, GodotConfig{}))
 
-	f := ConfigFile{
-		TemplateName: "dot_conf",
-		Destination:  "~/.config/conf",
-	}
-	require.NoError(t, f.Execute(conf, SyncOpts{}, GodotConfig{}))
+		requireContents(t, path.Join(conf.HomeDir, ".config", "conf"), fmt.Sprintf("Hello from %v", targetName))
+	})
 
-	requireContents(t, path.Join(conf.HomeDir, ".config", "conf"), fmt.Sprintf("Hello from %v", targetName))
+	t.Run("without templates", func(t *testing.T) {
+		defer cleanFuncsMap(t)
+		conf := setupForConfigFile(t, "dot_conf", "Hello from {{ .Target }}")
+
+		f := ConfigFile{
+			TemplateName: "dot_conf",
+			Destination:  "~/.config/conf",
+			NoTemplate: true,
+		}
+		require.NoError(t, f.Execute(conf, SyncOpts{}, GodotConfig{}))
+
+		requireContents(t, path.Join(conf.HomeDir, ".config", "conf"), "Hello from {{ .Target }}")
+	})
 }
 
 func TestIsInstalled(t *testing.T) {

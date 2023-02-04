@@ -3,12 +3,13 @@ package lib
 import (
 	"fmt"
 	"os"
+	"io"
 	"path"
 	"text/template"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/samber/lo"
 	log "github.com/sirupsen/logrus"
-	"github.com/hashicorp/go-multierror"
 )
 
 var funcs = template.FuncMap{
@@ -37,6 +38,7 @@ type ConfigFile struct {
 	Name         string `yaml:"-"`
 	TemplateName string `yaml:"template-name" mapstructure:"template-name"`
 	Destination  string `yaml:"destination" mapstructure:"destination"`
+	NoTemplate   bool   `yaml:"no-template" mapstructure:"no-template"`
 }
 
 func (c *ConfigFile) GetName() string {
@@ -71,11 +73,6 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConf
 	}
 
 	log.Infof("Executing config file %v", c.TemplateName)
-	tmpl, err := c.parseTemplate(conf.CloneLocation)
-	if err != nil {
-		return err
-	}
-
 	buildPath := path.Join(conf.BuildLocation, c.TemplateName)
 	if err := ensureContainingDir(buildPath); err != nil {
 		return err
@@ -86,13 +83,8 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConf
 	}
 	defer f.Close()
 
-	err = tmpl.Execute(f, TemplateVars{
-		Target:     conf.Target,
-		Submodules: path.Join(conf.CloneLocation, "submodules"),
-		Home:       conf.HomeDir,
-	})
-	if err != nil {
-		return fmt.Errorf("error rendering template: %v", err)
+	if err := c.render(f, conf); err != nil {
+		return err
 	}
 
 	dest := replaceTilde(c.Destination, conf.HomeDir)
@@ -111,6 +103,38 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConf
 	}
 
 	return nil
+}
+
+func (c *ConfigFile) render(f *os.File, conf UserConfig) error {
+	if c.NoTemplate {
+		src, err := os.Open(c.templatePath(conf.CloneLocation))
+		if err != nil {
+			return fmt.Errorf("error opening file: %w", err)
+		}
+		defer src.Close()
+
+		if _, err := io.Copy(f, src); err != nil {
+			return fmt.Errorf("error copying file: %w", err)
+		}
+
+		return nil
+	} else {
+		tmpl, err := c.parseTemplate(conf.CloneLocation)
+		if err != nil {
+			return err
+		}
+
+		err = tmpl.Execute(f, TemplateVars{
+			Target:     conf.Target,
+			Submodules: path.Join(conf.CloneLocation, "submodules"),
+			Home:       conf.HomeDir,
+		})
+		if err != nil {
+			return fmt.Errorf("error rendering template: %v", err)
+		}
+
+		return nil
+	}
 }
 
 func (c *ConfigFile) createVaultClosure(conf UserConfig, opts SyncOpts) {
@@ -163,11 +187,15 @@ func (c *ConfigFile) createIsInstalledClosure(userConf UserConfig, godotConf God
 
 func (c *ConfigFile) parseTemplate(dotfiles string) (*template.Template, error) {
 	t := template.New(c.TemplateName).Funcs(funcs)
-	t, err := t.ParseFiles(path.Join(dotfiles, "templates", c.TemplateName))
+	t, err := t.ParseFiles(c.templatePath(dotfiles))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing template file: %w", err)
 	}
 	return t, nil
+}
+
+func (c *ConfigFile) templatePath(dotfiles string) string {
+	return path.Join(dotfiles, "templates", c.TemplateName)
 }
 
 func (c *ConfigFile) pathExists(path string) (bool, error) {

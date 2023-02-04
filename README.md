@@ -111,6 +111,7 @@ type ConfigFile struct {
 	Name         string `yaml:"-"`
 	TemplateName string `yaml:"template-name" mapstructure:"template-name"`
 	Destination  string `yaml:"destination" mapstructure:"destination"`
+	NoTemplate   bool   `yaml:"no-template" mapstructure:"no-template"`
 }
 ```
 
@@ -118,6 +119,7 @@ type ConfigFile struct {
 | ------| ----------- | -------- |
 | template-name | the name of the template in the templates folder of the dotfiles repo | Yes |
 | destination | where the symlink to the rendered config file should be created | Yes |
+| no-template | do not interpret this file as a template, and instead link exactly as it is | No |
 
 ### Git Repo
 
