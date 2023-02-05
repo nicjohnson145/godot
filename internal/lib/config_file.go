@@ -2,14 +2,14 @@ package lib
 
 import (
 	"fmt"
-	"os"
 	"io"
+	"os"
 	"path"
 	"text/template"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/rs/zerolog"
 	"github.com/samber/lo"
-	log "github.com/sirupsen/logrus"
 )
 
 var funcs = template.FuncMap{
@@ -35,10 +35,15 @@ type TemplateVars struct {
 var _ Executor = (*ConfigFile)(nil)
 
 type ConfigFile struct {
-	Name         string `yaml:"-"`
-	TemplateName string `yaml:"template-name" mapstructure:"template-name"`
-	Destination  string `yaml:"destination" mapstructure:"destination"`
-	NoTemplate   bool   `yaml:"no-template" mapstructure:"no-template"`
+	Name         string         `yaml:"-"`
+	TemplateName string         `yaml:"template-name" mapstructure:"template-name"`
+	Destination  string         `yaml:"destination" mapstructure:"destination"`
+	NoTemplate   bool           `yaml:"no-template" mapstructure:"no-template"`
+	log          zerolog.Logger `yaml:"-"`
+}
+
+func (c *ConfigFile) SetLogger(log zerolog.Logger) {
+	c.log = log
 }
 
 func (c *ConfigFile) GetName() string {
@@ -72,7 +77,7 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConf
 		return fmt.Errorf("error creating IsInstalled closure: %w", err)
 	}
 
-	log.Infof("Executing config file %v", c.TemplateName)
+	c.log.Info().Str("name", c.TemplateName).Msg("executing config file")
 	buildPath := path.Join(conf.BuildLocation, c.TemplateName)
 	if err := ensureContainingDir(buildPath); err != nil {
 		return err
@@ -143,14 +148,14 @@ func (c *ConfigFile) createVaultClosure(conf UserConfig, opts SyncOpts) {
 	}
 
 	if opts.NoVault {
-		log.Debug("Creating no-op vault template func")
+		c.log.Debug().Msg("creating no-op vault template function")
 		funcs[funcNameVaultLookup] = func(path string, key string) (string, error) {
 			return "NOT_USING_VAULT", nil
 		}
 		return
 	}
 
-	log.Debug("Creating vault client template func")
+	c.log.Debug().Msg("creating vault template function")
 	funcs[funcNameVaultLookup] = func(path string, key string) (string, error) {
 		if !conf.VaultConfig.Client.Initialized() {
 			return "", fmt.Errorf("Template requires Valut to be set up")
@@ -175,7 +180,7 @@ func (c *ConfigFile) createIsInstalledClosure(userConf UserConfig, godotConf God
 		return fmt.Errorf("error getting executors list: %w", err)
 	}
 
-	log.Debug("Creating IsInstalled template func")
+	c.log.Debug().Msg("creating IsInstalled template function")
 	funcs[funcNameIsInstalled] = func(item string) bool {
 		return lo.ContainsBy(executors, func(t Executor) bool {
 			return t.GetName() == item

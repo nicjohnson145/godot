@@ -3,8 +3,8 @@ package lib
 import (
 	"fmt"
 
+	"github.com/rs/zerolog"
 	"github.com/samber/lo"
-	log "github.com/sirupsen/logrus"
 )
 
 type SyncOpts struct {
@@ -14,7 +14,7 @@ type SyncOpts struct {
 	Executors []string
 }
 
-func Sync(opts SyncOpts) error {
+func Sync(opts SyncOpts, logger zerolog.Logger) error {
 	conf, err := NewOverrideableConfig(ConfigOverrides{
 		IgnoreVault: opts.NoVault,
 	})
@@ -24,6 +24,7 @@ func Sync(opts SyncOpts) error {
 	return syncFromConf(
 		conf,
 		opts,
+		logger,
 	)
 }
 
@@ -41,14 +42,15 @@ func executorsFromOpts(opts SyncOpts) []ExecutorType {
 	return lo.Map(executorStrings, func(s string, _ int) ExecutorType {
 		val, err := ParseExecutorType(s)
 		if err != nil {
-			log.Fatal(err)
+			// There should be no reason for this to fail right now, just panic
+			panic(fmt.Errorf("unexpected error parsing executor: %w", err).Error())
 		}
 		return val
 	})
 }
 
-func syncFromConf(userConf UserConfig, opts SyncOpts) error {
-	if err := ensureDotfilesRepo(userConf); err != nil {
+func syncFromConf(userConf UserConfig, opts SyncOpts, logger zerolog.Logger) error {
+	if err := ensureDotfilesRepo(userConf, logger); err != nil {
 		return fmt.Errorf("error ensuring dotfiles repo: %w", err)
 	}
 	godotConf, err := NewGodotConfigFromUserConfig(userConf)
@@ -63,14 +65,15 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) error {
 
 	for _, ex := range executors {
 		if lo.Contains(opts.Ignore, ex.GetName()) {
-			log.Debugf("Ignoring %v due to command line arg", ex.GetName())
+			logger.Debug().Str("name", ex.GetName()).Msg("ignoring due to command line arg")
 			continue
 		}
 		if !lo.Contains(executorTypes, ex.Type()) {
-			log.Debugf("Skipping %v due to command line arg", ex.GetName())
+			logger.Debug().Str("name", ex.GetName()).Msg("ignoring due to command line arg")
 			continue
 		}
 
+		ex.SetLogger(logger)
 		if err := ex.Execute(userConf, opts, godotConf); err != nil {
 			return fmt.Errorf("error during execution of %v: %w", ex.GetName(), err)
 		}
@@ -79,13 +82,14 @@ func syncFromConf(userConf UserConfig, opts SyncOpts) error {
 	return nil
 }
 
-func ensureDotfilesRepo(conf UserConfig) error {
+func ensureDotfilesRepo(conf UserConfig, logger zerolog.Logger) error {
 	dotfiles := GitRepo{
-		URL: conf.DotfilesURL,
-		Location: conf.CloneLocation,
-		Private: true,
+		URL:         conf.DotfilesURL,
+		Location:    conf.CloneLocation,
+		Private:     true,
 		TrackLatest: true,
 	}
+	//dotfiles.SetLogger(logger)
 	if err := dotfiles.Execute(conf, SyncOpts{}, GodotConfig{}); err != nil {
 		return fmt.Errorf("error ensuring dotfiles repo: %w", err)
 	}

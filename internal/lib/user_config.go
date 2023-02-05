@@ -6,7 +6,7 @@ import (
 	"path"
 	"runtime"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v2"
 )
 
@@ -102,7 +102,7 @@ func NewConfigFromPath(confPath string, setClient vaultFunc, overrides ConfigOve
 	}
 
 	if conf.GithubUser == "" {
-		log.Warn("github-user not set, requests to the github API might be rate limited")
+		log.Warn().Msg("github-user not set, requests to the github API might be rate limited")
 	}
 
 	// Default the target to the hostname
@@ -173,7 +173,7 @@ func NewConfigFromPath(confPath string, setClient vaultFunc, overrides ConfigOve
 			conf.GithubPAT = pat
 		}
 		if !ok {
-			log.Warn("GITHUB_PAT not set, requests to the github API might be rate limited")
+			log.Warn().Msg("GITHUB_PAT not set, requests to the github API might be rate limited")
 		}
 	}
 

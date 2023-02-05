@@ -7,17 +7,20 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/rs/zerolog"
 )
 
 var _ Executor = (*ConfigDir)(nil)
 
 type ConfigDir struct {
-	Name        string `yaml:"-"`
-	DirName     string `yaml:"dir-name" mapstructure:"dir-name"`
-	Destination string `yaml:"destination" mapstructure:"destination"`
+	Name        string         `yaml:"-"`
+	DirName     string         `yaml:"dir-name" mapstructure:"dir-name"`
+	Destination string         `yaml:"destination" mapstructure:"destination"`
+	log         zerolog.Logger `yaml:"-"`
 }
 
 func (c *ConfigDir) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConfig) error {
+	c.log.Info().Str("config-dir", c.DirName).Msg("ensuring config-dir")
 	files, err := c.getFiles(conf)
 	if err != nil {
 		return err
@@ -26,9 +29,11 @@ func (c *ConfigDir) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConfi
 	for _, file := range files {
 		configFile := ConfigFile{
 			TemplateName: file,
-			Destination: filepath.Join(c.Destination, strings.TrimPrefix(file, c.DirName + "/")),
-			NoTemplate: true,
+			Destination:  filepath.Join(c.Destination, strings.TrimPrefix(file, c.DirName+"/")),
+			NoTemplate:   true,
 		}
+		// Disable the logging here to not mess up the flow
+		//configFile.SetLogger(quietLogger)
 		if err := configFile.Execute(conf, opts, godotConf); err != nil {
 			return fmt.Errorf("error handling %v: %w", file, err)
 		}
@@ -88,3 +93,6 @@ func (c *ConfigDir) SetName(name string) {
 	c.Name = name
 }
 
+func (c *ConfigDir) SetLogger(log zerolog.Logger) {
+	c.log = log
+}

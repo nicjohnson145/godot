@@ -6,20 +6,21 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/hashicorp/go-multierror"
-	log "github.com/sirupsen/logrus"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/hashicorp/go-multierror"
+	"github.com/rs/zerolog"
 )
 
 var _ Executor = (*GitRepo)(nil)
 
 type GitRepo struct {
-	Name        string `yaml:"-"`
-	URL         string `yaml:"url" mapstructure:"url"`
-	Location    string `yaml:"location" mapstructure:"location"`
-	Private     bool   `yaml:"private" mapstructure:"private"`
-	TrackLatest bool   `yaml:"track-latest" mapstructure:"track-latest"`
-	Ref         Ref    `yaml:"ref" mapstructure:"ref"`
+	Name        string         `yaml:"-"`
+	URL         string         `yaml:"url" mapstructure:"url"`
+	Location    string         `yaml:"location" mapstructure:"location"`
+	Private     bool           `yaml:"private" mapstructure:"private"`
+	TrackLatest bool           `yaml:"track-latest" mapstructure:"track-latest"`
+	Ref         Ref            `yaml:"ref" mapstructure:"ref"`
+	log         zerolog.Logger `yaml:"-"`
 }
 
 type Ref struct {
@@ -37,6 +38,10 @@ func (r *Ref) String() string {
 	} else {
 		return r.Tag
 	}
+}
+
+func (g *GitRepo) SetLogger(log zerolog.Logger) {
+	g.log = log
 }
 
 func (g *GitRepo) GetName() string {
@@ -74,7 +79,7 @@ func (g *GitRepo) location(conf UserConfig) string {
 }
 
 func (g *GitRepo) Execute(conf UserConfig, _ SyncOpts, _ GodotConfig) error {
-	log.Infof("Ensuring %v cloned", g.URL)
+	g.log.Info().Str("url", g.URL).Msg("ensuring git repo cloned")
 
 	var repo *git.Repository
 	var err error
@@ -107,7 +112,7 @@ func (g *GitRepo) Execute(conf UserConfig, _ SyncOpts, _ GodotConfig) error {
 			if err := g.fetchRepo(repo, conf); err != nil {
 				return fmt.Errorf("error fetching new commits: %w", err)
 			}
-			log.Infof("Ensuring %v at commit %v", g.URL, g.Ref.String())
+			g.log.Info().Str("ref", g.Ref.String()).Msg("ensuring at ref")
 			if err := g.ensureCommitCheckedOut(repo, g.Ref); err != nil {
 				return fmt.Errorf("error ensuring commit checked out: %w", err)
 			}
@@ -141,7 +146,7 @@ func (g *GitRepo) cloneRepo(conf UserConfig) (*git.Repository, error) {
 		false,
 		&git.CloneOptions{
 			Auth: g.authFromConfig(conf),
-			URL: g.URL,
+			URL:  g.URL,
 		},
 	)
 	if err != nil {
