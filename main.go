@@ -23,12 +23,12 @@ func main() {
 
 func initLogger(verbose bool, debug bool) zerolog.Logger {
 	if verbose {
-		return log.Level(zerolog.InfoLevel)
+		return lib.LoggerWithLevel(zerolog.InfoLevel)
 	}
 	if debug {
-		return log.Level(zerolog.DebugLevel)
+		return lib.LoggerWithLevel(zerolog.DebugLevel)
 	}
-	return log.Level(zerolog.WarnLevel)
+	return lib.LoggerWithLevel(zerolog.WarnLevel)
 }
 
 func buildCommand() *cobra.Command {

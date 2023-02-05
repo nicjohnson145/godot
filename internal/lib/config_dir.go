@@ -32,8 +32,8 @@ func (c *ConfigDir) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConfi
 			Destination:  filepath.Join(c.Destination, strings.TrimPrefix(file, c.DirName+"/")),
 			NoTemplate:   true,
 		}
-		// Disable the logging here to not mess up the flow
-		//configFile.SetLogger(quietLogger)
+		// Quiet the logging down so we dont get wierd spam from using a nested executor
+		configFile.SetLogger(LoggerWithLevel(zerolog.WarnLevel))
 		if err := configFile.Execute(conf, opts, godotConf); err != nil {
 			return fmt.Errorf("error handling %v: %w", file, err)
 		}
