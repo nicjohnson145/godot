@@ -24,6 +24,7 @@ func TestExecutorsFromOpts(t *testing.T) {
 				ExecutorTypeBundle,
 				ExecutorTypeGolang,
 				ExecutorTypeGoInstall,
+				ExecutorTypeConfigDir,
 			},
 		},
 		{
@@ -52,6 +53,7 @@ func TestExecutorsFromOpts(t *testing.T) {
 				ExecutorTypeBundle,
 				ExecutorTypeGolang,
 				ExecutorTypeGoInstall,
+				ExecutorTypeConfigDir,
 			},
 		},
 	}

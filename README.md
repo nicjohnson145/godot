@@ -121,6 +121,22 @@ type ConfigFile struct {
 | destination | where the symlink to the rendered config file should be created | Yes |
 | no-template | do not interpret this file as a template, and instead link exactly as it is | No |
 
+### Config Directories
+
+```go
+type ConfigDir struct {
+	Name        string `yaml:"-"`
+	DirName     string `yaml:"dir-name" mapstructure:"dir-name"`
+	Destination string `yaml:"destination" mapstructure:"destination"`
+	NoTemplate  bool   `yaml:"no-template" mapstructure:"no-template"`
+}
+```
+
+| Field | Description | Required |
+| ------| ----------- | -------- |
+| dir-name | Name of the directory containing the configs relative to the template directory | Yes |
+| destination | where the symlink to the rendered config files should be created | Yes |
+
 ### Git Repo
 
 ```go

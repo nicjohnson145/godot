@@ -12,6 +12,7 @@ url-download
 bundle
 golang
 go-install
+config-dir
 )
 */
 type ExecutorType string
