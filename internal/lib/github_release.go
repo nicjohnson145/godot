@@ -9,7 +9,7 @@ import (
 
 	"github.com/carlmjohnson/requests"
 	"github.com/hashicorp/go-multierror"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 )
 
 var (
@@ -49,14 +49,19 @@ type githubTag struct {
 var _ Executor = (*GithubRelease)(nil)
 
 type GithubRelease struct {
-	Name           string `yaml:"-"`
-	Repo           string `yaml:"repo" mapstructure:"repo"`
-	Tag            string `yaml:"tag" mapstructure:"tag"`
-	IsArchive      bool   `yaml:"is-archive" mapstructure:"is-archive"`
-	Regex          string `yaml:"regex" mapstructure:"regex"`
-	MacPattern     string `yaml:"mac-pattern" mapstructure:"mac-pattern"`
-	LinuxPattern   string `yaml:"linux-pattern" mapstructure:"linux-pattern"`
-	WindowsPattern string `yaml:"windows-pattern" mapstructure:"windows-pattern"`
+	Name           string         `yaml:"-"`
+	Repo           string         `yaml:"repo" mapstructure:"repo"`
+	Tag            string         `yaml:"tag" mapstructure:"tag"`
+	IsArchive      bool           `yaml:"is-archive" mapstructure:"is-archive"`
+	Regex          string         `yaml:"regex" mapstructure:"regex"`
+	MacPattern     string         `yaml:"mac-pattern" mapstructure:"mac-pattern"`
+	LinuxPattern   string         `yaml:"linux-pattern" mapstructure:"linux-pattern"`
+	WindowsPattern string         `yaml:"windows-pattern" mapstructure:"windows-pattern"`
+	log            zerolog.Logger `yaml:"-"`
+}
+
+func (g *GithubRelease) SetLogger(log zerolog.Logger) {
+	g.log = log
 }
 
 func (g *GithubRelease) GetName() string {
@@ -91,7 +96,7 @@ func (g *GithubRelease) Validate() error {
 }
 
 func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) error {
-	log.Infof("Ensuring %v", g.Repo)
+	g.log.Info().Str("release", g.Repo).Msg("ensuring release")
 	release, err := g.getRelease(conf)
 	if err != nil {
 		return fmt.Errorf("error determining release: %w", err)
@@ -124,7 +129,7 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) e
 		},
 		SearchFunc:  searchFunc,
 		SymlinkName: symlink,
-	})
+	}, g.log)
 	if err != nil {
 		return fmt.Errorf("error during download/symlink: %w", err)
 	}
@@ -206,7 +211,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 	}
 
 	if pat != "" {
-		log.Debugf("Using user specified pattern of %v", pat)
+		g.log.Debug().Str("pattern", pat).Msg("using user specified pattern")
 		userRegex, err := regexp.Compile(pat)
 		if err != nil {
 			return release{}, fmt.Errorf("error compiling user specified regex: %v", err)
@@ -234,7 +239,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 	}
 	if len(assets) == 1 {
 		// If there's only one matching asset by OS, then we're done here
-		log.Debugf("Reached a single asset after OS matching, found %v", assets[0].Name)
+		g.log.Debug().Str("asset", assets[0].Name).Msg("reached a single asset after OS matching")
 		g.setArchive(assets[0])
 		return assets[0], nil
 	}
@@ -250,7 +255,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 	}
 	if len(assets) == 1 {
 		// If there's only one, then we're done here
-		log.Debugf("Reached a single asset after architecture matching, found %v", assets[0].Name)
+		g.log.Debug().Str("asset", assets[0].Name).Msg("reached a single asset after architecture matching")
 		g.setArchive(assets[0])
 		return assets[0], nil
 	}
@@ -266,7 +271,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 		return noMatchErr("non linux packages")
 	}
 	if len(assets) == 1 {
-		log.Debugf("Reached a single asset after package filtering, found %v", assets[0].Name)
+		g.log.Debug().Str("asset", assets[0].Name).Msg("reached a single asset after package filtering")
 		g.setArchive(assets[0])
 		return assets[0], nil
 	}
@@ -278,7 +283,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 	}
 	if len(assets) == 1 {
 		// If there's only one, then we're done here
-		log.Debugf("Reached a single asset after musl filtering, found %v", assets[0].Name)
+		g.log.Debug().Str("asset", assets[0].Name).Msg("reached a single asset after musl filtering")
 		g.setArchive(assets[0])
 		return assets[0], nil
 	}

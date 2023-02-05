@@ -13,7 +13,7 @@ import (
 
 	"github.com/carlmjohnson/requests"
 	"github.com/flytam/filenamify"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 )
 
 func replaceTilde(s string, replacement string) string {
@@ -127,17 +127,17 @@ type downloadOpts struct {
 	SymlinkName  string
 }
 
-func downloadAndSymlinkBinary(opts downloadOpts) error {
+func downloadAndSymlinkBinary(opts downloadOpts, logger zerolog.Logger) error {
 	exists, err := pathExists(opts.FinalDest)
 	if err != nil {
 		return fmt.Errorf("unable to check existance of %v: %w", opts.FinalDest, err)
 	}
 	if exists {
-		log.Infof("%v already downloaded, skipping", opts.Name)
+		logger.Info().Str("name", opts.Name).Msg("already exists, skipping")
 		return nil
 	}
 
-	log.Infof("Downloading %v", opts.Name)
+	logger.Info().Str("name", opts.Name).Msg("downloading")
 
 	dir, err := os.MkdirTemp("", "godot-")
 	if err != nil {

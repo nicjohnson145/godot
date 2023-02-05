@@ -2,13 +2,14 @@ package lib
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"text/template"
 
-	"github.com/samber/lo"
-	log "github.com/sirupsen/logrus"
 	"github.com/hashicorp/go-multierror"
+	"github.com/rs/zerolog"
+	"github.com/samber/lo"
 )
 
 var funcs = template.FuncMap{
@@ -34,9 +35,15 @@ type TemplateVars struct {
 var _ Executor = (*ConfigFile)(nil)
 
 type ConfigFile struct {
-	Name         string `yaml:"-"`
-	TemplateName string `yaml:"template-name" mapstructure:"template-name"`
-	Destination  string `yaml:"destination" mapstructure:"destination"`
+	Name         string         `yaml:"-"`
+	TemplateName string         `yaml:"template-name" mapstructure:"template-name"`
+	Destination  string         `yaml:"destination" mapstructure:"destination"`
+	NoTemplate   bool           `yaml:"no-template" mapstructure:"no-template"`
+	log          zerolog.Logger `yaml:"-"`
+}
+
+func (c *ConfigFile) SetLogger(log zerolog.Logger) {
+	c.log = log
 }
 
 func (c *ConfigFile) GetName() string {
@@ -70,12 +77,7 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConf
 		return fmt.Errorf("error creating IsInstalled closure: %w", err)
 	}
 
-	log.Infof("Executing config file %v", c.TemplateName)
-	tmpl, err := c.parseTemplate(conf.CloneLocation)
-	if err != nil {
-		return err
-	}
-
+	c.log.Info().Str("name", c.TemplateName).Msg("executing config file")
 	buildPath := path.Join(conf.BuildLocation, c.TemplateName)
 	if err := ensureContainingDir(buildPath); err != nil {
 		return err
@@ -86,13 +88,8 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConf
 	}
 	defer f.Close()
 
-	err = tmpl.Execute(f, TemplateVars{
-		Target:     conf.Target,
-		Submodules: path.Join(conf.CloneLocation, "submodules"),
-		Home:       conf.HomeDir,
-	})
-	if err != nil {
-		return fmt.Errorf("error rendering template: %v", err)
+	if err := c.render(f, conf); err != nil {
+		return err
 	}
 
 	dest := replaceTilde(c.Destination, conf.HomeDir)
@@ -113,20 +110,52 @@ func (c *ConfigFile) Execute(conf UserConfig, opts SyncOpts, godotConf GodotConf
 	return nil
 }
 
+func (c *ConfigFile) render(f *os.File, conf UserConfig) error {
+	if c.NoTemplate {
+		src, err := os.Open(c.templatePath(conf.CloneLocation))
+		if err != nil {
+			return fmt.Errorf("error opening file: %w", err)
+		}
+		defer src.Close()
+
+		if _, err := io.Copy(f, src); err != nil {
+			return fmt.Errorf("error copying file: %w", err)
+		}
+
+		return nil
+	} else {
+		tmpl, err := c.parseTemplate(conf.CloneLocation)
+		if err != nil {
+			return err
+		}
+
+		err = tmpl.Execute(f, TemplateVars{
+			Target:     conf.Target,
+			Submodules: path.Join(conf.CloneLocation, "submodules"),
+			Home:       conf.HomeDir,
+		})
+		if err != nil {
+			return fmt.Errorf("error rendering template: %v", err)
+		}
+
+		return nil
+	}
+}
+
 func (c *ConfigFile) createVaultClosure(conf UserConfig, opts SyncOpts) {
 	if _, ok := funcs[funcNameVaultLookup]; ok {
 		return
 	}
 
 	if opts.NoVault {
-		log.Debug("Creating no-op vault template func")
+		c.log.Debug().Msg("creating no-op vault template function")
 		funcs[funcNameVaultLookup] = func(path string, key string) (string, error) {
 			return "NOT_USING_VAULT", nil
 		}
 		return
 	}
 
-	log.Debug("Creating vault client template func")
+	c.log.Debug().Msg("creating vault template function")
 	funcs[funcNameVaultLookup] = func(path string, key string) (string, error) {
 		if !conf.VaultConfig.Client.Initialized() {
 			return "", fmt.Errorf("Template requires Valut to be set up")
@@ -151,7 +180,7 @@ func (c *ConfigFile) createIsInstalledClosure(userConf UserConfig, godotConf God
 		return fmt.Errorf("error getting executors list: %w", err)
 	}
 
-	log.Debug("Creating IsInstalled template func")
+	c.log.Debug().Msg("creating IsInstalled template function")
 	funcs[funcNameIsInstalled] = func(item string) bool {
 		return lo.ContainsBy(executors, func(t Executor) bool {
 			return t.GetName() == item
@@ -163,11 +192,15 @@ func (c *ConfigFile) createIsInstalledClosure(userConf UserConfig, godotConf God
 
 func (c *ConfigFile) parseTemplate(dotfiles string) (*template.Template, error) {
 	t := template.New(c.TemplateName).Funcs(funcs)
-	t, err := t.ParseFiles(path.Join(dotfiles, "templates", c.TemplateName))
+	t, err := t.ParseFiles(c.templatePath(dotfiles))
 	if err != nil {
 		return nil, fmt.Errorf("error parsing template file: %w", err)
 	}
 	return t, nil
+}
+
+func (c *ConfigFile) templatePath(dotfiles string) string {
+	return path.Join(dotfiles, "templates", c.TemplateName)
 }
 
 func (c *ConfigFile) pathExists(path string) (bool, error) {

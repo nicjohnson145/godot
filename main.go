@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/nicjohnson145/godot/internal/lib"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -16,8 +17,18 @@ var (
 
 func main() {
 	if err := buildCommand().Execute(); err != nil {
-		log.Fatal(err)
+		log.Fatal().Str("error", err.Error()).Msg("")
 	}
+}
+
+func initLogger(verbose bool, debug bool) zerolog.Logger {
+	if verbose {
+		return lib.LoggerWithLevel(zerolog.InfoLevel)
+	}
+	if debug {
+		return lib.LoggerWithLevel(zerolog.DebugLevel)
+	}
+	return lib.LoggerWithLevel(zerolog.WarnLevel)
 }
 
 func buildCommand() *cobra.Command {
@@ -30,15 +41,10 @@ func buildCommand() *cobra.Command {
 		Short: "A dotfiles manager",
 		Long:  "A staticly linked dotfiles manager written in Go",
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
-			log.SetLevel(log.WarnLevel)
-			if verbose {
-				log.SetLevel(log.InfoLevel)
-			}
-			if debug {
-				log.SetLevel(log.DebugLevel)
-			}
 			// So we don't print usage messages on execution errors
 			cmd.SilenceUsage = true
+			// So we dont double report errors
+			cmd.SilenceErrors = true
 		},
 	}
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug logging")
@@ -49,7 +55,7 @@ func buildCommand() *cobra.Command {
 		Short: "Sync configuration",
 		Long:  "Sync local filesystem with configuration",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return lib.Sync(syncOpts)
+			return lib.Sync(syncOpts, initLogger(verbose, debug))
 		},
 	}
 	syncCmd.Flags().BoolVarP(&syncOpts.Quick, "quick", "q", false, "Run a quick sync, skipping some stages")
@@ -87,7 +93,7 @@ func buildCommand() *cobra.Command {
 		Args:  cobra.NoArgs,
 		Long:  "Check for newer version and install if found",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return lib.SelfUpdate(version)
+			return lib.SelfUpdate(version, initLogger(verbose, debug))
 		},
 	}
 	rootCmd.AddCommand(updateCmd)

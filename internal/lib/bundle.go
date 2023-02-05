@@ -1,10 +1,18 @@
 package lib
 
+import (
+	"github.com/rs/zerolog"
+)
+
 var _ Executor = (*Bundle)(nil)
 
 type Bundle struct {
 	Name  string `yaml:"-"`
 	Items []string `yaml:"items"`
+}
+
+func (b *Bundle) SetLogger(_ zerolog.Logger) {
+	// No-op since this is really just a container executor
 }
 
 func (b *Bundle) Execute(_ UserConfig, _ SyncOpts, _ GodotConfig) error {

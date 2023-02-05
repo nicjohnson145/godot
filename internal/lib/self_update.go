@@ -3,23 +3,20 @@ package lib
 import (
 	"fmt"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 )
 
-func SelfUpdate(currentVersion string) error {
+func SelfUpdate(currentVersion string, logger zerolog.Logger) error {
 	conf, err := NewConfig()
 	if err != nil {
 		return fmt.Errorf("error getting config: %w", err)
 	}
-	return selfUpdateWithConfig(conf, currentVersion)
+	return selfUpdateWithConfig(conf, currentVersion, logger)
 }
 
-func selfUpdateWithConfig(conf UserConfig, currentVersion string) error {
-	// Always make the log output here visible
-	log.SetLevel(log.InfoLevel)
-
+func selfUpdateWithConfig(conf UserConfig, currentVersion string, logger zerolog.Logger) error {
 	if currentVersion == "development" {
-		log.Warn("Running development build, assuming latest and will not self update")
+		logger.Warn().Msg("Running development build, assuming latest and will not self update")
 		return nil
 	}
 
@@ -39,11 +36,11 @@ func selfUpdateWithConfig(conf UserConfig, currentVersion string) error {
 	latest = latest[1:]
 
 	if latest == currentVersion {
-		log.Infof("Current version of %v is latest tag. Nothing to do", currentVersion)
+		logger.Info().Str("version", currentVersion).Msg("current version is latest tag. nothing to do")
 		return nil
 	}
 
-	log.Infof("Newer version found, updating to %v", latest)
+	logger.Info().Str("version", latest).Msg("newer version found, updating")
 	godot.Tag = "v" + latest
 	if err := godot.Execute(conf, SyncOpts{}, GodotConfig{}); err != nil {
 		return fmt.Errorf("error executing self update: %w", err)

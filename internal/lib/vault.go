@@ -6,12 +6,10 @@ import (
 	"path/filepath"
 
 	vault "github.com/hashicorp/vault/api"
-	log "github.com/sirupsen/logrus"
 )
 
 func setVaultClient(userConf *UserConfig) error {
 	if userConf.VaultConfig.Address == "" {
-		log.Debug("No vault address set, not setting vault client")
 		return nil
 	}
 
@@ -43,7 +41,6 @@ func setVaultClient(userConf *UserConfig) error {
 
 	client.SetToken(string(b))
 	userConf.VaultConfig.Client = RealVaultClient{Client: client}
-	log.Debug("Initialized vault client")
 	return nil
 }
 

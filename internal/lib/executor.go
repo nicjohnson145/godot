@@ -1,5 +1,9 @@
 package lib
 
+import (
+	"github.com/rs/zerolog"
+)
+
 //go:generate go-enum -f $GOFILE -marshal -names -flag
 
 /*
@@ -12,6 +16,7 @@ url-download
 bundle
 golang
 go-install
+config-dir
 )
 */
 type ExecutorType string
@@ -20,6 +25,7 @@ type Executor interface {
 	Execute(UserConfig, SyncOpts, GodotConfig) error
 	Type() ExecutorType
 	Validate() error
+	SetLogger(zerolog.Logger)
 	Namer
 }
 

@@ -5,15 +5,20 @@ import (
 	"runtime"
 
 	"github.com/hashicorp/go-multierror"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 )
 
 var _ Executor = (*GoInstall)(nil)
 
 type GoInstall struct {
-	Name string `yaml:"-"`
-	Package string `yaml:"package" mapstructure:"package"`
-	Version string `yaml:"version" mapstructure:"version"`
+	Name    string         `yaml:"-"`
+	Package string         `yaml:"package" mapstructure:"package"`
+	Version string         `yaml:"version" mapstructure:"version"`
+	log     zerolog.Logger `yaml:"-"`
+}
+
+func (g *GoInstall) SetLogger(log zerolog.Logger) {
+	g.log = log
 }
 
 func (g *GoInstall) Type() ExecutorType {
@@ -42,13 +47,13 @@ func (g *GoInstall) Execute(_ UserConfig, _ SyncOpts, _ GodotConfig) error {
 	if runtime.GOOS != "linux" {
 		return fmt.Errorf("go-install currently only supports linux")
 	}
-	log.Infof("go installing %v", g.Package)
+	g.log.Info().Str("package", g.Package).Msg("go installing")
 
 	version := "latest"
 	if g.Version != "" {
 		version = g.Version
 	}
-	_, _, err := runCmd("/usr/local/go/bin/go", "install", g.Package + "@" + version)
+	_, _, err := runCmd("/usr/local/go/bin/go", "install", g.Package+"@"+version)
 	if err != nil {
 		return fmt.Errorf("error installing package: %w", err)
 	}

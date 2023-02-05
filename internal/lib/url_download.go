@@ -8,21 +8,26 @@ import (
 	"text/template"
 
 	"github.com/hashicorp/go-multierror"
-	log "github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 )
 
 var _ Executor = (*UrlDownload)(nil)
 
 type UrlDownload struct {
-	Name       string `yaml:"-"`
-	Tag        string `yaml:"tag" mapstructure:"tag"`
-	MacUrl     string `yaml:"mac-url" mapstructure:"mac-url"`
-	LinuxUrl   string `yaml:"linux-url" mapstructure:"linux-url"`
-	WindowsUrl string `yaml:"windows-url" mapstructure:"windows-url"`
+	Name       string         `yaml:"-"`
+	Tag        string         `yaml:"tag" mapstructure:"tag"`
+	MacUrl     string         `yaml:"mac-url" mapstructure:"mac-url"`
+	LinuxUrl   string         `yaml:"linux-url" mapstructure:"linux-url"`
+	WindowsUrl string         `yaml:"windows-url" mapstructure:"windows-url"`
+	log        zerolog.Logger `yaml:"-"`
 }
 
 type urlVars struct {
 	Tag string
+}
+
+func (u *UrlDownload) SetLogger(log zerolog.Logger) {
+	u.log = log
 }
 
 func (u *UrlDownload) GetName() string {
@@ -48,7 +53,7 @@ func (u *UrlDownload) Validate() error {
 }
 
 func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) error {
-	log.Infof("Ensuring %v", u.Name)
+	u.log.Info().Str("url", u.Name).Msg("ensuring")
 	url, err := u.getDownloadUrl()
 	if err != nil {
 		return fmt.Errorf("error getting url: %w", err)
@@ -70,7 +75,7 @@ func (u *UrlDownload) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) err
 		FinalDest:    dest,
 		Url:          url,
 		SymlinkName:  symlink,
-	})
+	}, u.log)
 	if err != nil {
 		return fmt.Errorf("error during download/symlink: %w", err)
 	}
