@@ -2,8 +2,8 @@ package lib
 
 import (
 	"fmt"
-	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/lithammer/dedent"
@@ -14,49 +14,21 @@ const (
 	targetName = "my-target"
 )
 
-func makeSubDir(t *testing.T, dir string, d string) string {
-	t.Helper()
-	sub := path.Join(dir, d)
-	err := os.MkdirAll(sub, 0744)
-	require.NoError(t, err)
-	return sub
-}
-
 func setupForConfigFile(t *testing.T, name string, content string) UserConfig {
 	t.Helper()
-	dir := t.TempDir()
 
-	templates := makeSubDir(t, dir, "templates")
-	output := makeSubDir(t, dir, "output")
-	home := makeSubDir(t, dir, "home")
-
-	err := os.WriteFile(
-		path.Join(templates, name),
-		[]byte(content),
-		0744,
-	)
-	require.NoError(t, err)
+	root := buildDirectoryStructure(t, map[string]string{
+		"templates/" + name: content,
+		"output/": "",
+		"home/": "",
+	})
 
 	return UserConfig{
-		CloneLocation: dir,
-		HomeDir:       home,
-		BuildLocation: output,
+		CloneLocation: root,
+		HomeDir:       filepath.Join(root, "home"),
+		BuildLocation: filepath.Join(root, "output"),
 		Target:        targetName,
 	}
-}
-
-func requireContents(t *testing.T, path string, expected string) {
-	t.Helper()
-	b, err := os.ReadFile(path)
-	require.NoError(t, err)
-	require.Equal(t, expected, string(b))
-}
-
-func cleanFuncsMap(t *testing.T) {
-	t.Helper()
-
-	delete(funcs, funcNameIsInstalled)
-	delete(funcs, funcNameVaultLookup)
 }
 
 func TestConfigFileExecute(t *testing.T) {
