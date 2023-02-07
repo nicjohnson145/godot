@@ -81,7 +81,7 @@ func (r *GodotExecutor) AsExecutor() (Executor, error) {
 		var x ConfigDir
 		executor, err = decodeStructure(&x, r.Spec, r.Type.String())
 	default:
-		return nil, fmt.Errorf("programming error: unhandled executor type of %v", r.Type)
+		return nil, fmt.Errorf("programming error: unhandled executor type of '%v' with name '%v'", r.Type, r.Name)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("error decoding spec: %w", err)
