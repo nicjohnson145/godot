@@ -94,7 +94,7 @@ func buildCommand() *cobra.Command {
 		Args:  cobra.NoArgs,
 		Long:  "Check for newer version and install if found",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return lib.SelfUpdate(version, initLogger(verbose, debug))
+			return lib.SelfUpdate(version, initLogger(true, false))
 		},
 	}
 	rootCmd.AddCommand(updateCmd)
