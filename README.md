@@ -111,7 +111,6 @@ type ConfigFile struct {
 	Name         string `yaml:"-"`
 	TemplateName string `yaml:"template-name" mapstructure:"template-name"`
 	Destination  string `yaml:"destination" mapstructure:"destination"`
-	NoTemplate   bool   `yaml:"no-template" mapstructure:"no-template"`
 }
 ```
 
