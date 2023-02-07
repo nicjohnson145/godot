@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/nicjohnson145/godot/internal/lib"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +17,8 @@ var (
 
 func main() {
 	if err := buildCommand().Execute(); err != nil {
-		log.Fatal().Str("error", err.Error()).Msg("")
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 }
 

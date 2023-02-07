@@ -77,6 +77,9 @@ func (r *GodotExecutor) AsExecutor() (Executor, error) {
 	case ExecutorTypeGoInstall:
 		var x GoInstall
 		executor, err = decodeStructure(&x, r.Spec, r.Type.String())
+	case ExecutorTypeConfigDir:
+		var x ConfigDir
+		executor, err = decodeStructure(&x, r.Spec, r.Type.String())
 	default:
 		return nil, fmt.Errorf("programming error: unhandled executor type of %v", r.Type)
 	}
