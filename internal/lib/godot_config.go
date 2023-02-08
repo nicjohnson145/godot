@@ -48,7 +48,7 @@ func decodeStructure[T any](x T, spec map[string]any, typeName string) (T, error
 	return x, nil
 }
 
-//nolint:ireturn
+//nolint:ireturn,gocyclo
 func (r *GodotExecutor) AsExecutor() (Executor, error) {
 	var executor Executor
 	var err error
