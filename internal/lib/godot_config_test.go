@@ -67,6 +67,14 @@ func TestExecutorsForTarget(t *testing.T) {
 		// should yell about a failure to unmarshal the type
 		require.Contains(t, err.Error(), "some-bad-type")
 	})
+
+	t.Run("bad_bundle_item", func(t *testing.T) {
+		confPath := setupConf(t, "./testdata/godot-config/bad_executor_in_bundle.yaml")
+		_, err := NewGodotConfig(confPath)
+		require.Error(t, err)
+		// should yell about a failure to unmarshal the type
+		require.Contains(t, err.Error(), "missingconf")
+	})
 }
 
 func ensureExecutorParsed[T any](t *testing.T, gEx GodotExecutor, expected T) {
