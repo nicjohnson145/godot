@@ -120,15 +120,25 @@ func (r *GodotConfig) Validate() error {
 		}
 		// Bundles work a little differently
 		if rawEx.Type == ExecutorTypeBundle {
-			bndl, ok := ex.(*Bundle)
-			if !ok {
-				errors = multierror.Append(errors, fmt.Errorf("executor %v has type bundle, but cannot cast", name))
+			if err := r.validateBundle(name, ex); err != nil {
+				errors = multierror.Append(errors, err)
 			}
-			for _, item := range bndl.Items {
-				if _, ok := r.Executors[item]; !ok {
-					errors = multierror.Append(errors, fmt.Errorf("bundle %v has unknown item %v", name, item))
-				}
-			}
+		}
+	}
+
+	return errors.ErrorOrNil()
+}
+
+func (r *GodotConfig) validateBundle(name string, ex Executor) error {
+	var errors *multierror.Error
+
+	bndl, ok := ex.(*Bundle)
+	if !ok {
+		errors = multierror.Append(errors, fmt.Errorf("executor %v has type bundle, but cannot cast", name))
+	}
+	for _, item := range bndl.Items {
+		if _, ok := r.Executors[item]; !ok {
+			errors = multierror.Append(errors, fmt.Errorf("bundle %v has unknown item %v", name, item))
 		}
 	}
 
