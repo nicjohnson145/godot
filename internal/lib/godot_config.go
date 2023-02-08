@@ -40,6 +40,7 @@ type GodotExecutor struct {
 	Spec map[string]any `json:"spec"`
 }
 
+//nolint:ireturn
 func decodeStructure[T any](x T, spec map[string]any, typeName string) (T, error) {
 	if err := mapstructure.Decode(spec, &x); err != nil {
 		return *new(T), fmt.Errorf("error decoding as %v: %w", typeName, err)
@@ -47,7 +48,7 @@ func decodeStructure[T any](x T, spec map[string]any, typeName string) (T, error
 	return x, nil
 }
 
-//nolint:ireturn
+//nolint:ireturn,gocyclo
 func (r *GodotExecutor) AsExecutor() (Executor, error) {
 	var executor Executor
 	var err error
@@ -117,6 +118,28 @@ func (r *GodotConfig) Validate() error {
 		}
 		if err := ex.Validate(); err != nil {
 			errors = multierror.Append(errors, fmt.Errorf("executor %v is invalid: %w", name, err))
+		}
+		// Bundles work a little differently
+		if rawEx.Type == ExecutorTypeBundle {
+			if err := r.validateBundle(name, ex); err != nil {
+				errors = multierror.Append(errors, err)
+			}
+		}
+	}
+
+	return errors.ErrorOrNil()
+}
+
+func (r *GodotConfig) validateBundle(name string, ex Executor) error {
+	var errors *multierror.Error
+
+	bndl, ok := ex.(*Bundle)
+	if !ok {
+		errors = multierror.Append(errors, fmt.Errorf("executor %v has type bundle, but cannot cast", name))
+	}
+	for _, item := range bndl.Items {
+		if _, ok := r.Executors[item]; !ok {
+			errors = multierror.Append(errors, fmt.Errorf("bundle %v has unknown item %v", name, item))
 		}
 	}
 

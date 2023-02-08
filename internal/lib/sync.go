@@ -89,7 +89,7 @@ func ensureDotfilesRepo(conf UserConfig, logger zerolog.Logger) error {
 		Private:     true,
 		TrackLatest: true,
 	}
-	//dotfiles.SetLogger(logger)
+	dotfiles.SetLogger(logger)
 	if err := dotfiles.Execute(conf, SyncOpts{}, GodotConfig{}); err != nil {
 		return fmt.Errorf("error ensuring dotfiles repo: %w", err)
 	}

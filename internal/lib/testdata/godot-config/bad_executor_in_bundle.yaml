@@ -1,0 +1,9 @@
+executors:
+  bndl:
+    type: bundle
+    spec:
+      items:
+      - missingconf
+targets:
+  target1:
+  - bndl
