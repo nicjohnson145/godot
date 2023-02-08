@@ -200,3 +200,19 @@ func TestAsExecutor(t *testing.T) {
 		)
 	})
 }
+
+func TestAsExecutorSmokes(t *testing.T) {
+	for _, kind := range _ExecutorTypeValue {
+		if kind == ExecutorTypeBundle {
+			continue
+		}
+		gEx := GodotExecutor{
+			Name: "ex",
+			Type: kind,
+			Spec: map[string]any{},
+		}
+		_, err := gEx.AsExecutor()
+		require.NoError(t, err)
+	}
+}
+
