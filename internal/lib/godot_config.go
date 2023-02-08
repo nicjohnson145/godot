@@ -40,6 +40,7 @@ type GodotExecutor struct {
 	Spec map[string]any `json:"spec"`
 }
 
+//nolint:ireturn
 func decodeStructure[T any](x T, spec map[string]any, typeName string) (T, error) {
 	if err := mapstructure.Decode(spec, &x); err != nil {
 		return *new(T), fmt.Errorf("error decoding as %v: %w", typeName, err)
