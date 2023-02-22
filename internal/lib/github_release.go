@@ -40,6 +40,7 @@ type releaseResponse struct {
 type release struct {
 	Name        string `json:"name"`
 	DownloadUrl string `json:"browser_download_url"`
+	Url         string `json:"url"`
 }
 
 type githubTag struct {
@@ -121,11 +122,12 @@ func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) e
 		Name:         g.Name,
 		DownloadName: path.Base(release.DownloadUrl),
 		FinalDest:    dest,
-		Url:          release.DownloadUrl,
+		Url:          release.Url,
 		RequestFunc: func(req *requests.Builder) {
 			if conf.GithubAuth != "" {
 				req.Header("Authorization", conf.GithubAuth)
 			}
+			req.Header("Accept", "application/octet-stream")
 		},
 		SearchFunc:  searchFunc,
 		SymlinkName: symlink,
