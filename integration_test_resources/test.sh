@@ -6,6 +6,8 @@ godot sync -v
 
 HOMEDIR="/home/newuser"
 
+# devtools should exist
+$HOMEDIR/bin/devtools -h
 # Bat should exist
 $HOMEDIR/bin/bat -h
 # Kubectl should be installed
