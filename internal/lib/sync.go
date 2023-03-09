@@ -14,7 +14,19 @@ type SyncOpts struct {
 	Executors []string
 }
 
+func (s *SyncOpts) Validate() error {
+	for _, ex := range s.Executors {
+		if _, err := ParseExecutorType(ex); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func Sync(opts SyncOpts, logger zerolog.Logger) error {
+	if err := opts.Validate(); err != nil {
+		return err
+	}
 	conf, err := NewOverrideableConfig(ConfigOverrides{
 		IgnoreVault: opts.NoVault,
 	})
