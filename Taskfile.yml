@@ -3,10 +3,12 @@ version: 3
 tasks:
 
   generate:
+    desc: run code generation
     cmds:
       - go generate ./...
 
   go-build:
+    desc: build a linux binary
     deps:
       - generate
     cmds:
@@ -16,21 +18,25 @@ tasks:
       CGO_ENABLED: 0
 
   unit-test:
+    desc: run unit tests
     cmds:
       - go test -v ./...
 
   docker-build:
+    desc: build the integration tests docker env
     deps:
       - go-build
     cmds:
       - docker build . -t godot_integration -f integration_test.Dockerfile
 
   check-pat-set:
+    internal: true
     cmds:
       - if [ -z "$GITHUB_PAT" ]; then echo "GITHUB_PAT not set, integration tests can't run"; exit 1; fi
     silent: true
 
   integration-test:
+    desc: execute integration tests in docker
     deps:
       - docker-build
       - check-pat-set
@@ -38,6 +44,7 @@ tasks:
       - docker run -e GITHUB_PAT=${GITHUB_PAT} --rm godot_integration
 
   test:
+    desc: run all available tests
     deps:
       - unit-test
       - integration-test
