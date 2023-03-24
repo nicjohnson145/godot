@@ -12,27 +12,6 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var (
-	regexMusl     = regexp.MustCompile("(?i)musl")
-	regexLinuxPkg = regexp.MustCompile(`(?i)(\.deb|\.rpm|\.apk)$`)
-
-	osRegexMap = map[string]*regexp.Regexp{
-		"windows": regexp.MustCompile(`(?i)(windows|win)`),
-		"linux":   regexp.MustCompile("(?i)linux"),
-		"darwin":  regexp.MustCompile(`(?i)(darwin|mac(os)?|apple|osx)`),
-	}
-
-	archRegexMap = map[string]*regexp.Regexp{
-		"386":   regexp.MustCompile(`(?i)(i?386|x86_32|amd32|x32)`),
-		"amd64": regexp.MustCompile(`(?i)(x86_64|amd64|x64)`),
-		"arm64": regexp.MustCompile(`(?i)(arm64|aarch64)`),
-	}
-)
-
-const (
-	Latest = "LATEST"
-)
-
 type releaseResponse struct {
 	Assets []release `json:"assets"`
 }
