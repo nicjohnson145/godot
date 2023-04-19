@@ -8,11 +8,17 @@ builds:
   - env:
       - CGO_ENABLED=0
     goos:
-      - linux
-      - windows
-      - darwin
+    - linux
+    - windows
+    - darwin
     goarch:
-      - amd64
+    - amd64
+    - arm64
+    goarm:
+    - 7
+    ignore:
+    - goos: windows
+      goarch: arm64
 archives:
   - format: binary
     name_template: "{{ .Binary }}_{{ .Os }}_{{ .Arch }}"
