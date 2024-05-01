@@ -36,6 +36,7 @@ func buildCommand() *cobra.Command {
 	syncOpts := lib.SyncOpts{}
 	var debug bool
 	var verbose bool
+	var updateIgnoreVault bool
 
 	rootCmd := &cobra.Command{
 		Use:   "godot",
@@ -94,9 +95,14 @@ func buildCommand() *cobra.Command {
 		Args:  cobra.NoArgs,
 		Long:  "Check for newer version and install if found",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return lib.SelfUpdate(version, initLogger(true, false))
+			return lib.SelfUpdate(lib.SelfUpdateOpts{
+				Logger: initLogger(true, false),
+				CurrentVersion: version,
+				IgnoreVault: updateIgnoreVault,
+			})
 		},
 	}
+	updateCmd.Flags().BoolVar(&updateIgnoreVault, "no-vault", false, "Ignore vault integrations")
 	rootCmd.AddCommand(updateCmd)
 
 	return rootCmd

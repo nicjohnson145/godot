@@ -6,12 +6,20 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func SelfUpdate(currentVersion string, logger zerolog.Logger) error {
-	conf, err := NewConfig()
+type SelfUpdateOpts struct {
+	Logger zerolog.Logger
+	CurrentVersion string
+	IgnoreVault bool
+}
+
+func SelfUpdate(opts SelfUpdateOpts) error {
+	conf, err := NewOverrideableConfig(ConfigOverrides{
+		IgnoreVault: opts.IgnoreVault,
+	})
 	if err != nil {
 		return fmt.Errorf("error getting config: %w", err)
 	}
-	return selfUpdateWithConfig(conf, currentVersion, logger)
+	return selfUpdateWithConfig(conf, opts.CurrentVersion, opts.Logger)
 }
 
 func selfUpdateWithConfig(conf UserConfig, currentVersion string, logger zerolog.Logger) error {
