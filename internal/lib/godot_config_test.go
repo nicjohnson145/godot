@@ -148,9 +148,11 @@ func TestAsExecutor(t *testing.T) {
 					"tag": "LATEST",
 					"is-archive": true,
 					"regex": "abcd",
-					"mac-pattern": "mac-pattern",
-					"linux-pattern": "linux-pattern",
-					"windows-pattern": "windows-pattern",
+					"asset-patterns": map[string]any{
+						"darwin": map[string]any{
+							"amd64": "mac-amd64-pattern",
+						},
+					},
 				},
 			},
 			&GithubRelease{
@@ -159,9 +161,11 @@ func TestAsExecutor(t *testing.T) {
 				Tag: "LATEST",
 				IsArchive: true,
 				Regex: "abcd",
-				MacPattern: "mac-pattern",
-				LinuxPattern: "linux-pattern",
-				WindowsPattern: "windows-pattern",
+				AssetPatterns: map[string]map[string]string{
+					"darwin": {
+						"amd64": "mac-amd64-pattern",
+					},
+				},
 			},
 		)
 	})

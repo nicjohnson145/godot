@@ -50,15 +50,13 @@ type githubTag struct {
 var _ Executor = (*GithubRelease)(nil)
 
 type GithubRelease struct {
-	Name           string         `yaml:"-"`
-	Repo           string         `yaml:"repo" mapstructure:"repo"`
-	Tag            string         `yaml:"tag" mapstructure:"tag"`
-	IsArchive      bool           `yaml:"is-archive" mapstructure:"is-archive"`
-	Regex          string         `yaml:"regex" mapstructure:"regex"`
-	MacPattern     string         `yaml:"mac-pattern" mapstructure:"mac-pattern"`
-	LinuxPattern   string         `yaml:"linux-pattern" mapstructure:"linux-pattern"`
-	WindowsPattern string         `yaml:"windows-pattern" mapstructure:"windows-pattern"`
-	log            zerolog.Logger `yaml:"-"`
+	Name          string                       `yaml:"-"`
+	Repo          string                       `yaml:"repo" mapstructure:"repo"`
+	Tag           string                       `yaml:"tag" mapstructure:"tag"`
+	IsArchive     bool                         `yaml:"is-archive" mapstructure:"is-archive"`
+	Regex         string                       `yaml:"regex" mapstructure:"regex"`
+	AssetPatterns map[string]map[string]string `yaml:"asset-patterns" mapstructure:"asset-patterns"`
+	log           zerolog.Logger               `yaml:"-"`
 }
 
 func (g *GithubRelease) SetLogger(log zerolog.Logger) {
@@ -97,7 +95,7 @@ func (g *GithubRelease) Validate() error {
 }
 
 func (g *GithubRelease) Execute(conf UserConfig, opts SyncOpts, _ GodotConfig) error {
-	g.log.Info().Str("release", g.Repo).Msg("ensuring release")
+	g.log.Info().Str("release", g.Name).Msg("ensuring release")
 	release, err := g.getRelease(conf)
 	if err != nil {
 		return fmt.Errorf("error determining release: %w", err)
@@ -203,13 +201,11 @@ func (g *GithubRelease) GetLatestRelease(conf UserConfig) (string, error) {
 //nolint:gocyclo
 func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch string) (release, error) {
 	var pat string
-	switch userOs {
-	case "windows":
-		pat = g.WindowsPattern
-	case "linux":
-		pat = g.LinuxPattern
-	case "darwin":
-		pat = g.MacPattern
+	// Try to lookup a specific pattern, if its available
+	if osPatterns, ok := g.AssetPatterns[userOs]; ok {
+		if archPattern, ok := osPatterns[userArch]; ok {
+			pat = archPattern
+		}
 	}
 
 	if pat != "" {
@@ -264,7 +260,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 
 	// If we're not linux, then I don't have any more tricks up my sleeve
 	if userOs != "linux" {
-		return release{}, fmt.Errorf("unable to auto-detect release asset, please specify a per-OS pattern")
+		return release{}, fmt.Errorf("unable to auto-detect release asset, please specify an OS/Arch pattern")
 	}
 
 	// But if we are, lets filter off any non-MUSL or deb/rpm
@@ -290,7 +286,7 @@ func (g *GithubRelease) getAsset(resp releaseResponse, userOs string, userArch s
 		return assets[0], nil
 	}
 
-	return release{}, fmt.Errorf("enable to auto-detect release asset, please specify a per-OS pattern")
+	return release{}, fmt.Errorf("enable to auto-detect release asset, please specify an OS/Arch pattern")
 }
 
 func (g *GithubRelease) filterAssets(assets []release, pat *regexp.Regexp, match bool) []release {

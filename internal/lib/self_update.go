@@ -24,9 +24,19 @@ func selfUpdateWithConfig(conf UserConfig, currentVersion string, logger zerolog
 		Name:           "godot",
 		Repo:           "nicjohnson145/godot",
 		IsArchive:      false,
-		MacPattern:     "^godot_darwin_amd64$",
-		LinuxPattern:   "^godot_linux_amd64$",
-		WindowsPattern: "^godot_windows_amd64.exe$",
+		AssetPatterns: map[string]map[string]string{
+			"darwin": {
+				"amd64": "^godot_darwin_amd64$",
+				"arm64": "^godot_darwin_arm64$",
+			},
+			"linux": {
+				"amd64": "^godot_linux_amd64$",
+				"arm64": "^godot_linux_arm64$",
+			},
+			"windows": {
+				"amd64": "^godot_windows_amd64.exe$",
+			},
+		},
 	}
 
 	latest, err := godot.GetLatestRelease(conf)

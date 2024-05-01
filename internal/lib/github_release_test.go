@@ -42,8 +42,6 @@ func TestGithubReleaseExecute(t *testing.T) {
 			Repo:         "nicjohnson145/godot",
 			IsArchive:    false,
 			Tag:          "v2.4.1",
-			LinuxPattern: "godot_linux_amd64",
-			MacPattern:   "godot_darwin_amd64",
 		}
 		require.NoError(t, g.Execute(UserConfig{
 			BinaryDir:  dir,
@@ -62,8 +60,6 @@ func TestGithubReleaseExecute(t *testing.T) {
 			Repo:         "BurntSushi/ripgrep",
 			IsArchive:    true,
 			Tag:          "13.0.0",
-			LinuxPattern: ".*unknown-linux-musl.*",
-			MacPattern:   ".*apple-darwin.*",
 		}
 		require.NoError(t, g.Execute(UserConfig{
 			BinaryDir:  dir,
@@ -83,8 +79,6 @@ func TestGithubReleaseExecute(t *testing.T) {
 			IsArchive:    true,
 			Tag:          "v2.12.1",
 			Regex:        ".*/bin/gh$",
-			LinuxPattern: ".*linux_amd64.tar.gz$",
-			MacPattern:   ".*macOS_amd64.tar.gz$",
 		}
 		require.NoError(t, g.Execute(UserConfig{
 			BinaryDir:  dir,
