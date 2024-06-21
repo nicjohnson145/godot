@@ -1,11 +1,13 @@
 package lib
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
-	vault "github.com/hashicorp/vault/api"
+	vault "github.com/hashicorp/vault-client-go"
 )
 
 func setVaultClient(userConf *UserConfig) error {
@@ -13,9 +15,10 @@ func setVaultClient(userConf *UserConfig) error {
 		return nil
 	}
 
-	config := vault.DefaultConfig()
-	config.Address = userConf.VaultConfig.Address
-	client, err := vault.NewClient(config)
+	client, err := vault.New(
+		vault.WithAddress(userConf.VaultConfig.Address),
+		vault.WithRequestTimeout(15*time.Second),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to initialize Vault client: %v", err)
 	}
@@ -58,7 +61,7 @@ func (v RealVaultClient) Initialized() bool {
 }
 
 func (v RealVaultClient) ReadKey(path string, key string) (string, error) {
-	secret, err := v.Client.Logical().Read(path)
+	secret, err := v.Client.Read(context.Background(), path)
 	if err != nil {
 		return "", fmt.Errorf("Error reading path %v from vault: %w", path, err)
 	}
