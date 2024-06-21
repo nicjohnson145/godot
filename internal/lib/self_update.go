@@ -23,11 +23,6 @@ func SelfUpdate(opts SelfUpdateOpts) error {
 }
 
 func selfUpdateWithConfig(conf UserConfig, currentVersion string, logger zerolog.Logger) error {
-	if currentVersion == "development" {
-		logger.Warn().Msg("Running development build, assuming latest and will not self update")
-		return nil
-	}
-
 	godot := GithubRelease{
 		Name:           "godot",
 		Repo:           "nicjohnson145/godot",
