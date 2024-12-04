@@ -17,6 +17,7 @@ bundle
 golang
 go-install
 config-dir
+neovim
 )
 */
 type ExecutorType string

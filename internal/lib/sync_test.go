@@ -25,6 +25,7 @@ func TestExecutorsFromOpts(t *testing.T) {
 				ExecutorTypeGolang,
 				ExecutorTypeGoInstall,
 				ExecutorTypeConfigDir,
+				ExecutorTypeNeovim,
 			},
 		},
 		{
@@ -54,6 +55,7 @@ func TestExecutorsFromOpts(t *testing.T) {
 				ExecutorTypeGolang,
 				ExecutorTypeGoInstall,
 				ExecutorTypeConfigDir,
+				ExecutorTypeNeovim,
 			},
 		},
 	}

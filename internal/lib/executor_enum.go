@@ -30,6 +30,8 @@ const (
 	ExecutorTypeGoInstall ExecutorType = "go-install"
 	// ExecutorTypeConfigDir is a ExecutorType of type config-dir.
 	ExecutorTypeConfigDir ExecutorType = "config-dir"
+	// ExecutorTypeNeovim is a ExecutorType of type neovim.
+	ExecutorTypeNeovim ExecutorType = "neovim"
 )
 
 var ErrInvalidExecutorType = fmt.Errorf("not a valid ExecutorType, try [%s]", strings.Join(_ExecutorTypeNames, ", "))
@@ -44,6 +46,7 @@ var _ExecutorTypeNames = []string{
 	string(ExecutorTypeGolang),
 	string(ExecutorTypeGoInstall),
 	string(ExecutorTypeConfigDir),
+	string(ExecutorTypeNeovim),
 }
 
 // ExecutorTypeNames returns a list of possible string values of ExecutorType.
@@ -75,6 +78,7 @@ var _ExecutorTypeValue = map[string]ExecutorType{
 	"golang":         ExecutorTypeGolang,
 	"go-install":     ExecutorTypeGoInstall,
 	"config-dir":     ExecutorTypeConfigDir,
+	"neovim":         ExecutorTypeNeovim,
 }
 
 // ParseExecutorType attempts to convert a string to a ExecutorType.

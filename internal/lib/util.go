@@ -174,12 +174,12 @@ func downloadAndSymlinkBinary(opts downloadOpts, logger zerolog.Logger) error {
 }
 
 func pathExists(loc string) (bool, error) {
-    if _, err := os.Stat(loc); err != nil {
-        if os.IsNotExist(err) {
-            return false, nil
-        } else {
-            return false, err
-        }
-    }
-    return true, nil
+	if _, err := os.Stat(loc); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+	return true, nil
 }

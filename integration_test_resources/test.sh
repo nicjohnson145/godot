@@ -47,5 +47,9 @@ fi
 # Gopls should be installed
 $HOMEDIR/go/bin/gopls -h
 
+# Neovim should be installed, both through the symlink & through the raw directory
+$HOMEDIR/bin/neovim/bin/nvim --version
+$HOMEDIR/bin/neovim-v0.10.2/bin/nvim --version
+
 
 exit 0
